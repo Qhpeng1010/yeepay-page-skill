@@ -1,0 +1,1787 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Boss Ledger - 商户经营与核销管理</title>
+  <link rel="stylesheet" href="./vendor/antd-reset.css" />
+  <style>
+    :root {
+      --primary: #F36046;
+      --primary-hover: #FF7A66;
+      --selected-bg: #FEF2F0;
+      --page-bg: #F4F4F4;
+      --topbar-bg: #3A3A3A;
+      --border: #E5E6EB;
+      --divider: #F0F0F0;
+      --stat-bg: #FAFAFA;
+      --text: #1F2329;
+      --text-secondary: #4E5969;
+      --text-tertiary: #86909C;
+      --topbar-text: #B8B8B8;
+      --success: #52C41A;
+      --warning: #FAAD14;
+      --error: #FF4D4F;
+      --processing: #1677FF;
+    }
+
+    html,
+    body,
+    #root {
+      height: 100%;
+      margin: 0;
+      background: var(--page-bg);
+    }
+
+    body {
+      color: var(--text);
+      font: 14px/22px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    .boss-page {
+      min-width: 1180px;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--page-bg);
+    }
+
+    .topbar {
+      height: 28px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--topbar-text);
+      background: var(--topbar-bg);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .primary-nav {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      position: relative;
+      z-index: 5;
+    }
+
+    .logo-zone {
+      width: 208px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+    }
+
+    .logo {
+      width: 128px;
+      height: 40px;
+      display: block;
+      object-fit: contain;
+    }
+
+    .primary-items {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 32px;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      padding-right: 32px;
+    }
+
+    .primary-item {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      color: var(--text-secondary);
+      position: relative;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .primary-item.active {
+      color: var(--primary);
+    }
+
+    .primary-item.active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 2px;
+      background: var(--primary);
+    }
+
+    .shell {
+      display: flex;
+      height: calc(100vh - 92px);
+      overflow: hidden;
+    }
+
+    .sider {
+      width: 208px;
+      flex: 0 0 208px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--divider);
+      transition: width .2s ease, flex-basis .2s ease;
+    }
+
+    .sider.collapsed {
+      width: 48px;
+      flex-basis: 48px;
+      overflow: hidden;
+    }
+
+    .sider-menu {
+      flex: 1;
+      width: 207px;
+      padding-top: 4px;
+      overflow: auto;
+    }
+
+    .sider-menu .ant-menu {
+      border-inline-end: 0 !important;
+      font-weight: 400;
+      width: 207px !important;
+    }
+
+    .sider.collapsed .ant-menu-inline-collapsed {
+      width: 48px !important;
+    }
+
+    .sider.collapsed .sider-menu,
+    .sider.collapsed .sider-menu .ant-menu {
+      width: 48px !important;
+    }
+
+    .sider.collapsed .ant-menu-submenu-arrow {
+      display: none !important;
+    }
+
+    .sider-menu .ant-menu-item,
+    .sider-menu .ant-menu-submenu-title {
+      width: 207px !important;
+      height: 40px !important;
+      line-height: 40px !important;
+      margin: 0 !important;
+      border-radius: 0 !important;
+      font-weight: 400 !important;
+    }
+
+    .sider-menu .ant-menu-item .anticon,
+    .sider-menu .ant-menu-submenu-title .anticon {
+      margin-inline-end: 8px !important;
+    }
+
+    .sider-menu .ant-menu-submenu-selected > .ant-menu-submenu-title,
+    .sider-menu .ant-menu-item-selected {
+      color: var(--primary) !important;
+      background: transparent !important;
+    }
+
+    .sider-menu .ant-menu-sub .ant-menu-item-selected {
+      background: var(--selected-bg) !important;
+      position: relative;
+    }
+
+    .sider-menu .ant-menu-sub .ant-menu-item-selected::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 2px;
+      height: 40px;
+      background: var(--primary);
+    }
+
+    .sider.collapsed .ant-menu-item,
+    .sider.collapsed .ant-menu-submenu-title {
+      width: 48px !important;
+      padding-inline: 0 !important;
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .sider.collapsed .ant-menu-title-content {
+      display: none !important;
+    }
+
+    .sider.collapsed .ant-menu-item .anticon,
+    .sider.collapsed .ant-menu-submenu-title .anticon {
+      margin-inline-end: 0 !important;
+    }
+
+    .collapse-control {
+      height: 48px;
+      border-top: 1px solid #EBEBEB;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .workspace {
+      min-width: 0;
+      flex: 1;
+      background: var(--page-bg);
+      overflow: hidden;
+    }
+
+    .work-body {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .tab-strip {
+      height: 48px;
+      padding-top: 4px;
+      padding-left: 16px;
+      flex: 0 0 auto;
+      background: var(--page-bg);
+    }
+
+    .boss-tabs.ant-tabs {
+      height: 44px;
+    }
+
+    .boss-tabs .ant-tabs-nav {
+      margin: 0 !important;
+      height: 44px;
+      padding-left: 0;
+    }
+
+    .boss-tabs .ant-tabs-nav::before {
+      border-bottom: 0 !important;
+    }
+
+    .boss-tabs .ant-tabs-tab {
+      height: 44px !important;
+      padding: 0 12px !important;
+      border: 0 !important;
+      border-radius: 4px 4px 0 0 !important;
+      background: #ECECEC !important;
+      color: var(--text-secondary);
+    }
+
+    .boss-tabs .ant-tabs-tab-active {
+      background: #fff !important;
+      border-radius: 8px 8px 0 0 !important;
+    }
+
+    .boss-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+      color: var(--primary) !important;
+    }
+
+    .tab-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 132px;
+    }
+
+    .tab-title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .content {
+      flex: 1;
+      overflow: auto;
+      padding: 0 16px;
+      background: var(--page-bg);
+    }
+
+    .page-stack {
+      min-height: calc(100vh - 92px - 48px - 24px);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background: var(--page-bg);
+      padding: 0 0 0;
+    }
+
+    .query-panel {
+      background: #fff;
+      border: 1px solid var(--divider);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .query-panel .ant-form {
+      width: 100%;
+    }
+
+    .query-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: end;
+      width: 100%;
+    }
+
+    .query-grid .ant-form-item {
+      width: 100%;
+      margin: 0 !important;
+    }
+
+    .query-grid .ant-form-item-row,
+    .query-grid .ant-form-item-control,
+    .query-grid .ant-form-item-control-input,
+    .query-grid .ant-picker,
+    .query-grid .ant-select,
+    .query-grid .ant-input {
+      width: 100%;
+    }
+
+    .query-grid .ant-form-item-row {
+      flex-wrap: nowrap;
+    }
+
+    .query-grid .ant-form-item-control {
+      min-width: 0;
+    }
+
+    .query-grid .ant-form-item-label {
+      padding-right: 0 !important;
+      margin-right: 8px;
+      flex: 0 0 auto;
+    }
+
+    .query-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .query-actions-cell {
+      grid-column: 3;
+    }
+
+    .query-actions-row {
+      grid-column: 1 / -1;
+    }
+
+    .analysis-filter {
+      background: #fff;
+      border: 1px solid var(--divider);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .analysis-filter-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .analysis-filter-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .analysis-filter .ant-select {
+      min-width: 220px;
+    }
+
+    .query-toggle {
+      padding: 0 !important;
+      border: 0 !important;
+      box-shadow: none !important;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .metric-card,
+    .chart-card,
+    .rank-card,
+    .todo-card,
+    .table-panel,
+    .verify-panel {
+      background: #fff;
+      border: 1px solid var(--divider);
+      border-radius: 8px;
+    }
+
+    .metric-card {
+      padding: 16px;
+      min-height: 104px;
+    }
+
+    .metric-title {
+      color: var(--text-tertiary);
+      margin-bottom: 12px;
+    }
+
+    .metric-value {
+      color: var(--text);
+      font-size: 24px;
+      line-height: 32px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric-extra {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .up {
+      color: var(--success);
+    }
+
+    .down {
+      color: var(--error);
+    }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
+      gap: 16px;
+    }
+
+    .chart-card,
+    .rank-card,
+    .todo-card,
+    .verify-panel {
+      padding: 16px;
+    }
+
+    .card-title,
+    .toolbar-title {
+      color: var(--text);
+      font-size: 16px;
+      line-height: 32px;
+      font-weight: 500;
+    }
+
+    .card-subtitle {
+      color: var(--text-tertiary);
+      font-size: 12px;
+    }
+
+    .chart-box {
+      height: 260px;
+      margin-top: 12px;
+    }
+
+    .chart-fallback {
+      height: 260px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-tertiary);
+      background: #FAFAFA;
+      border: 1px dashed var(--border);
+      border-radius: 4px;
+    }
+
+    .rank-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .rank-list {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .rank-row,
+    .todo-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .rank-name {
+      min-width: 108px;
+      color: var(--text-secondary);
+    }
+
+    .rank-bar {
+      flex: 1;
+      height: 8px;
+      border-radius: 4px;
+      background: #F2F3F5;
+      overflow: hidden;
+    }
+
+    .rank-fill {
+      height: 100%;
+      background: var(--primary);
+    }
+
+    .rank-value,
+    .todo-value {
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .todo-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .todo-card {
+      min-height: 104px;
+    }
+
+    .toolbar {
+      min-height: 64px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--divider);
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+
+    .table-panel {
+      overflow: hidden;
+    }
+
+    .table-panel .toolbar {
+      border-bottom: 0;
+    }
+
+    .table-panel.fill-panel {
+      min-height: 0;
+    }
+
+    .table-stat {
+      margin: 0 16px 12px;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      background: transparent;
+    }
+
+    .table-stat-card {
+      padding: 16px;
+      background: #F6F6F6;
+      border-radius: 4px;
+    }
+
+    .table-stat-card .ant-statistic-title {
+      margin-bottom: 4px;
+      color: var(--text-tertiary);
+      font-size: 14px;
+    }
+
+    .table-stat-card .ant-statistic-content {
+      color: var(--text);
+      font-size: 18px;
+      line-height: 26px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .table-body {
+      padding: 0 16px;
+    }
+
+    .table-body .ant-table-wrapper {
+      min-width: 0;
+    }
+
+    .table-pagination {
+      padding: 16px 0;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .operation-buttons {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .operation-buttons .ant-btn-link {
+      padding: 0 !important;
+      height: 22px;
+      line-height: 22px;
+      color: var(--primary) !important;
+    }
+
+    .operation-buttons .ant-btn-link:hover {
+      color: var(--primary-hover) !important;
+    }
+
+    .operation-more {
+      color: var(--primary) !important;
+    }
+
+    .ant-btn-primary {
+      background: var(--primary) !important;
+      border-color: var(--primary) !important;
+      box-shadow: none !important;
+    }
+
+    .ant-btn-primary:hover {
+      background: var(--primary-hover) !important;
+      border-color: var(--primary-hover) !important;
+    }
+
+    .ant-pagination .ant-pagination-item-active {
+      border-color: var(--primary) !important;
+    }
+
+    .ant-pagination .ant-pagination-item-active a,
+    .ant-pagination .ant-pagination-item:hover a,
+    .ant-pagination .ant-pagination-prev:hover .ant-pagination-item-link,
+    .ant-pagination .ant-pagination-next:hover .ant-pagination-item-link {
+      color: var(--primary) !important;
+    }
+
+    .ant-checkbox-checked .ant-checkbox-inner {
+      background-color: var(--primary) !important;
+      border-color: var(--primary) !important;
+    }
+
+    .ant-table-thead > tr > th {
+      background: #FAFAFA !important;
+      font-weight: 500 !important;
+    }
+
+    .ant-table-cell-fix-right {
+      background: #fff !important;
+    }
+
+    .ant-table-thead .ant-table-cell-fix-right {
+      background: #FAFAFA !important;
+    }
+
+    .column-setting-button {
+      width: 32px;
+      background: #FAFAFA !important;
+      border-color: #FAFAFA !important;
+    }
+
+    .column-setting-panel {
+      width: 180px;
+      padding: 12px;
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, .12);
+    }
+
+    .column-setting-title {
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .verify-box {
+      height: 168px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 16px;
+      border: 1px dashed var(--border);
+      border-radius: 4px;
+      color: var(--text-tertiary);
+      background: #FAFAFA;
+      text-align: center;
+    }
+
+    .verify-form {
+      margin-top: 16px;
+    }
+
+    .status-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .status-dot::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-tertiary);
+    }
+
+    .status-success::before {
+      background: var(--success);
+    }
+
+    .status-warning::before {
+      background: var(--warning);
+    }
+
+    .status-error::before {
+      background: var(--error);
+    }
+
+    .status-processing::before {
+      background: var(--processing);
+    }
+
+    .drawer-section {
+      margin-bottom: 24px;
+    }
+
+    .drawer-section-title {
+      margin-bottom: 12px;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .drawer-title-bar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .drawer-title-text {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .drawer-close-button {
+      width: 32px;
+      height: 32px;
+      padding: 0 !important;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-tertiary) !important;
+    }
+
+    .page-footer {
+      height: 24px;
+      color: var(--text-tertiary);
+      font-size: 12px;
+      text-align: center;
+      line-height: 18px;
+    }
+
+    .ant-modal .ant-modal-header {
+      min-height: 56px;
+      margin: 0;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--divider);
+    }
+
+    .ant-modal .ant-modal-content {
+      padding: 0;
+      border-radius: 6px;
+    }
+
+    .ant-modal .ant-modal-body {
+      padding: 24px;
+    }
+
+    .ant-modal .ant-modal-footer {
+      margin: 0;
+      padding: 10px 24px;
+      border-top: 1px solid var(--divider);
+    }
+
+    .ant-modal-confirm .ant-modal-body {
+      padding: 24px !important;
+    }
+
+    .ant-modal-confirm .ant-modal-confirm-body-wrapper {
+      padding: 0 !important;
+    }
+
+    .ant-modal-confirm .ant-modal-confirm-btns {
+      margin-top: 24px !important;
+      text-align: right;
+    }
+
+    .ant-drawer .ant-drawer-header {
+      min-height: 56px;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--divider);
+    }
+
+    .ant-drawer .ant-drawer-body {
+      padding: 24px;
+    }
+
+    .ant-drawer .ant-drawer-footer {
+      height: 56px;
+      padding: 12px 24px;
+      border-top: 1px solid var(--divider);
+    }
+
+    .ant-form-item-label > label {
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="./vendor/react.production.min.js"></script>
+  <script src="./vendor/react-dom.production.min.js"></script>
+  <script src="./vendor/dayjs.min.js"></script>
+  <script src="./vendor/dayjs-zh-cn.js"></script>
+  <script src="./vendor/antd.min.js"></script>
+  <script src="./vendor/ant-design-icons.umd.js"></script>
+  <script src="./vendor/lodash.min.js"></script>
+  <script src="./vendor/g2plot.min.js"></script>
+  <script src="./vendor/babel.min.js"></script>
+  <script type="text/babel">
+    const {
+      App,
+      Button,
+      Checkbox,
+      ConfigProvider,
+      DatePicker,
+      Descriptions,
+      Drawer,
+      Dropdown,
+      Empty,
+      Form,
+      Input,
+      InputNumber,
+      Menu,
+      Modal,
+      Pagination,
+      Progress,
+      Select,
+      Space,
+      Statistic,
+      Table,
+      Tabs,
+      Tooltip,
+      message,
+    } = antd;
+    const AntIcons = window.icons || window.antdIcons || window.AntDesignIcons || {};
+    const {
+      AuditOutlined,
+      BarChartOutlined,
+      CloseOutlined,
+      DownOutlined,
+      MenuFoldOutlined,
+      MenuUnfoldOutlined,
+      PieChartOutlined,
+      ReloadOutlined,
+      SafetyCertificateOutlined,
+      ScanOutlined,
+      SettingOutlined,
+      ShopOutlined,
+      TeamOutlined,
+      ToolOutlined,
+      UpOutlined,
+      WalletOutlined,
+    } = AntIcons;
+
+    dayjs.locale('zh-cn');
+    const { RangePicker } = DatePicker;
+
+    const currency = (value) => Number(value).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    function CompactOperations({ actions }) {
+      const primaryActions = actions.slice(0, 3);
+      const overflowActions = actions.slice(3);
+      return (
+        <div className="operation-buttons">
+          {primaryActions.map((action) => (
+            <Button key={action.key} type="link" danger={action.danger} onClick={action.onClick}>{action.label}</Button>
+          ))}
+          {overflowActions.length > 0 && (
+            <Dropdown
+              trigger={['click']}
+              menu={{
+                items: overflowActions.map((action) => ({ key: action.key, label: action.label, danger: action.danger })),
+                onClick: ({ key }) => {
+                  const matched = overflowActions.find((action) => action.key === key);
+                  if (matched) matched.onClick();
+                },
+              }}
+            >
+              <Button type="link" className="operation-more" onClick={(event) => event.preventDefault()}>更多</Button>
+            </Dropdown>
+          )}
+        </div>
+      );
+    }
+
+    const statusMap = {
+      pending: 'warning',
+      verified: 'success',
+      refunded: 'default',
+      expired: 'error',
+      success: 'success',
+      abnormal: 'error',
+      open: 'success',
+      closed: 'default',
+      active: 'success',
+      paused: 'default',
+      processing: 'processing',
+    };
+
+    function StatusDot({ status, text }) {
+      return <span className={`status-dot status-${statusMap[status] || 'default'}`}>{text}</span>;
+    }
+
+    function ChartBox({ type, config }) {
+      const ref = React.useRef(null);
+      const chartRef = React.useRef(null);
+      const [ready, setReady] = React.useState(true);
+
+      React.useEffect(() => {
+        const charts = window.G2Plot || {};
+        const ChartCtor = charts[type];
+        if (!ChartCtor || !ref.current) {
+          setReady(false);
+          return;
+        }
+        setReady(true);
+        if (chartRef.current && chartRef.current.destroy) {
+          chartRef.current.destroy();
+        }
+        const baseConfig = {
+          autoFit: true,
+          color: ['#F36046', '#1677FF', '#52C41A', '#FAAD14', '#722ED1', '#13C2C2', '#EB2F96', '#A0D911'],
+          legend: { position: 'top' },
+          appendPadding: 8,
+          animation: false,
+          ...config,
+        };
+        chartRef.current = new ChartCtor(ref.current, baseConfig);
+        chartRef.current.render();
+        return () => {
+          if (chartRef.current && chartRef.current.destroy) {
+            chartRef.current.destroy();
+          }
+        };
+      }, [type, JSON.stringify(config)]);
+
+      if (!ready) {
+        return <div className="chart-fallback">图表运行时暂未加载</div>;
+      }
+      return <div className="chart-box" ref={ref} />;
+    }
+
+    const trendData = [
+      { date: '07-03', type: '营收', value: 126800 },
+      { date: '07-04', type: '营收', value: 142500 },
+      { date: '07-05', type: '营收', value: 155200 },
+      { date: '07-06', type: '营收', value: 138900 },
+      { date: '07-07', type: '营收', value: 169300 },
+      { date: '07-08', type: '营收', value: 181600 },
+      { date: '07-09', type: '营收', value: 196800 },
+      { date: '07-03', type: '客流', value: 4620 },
+      { date: '07-04', type: '客流', value: 5180 },
+      { date: '07-05', type: '客流', value: 5620 },
+      { date: '07-06', type: '客流', value: 4910 },
+      { date: '07-07', type: '客流', value: 6110 },
+      { date: '07-08', type: '客流', value: 6420 },
+      { date: '07-09', type: '客流', value: 6950 },
+    ];
+
+    const channelShareData = [
+      { channel: '抖音生活服务', value: 38 },
+      { channel: '美团', value: 24 },
+      { channel: '小程序', value: 22 },
+      { channel: '携程', value: 10 },
+      { channel: '其他', value: 6 },
+    ];
+
+    const hourlyTrafficData = Array.from({ length: 24 }).map((_, hour) => ({
+      hour: `${String(hour).padStart(2, '0')}:00`,
+      value: [18, 12, 8, 5, 4, 9, 28, 96, 188, 276, 358, 436, 512, 488, 426, 392, 468, 586, 642, 518, 376, 224, 96, 42][hour],
+    }));
+
+    const regionData = [
+      { region: '上海', value: 34 },
+      { region: '江苏', value: 22 },
+      { region: '浙江', value: 18 },
+      { region: '北京', value: 9 },
+      { region: '广东', value: 8 },
+      { region: '其他', value: 9 },
+    ];
+
+    const customerCompareData = [
+      { type: '新客', metric: '客单价', value: 168 },
+      { type: '老客', metric: '客单价', value: 236 },
+      { type: '新客', metric: '转化率', value: 42 },
+      { type: '老客', metric: '转化率', value: 68 },
+    ];
+
+    const orders = [
+      { key: '1', orderNo: 'BL202607090018', phone: '138****5521', channel: '抖音生活服务', store: '上海浦东旗舰店', paidAmount: 328.00, refundAmount: 0, status: 'pending', statusText: '待核销', validUntil: '2026-07-31' },
+      { key: '2', orderNo: 'BL202607090017', phone: '186****0926', channel: '美团', store: '杭州西湖店', paidAmount: 198.00, refundAmount: 0, status: 'verified', statusText: '已核销', validUntil: '2026-08-15' },
+      { key: '3', orderNo: 'BL202607080126', phone: '159****7102', channel: '小程序', store: '南京新街口店', paidAmount: 468.00, refundAmount: 468.00, status: 'refunded', statusText: '已退款', validUntil: '2026-07-25' },
+      { key: '4', orderNo: 'BL202607080088', phone: '177****3918', channel: '携程', store: '苏州金鸡湖店', paidAmount: 258.00, refundAmount: 0, status: 'expired', statusText: '已过期', validUntil: '2026-07-08' },
+      { key: '5', orderNo: 'BL202607070312', phone: '135****6678', channel: '抖音生活服务', store: '上海浦东旗舰店', paidAmount: 598.00, refundAmount: 0, status: 'pending', statusText: '待核销', validUntil: '2026-08-10' },
+    ];
+
+    const verifyLogs = [
+      { key: 'v1', time: '2026-07-09 14:21:08', code: '8392 1180 5521', store: '上海浦东旗舰店', amount: 328.00, operator: 'store_001', status: 'success', statusText: '核销成功' },
+      { key: 'v2', time: '2026-07-09 14:16:42', code: '9201 5528 0190', store: '杭州西湖店', amount: 198.00, operator: 'store_012', status: 'success', statusText: '核销成功' },
+      { key: 'v3', time: '2026-07-09 14:09:33', code: '6731 0091 2287', store: '南京新街口店', amount: 468.00, operator: 'store_008', status: 'success', statusText: '核销成功' },
+    ];
+
+    const abnormalLogs = [
+      { key: 'a1', time: '2026-07-09 13:58:12', code: '1180 0092 8821', store: '苏州金鸡湖店', reason: '重复核销', status: 'abnormal', statusText: '重复' },
+      { key: 'a2', time: '2026-07-09 12:34:20', code: '0091 1180 6621', store: '上海浦东旗舰店', reason: '券码已过期', status: 'abnormal', statusText: '过期' },
+      { key: 'a3', time: '2026-07-09 10:12:03', code: '5521 1180 7777', store: '杭州西湖店', reason: '无效券码', status: 'abnormal', statusText: '无效' },
+    ];
+
+    const stores = [
+      { key: 's1', storeName: '上海浦东旗舰店', area: '华东', address: '上海市浦东新区世纪大道 88 号', status: 'open', statusText: '营业中', account: 'store_001 / 4 个子账号', revenue: 685200 },
+      { key: 's2', storeName: '杭州西湖店', area: '华东', address: '杭州市西湖区文三路 168 号', status: 'open', statusText: '营业中', account: 'store_012 / 3 个子账号', revenue: 412800 },
+      { key: 's3', storeName: '南京新街口店', area: '华东', address: '南京市秦淮区中山东路 1 号', status: 'open', statusText: '营业中', account: 'store_008 / 2 个子账号', revenue: 376500 },
+      { key: 's4', storeName: '苏州金鸡湖店', area: '华东', address: '苏州市工业园区星湖街 328 号', status: 'closed', statusText: '暂停营业', account: 'store_019 / 1 个子账号', revenue: 122600 },
+    ];
+
+    const channels = [
+      { key: 'c1', channelName: '抖音生活服务', commissionRate: 8, salesAmount: 966800, unsettledAmount: 77344, status: 'active', statusText: '合作中' },
+      { key: 'c2', channelName: '美团', commissionRate: 7, salesAmount: 621400, unsettledAmount: 43498, status: 'active', statusText: '合作中' },
+      { key: 'c3', channelName: '小程序直营', commissionRate: 0, salesAmount: 558900, unsettledAmount: 0, status: 'active', statusText: '合作中' },
+      { key: 'c4', channelName: '携程', commissionRate: 9, salesAmount: 268300, unsettledAmount: 24147, status: 'paused', statusText: '暂停合作' },
+    ];
+
+    function MetricCard({ title, value, trend, direction }) {
+      return (
+        <div className="metric-card">
+          <div className="metric-title">{title}</div>
+          <div className="metric-value">{value}</div>
+          <div className="metric-extra">
+            较昨日 <span className={direction === 'down' ? 'down' : 'up'}>{trend}</span>
+          </div>
+        </div>
+      );
+    }
+
+    function AnalysisFilter({ categoryOptions, storeOptions, channelOptions, defaultCategory = 'all', defaultStore = 'all', defaultChannel = 'all' }) {
+      return (
+        <section className="analysis-filter">
+          <div className="analysis-filter-left">
+            {categoryOptions && (
+              <div className="analysis-filter-item">
+                <span>业务品类:</span>
+                <Select defaultValue={defaultCategory} options={categoryOptions} />
+              </div>
+            )}
+            {storeOptions && (
+              <div className="analysis-filter-item">
+                <span>门店:</span>
+                <Select defaultValue={defaultStore} options={storeOptions} />
+              </div>
+            )}
+            {channelOptions && (
+              <div className="analysis-filter-item">
+                <span>渠道:</span>
+                <Select defaultValue={defaultChannel} options={channelOptions} />
+              </div>
+            )}
+          </div>
+          <RangePicker defaultValue={[dayjs().subtract(6, 'day'), dayjs()]} />
+        </section>
+      );
+    }
+
+    function QueryPanel({ fields, onQuery, onReset, loading }) {
+      const [expanded, setExpanded] = React.useState(false);
+      const visibleFields = fields.length > 6 && !expanded ? fields.slice(0, 5) : fields;
+      const showToggle = fields.length > 6;
+      const actionClassName = visibleFields.length % 3 !== 0 ? 'query-actions query-actions-cell' : 'query-actions query-actions-row';
+      return (
+        <section className="query-panel">
+          <Form layout="inline" colon>
+            <div className="query-grid">
+              {visibleFields.map((field) => (
+                <Form.Item key={field.name} label={field.label} name={field.name}>
+                  {field.node}
+                </Form.Item>
+              ))}
+              <div className={actionClassName}>
+                {showToggle && (
+                  <Button
+                    type="text"
+                    className="query-toggle"
+                    icon={expanded ? <UpOutlined /> : <DownOutlined />}
+                    onClick={() => setExpanded(!expanded)}
+                  >
+                    {expanded ? '收 起' : '展 开'}
+                  </Button>
+                )}
+                <Button onClick={onReset}>重 置</Button>
+                <Button type="primary" loading={loading} onClick={onQuery}>查 询</Button>
+              </div>
+            </div>
+          </Form>
+        </section>
+      );
+    }
+
+    function RankCard({ title, data }) {
+      return (
+        <div className="rank-card">
+          <div className="card-title">{title}</div>
+          <div className="rank-list">
+            {data.map((item) => (
+              <div className="rank-row" key={item.name}>
+                <span className="rank-name">{item.name}</span>
+                <span className="rank-bar"><span className="rank-fill" style={{ width: `${item.percent}%` }} /></span>
+                <span className="rank-value">{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function DashboardPage({ onQuery, onReset, loading }) {
+      const categoryOptions = [{ value: 'all', label: '全部品类' }, { value: 'family', label: '亲子票' }, { value: 'meal', label: '套餐券' }, { value: 'night', label: '夜场票' }];
+      const storeOptions = [{ value: 'all', label: '全部门店' }, ...stores.map((s) => ({ value: s.key, label: s.storeName }))];
+      return (
+        <div className="page-stack">
+          <AnalysisFilter categoryOptions={categoryOptions} storeOptions={storeOptions} />
+          <div className="metric-grid">
+            <MetricCard title="今日营收总额(元)" value="196,800.00" trend="+8.4%" />
+            <MetricCard title="今日核销订单数(单)" value="1,286" trend="+6.1%" />
+            <MetricCard title="活跃门店数(家)" value="36" trend="+2 家" />
+            <MetricCard title="待结算款项(元)" value="428,600.00" trend="-3.2%" direction="down" />
+          </div>
+          <div className="chart-grid">
+            <div className="chart-card">
+              <div className="card-title">营收客流趋势图</div>
+              <ChartBox type="Line" config={{ data: trendData, xField: 'date', yField: 'value', seriesField: 'type', smooth: true }} />
+            </div>
+            <div className="chart-card">
+              <div className="card-title">客源渠道占比图</div>
+              <ChartBox type="Pie" config={{ data: channelShareData, angleField: 'value', colorField: 'channel', radius: 0.78, label: { type: 'outer' } }} />
+            </div>
+          </div>
+          <div className="rank-grid">
+            <RankCard title="品类营收排行" data={[{ name: '亲子套票', percent: 96, value: '68.5 万' }, { name: '双人餐券', percent: 78, value: '55.8 万' }, { name: '夜场体验', percent: 54, value: '39.2 万' }, { name: '周边零售', percent: 36, value: '21.7 万' }]} />
+            <RankCard title="门店营收排行" data={[{ name: '上海浦东旗舰店', percent: 100, value: '68.5 万' }, { name: '杭州西湖店', percent: 72, value: '41.3 万' }, { name: '南京新街口店', percent: 64, value: '37.6 万' }, { name: '苏州金鸡湖店', percent: 28, value: '12.3 万' }]} />
+          </div>
+          <div className="todo-grid">
+            <div className="todo-card"><div className="card-title">待结算单据</div><div className="metric-value">128</div><div className="card-subtitle">最早待处理：2026-07-05</div></div>
+            <div className="todo-card"><div className="card-title">待审核商品</div><div className="metric-value">24</div><div className="card-subtitle">新增套餐需审核后上架</div></div>
+            <div className="todo-card"><div className="card-title">待处理售后工单</div><div className="metric-value">17</div><div className="card-subtitle">超 24 小时未处理：3 单</div></div>
+          </div>
+          <footer className="page-footer">© 2026 易宝支付有限公司 版权所有</footer>
+        </div>
+      );
+    }
+
+    function TrafficPage({ onQuery, onReset, onExport, loading }) {
+      const storeOptions = [{ value: 'all', label: '全部门店' }, ...stores.map((s) => ({ value: s.key, label: s.storeName }))];
+      const channelOptions = [{ value: 'all', label: '全部渠道' }, { value: 'douyin', label: '抖音生活服务' }, { value: 'meituan', label: '美团' }, { value: 'mini', label: '小程序' }];
+      return (
+        <div className="page-stack">
+          <AnalysisFilter storeOptions={storeOptions} channelOptions={channelOptions} />
+          <div className="metric-grid">
+            <MetricCard title="总到店人次(人)" value="42,806" trend="+7.2%" />
+            <MetricCard title="新客占比(%)" value="38.6" trend="+2.8%" />
+            <MetricCard title="复购客单价(元)" value="236.00" trend="+5.4%" />
+            <MetricCard title="客流峰值" value="18:00" trend="峰值 642 人" />
+          </div>
+          <div className="toolbar" style={{ border: '1px solid var(--divider)', borderRadius: 8, background: '#fff' }}>
+            <div className="toolbar-title">客流分析报表</div>
+            <div className="toolbar-actions"><Button onClick={onExport}>下载Excel</Button></div>
+          </div>
+          <div className="chart-grid">
+            <div className="chart-card">
+              <div className="card-title">24 小时时段客流分布数据</div>
+              <ChartBox type="Column" config={{ data: hourlyTrafficData, xField: 'hour', yField: 'value', columnWidthRatio: 0.62 }} />
+            </div>
+            <div className="chart-card">
+              <div className="card-title">游客地域来源占比</div>
+              <ChartBox type="Pie" config={{ data: regionData, angleField: 'value', colorField: 'region', radius: 0.78 }} />
+            </div>
+          </div>
+          <div className="rank-grid">
+            <div className="chart-card">
+              <div className="card-title">新老客消费对比</div>
+              <ChartBox type="Column" config={{ data: customerCompareData, xField: 'type', yField: 'value', seriesField: 'metric', isGroup: true }} />
+            </div>
+            <RankCard title="高复购套餐排行" data={[{ name: '亲子年卡', percent: 96, value: '复购 42%' }, { name: '双人晚餐券', percent: 82, value: '复购 36%' }, { name: '周末家庭套票', percent: 74, value: '复购 31%' }, { name: '夜场畅玩票', percent: 61, value: '复购 25%' }]} />
+          </div>
+          <footer className="page-footer">© 2026 易宝支付有限公司 版权所有</footer>
+        </div>
+      );
+    }
+
+    function DataTablePanel({ title, columns, data, stats, actions, rowSelection, loading }) {
+      const [visibleColumnKeys, setVisibleColumnKeys] = React.useState(columns.filter((c) => c.key !== 'actions').map((c) => c.key).concat('actions'));
+      const visibleColumns = columns.filter((column) => column.key === 'actions' || visibleColumnKeys.includes(column.key));
+      const options = columns.filter((column) => column.key !== 'actions').map((column) => ({ label: column.title, value: column.key }));
+      const dropdown = (
+        <div className="column-setting-panel" onClick={(event) => event.stopPropagation()}>
+          <div className="column-setting-title">列设置</div>
+          <Checkbox.Group value={visibleColumnKeys.filter((key) => key !== 'actions')} onChange={(values) => setVisibleColumnKeys([...values, 'actions'])}>
+            <Space direction="vertical" size={8}>
+              {options.map((option) => <Checkbox key={option.value} value={option.value}>{option.label}</Checkbox>)}
+            </Space>
+          </Checkbox.Group>
+        </div>
+      );
+      return (
+        <section className="table-panel fill-panel">
+          <div className="toolbar">
+            <div className="toolbar-title">{title}</div>
+            <div className="toolbar-actions">
+              {actions}
+              <Tooltip title="列设置">
+                <Dropdown trigger={['click']} placement="bottomRight" dropdownRender={() => dropdown}>
+                  <Button className="column-setting-button" icon={<SettingOutlined />} />
+                </Dropdown>
+              </Tooltip>
+            </div>
+          </div>
+          {stats && (
+            <div className="table-stat">
+              {stats.map((item) => (
+                <div className="table-stat-card" key={item.label}>
+                  <Statistic title={item.label} value={item.value} valueStyle={{ color: 'var(--text)' }} />
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="table-body">
+            <Table rowKey="key" loading={loading} rowSelection={rowSelection} columns={visibleColumns} dataSource={data} pagination={false} scroll={{ x: 1320 }} locale={{ emptyText: <Empty description="暂无符合条件的数据" /> }} />
+            <div className="table-pagination">
+              <Pagination current={1} pageSize={10} total={48} showTotal={(total) => `共 ${total} 条`} />
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function OrderPage({ onQuery, onReset, onExport, loading, openOrder, openSimpleModal }) {
+      const [selectedKeys, setSelectedKeys] = React.useState([]);
+      const fields = [
+        { name: 'status', label: '订单状态', node: <Select defaultValue="all" options={[{ value: 'all', label: '全部状态' }, { value: 'pending', label: '待核销' }, { value: 'verified', label: '已核销' }, { value: 'refunded', label: '已退款' }, { value: 'expired', label: '已过期' }]} /> },
+        { name: 'channel', label: '渠道', node: <Select defaultValue="all" options={[{ value: 'all', label: '全部渠道' }, { value: 'douyin', label: '抖音生活服务' }, { value: 'meituan', label: '美团' }, { value: 'mini', label: '小程序' }]} /> },
+        { name: 'store', label: '门店', node: <Select defaultValue="all" options={[{ value: 'all', label: '全部门店' }, ...stores.map((s) => ({ value: s.key, label: s.storeName }))]} /> },
+        { name: 'time', label: '下单时间', node: <RangePicker defaultValue={[dayjs().subtract(6, 'day'), dayjs()]} /> },
+        { name: 'orderNo', label: '订单号', node: <Input placeholder="请输入订单号" /> },
+        { name: 'phone', label: '手机号', node: <Input placeholder="请输入手机号" /> },
+      ];
+      const requireSelection = (title) => {
+        if (!selectedKeys.length) {
+          message.warning('请先选择订单');
+          return;
+        }
+        openSimpleModal(title, `将处理已选择的 ${selectedKeys.length} 条订单。`);
+      };
+      const columns = [
+        { title: '订单号', dataIndex: 'orderNo', key: 'orderNo', width: 158 },
+        { title: '用户手机号', dataIndex: 'phone', key: 'phone', width: 120 },
+        { title: '渠道', dataIndex: 'channel', key: 'channel', width: 130 },
+        { title: '门店', dataIndex: 'store', key: 'store', width: 160 },
+        { title: '实收金额(元)', dataIndex: 'paidAmount', key: 'paidAmount', width: 128, align: 'right', render: (v) => currency(v) },
+        { title: '状态', dataIndex: 'statusText', key: 'status', width: 108, render: (_, record) => <StatusDot status={record.status} text={record.statusText} /> },
+        { title: '有效期', dataIndex: 'validUntil', key: 'validUntil', width: 120 },
+        {
+          title: '操作',
+          key: 'actions',
+          width: 176,
+          fixed: 'right',
+          render: (_, record) => {
+            const actions = [
+              { key: 'detail', label: '查看详情', onClick: () => openOrder(record) },
+            ];
+            if (record.status !== 'refunded') {
+              actions.push({ key: 'refund', label: '退款', danger: true, onClick: () => openSimpleModal('确认退款？', `订单 ${record.orderNo} 将进入退款流程。`) });
+            }
+            if (record.status === 'pending') {
+              actions.push(
+                { key: 'reschedule', label: '改期', onClick: () => openSimpleModal('确认改期？', `订单 ${record.orderNo} 将改期到新的有效期。`) },
+                { key: 'sms', label: '补发短信', onClick: () => message.success('核销短信已补发') },
+              );
+            }
+            return <CompactOperations actions={actions} />;
+          },
+        },
+      ];
+      return (
+        <div className="page-stack">
+          <QueryPanel fields={fields} onQuery={onQuery} onReset={onReset} loading={loading} />
+          <DataTablePanel
+            title="全部订单列表"
+            loading={loading}
+            columns={columns}
+            data={orders}
+            rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys }}
+            stats={[{ label: '订单总数(单)', value: '1,286' }, { label: '总实收(元)', value: '196,800.00' }, { label: '总退款(元)', value: '8,628.00' }, { label: '过期订单数(单)', value: '42' }]}
+            actions={<><Button onClick={onExport}>下载Excel</Button><Button onClick={() => requireSelection('批量补发券码')}>批量补发券码</Button><Button type="primary" danger onClick={() => requireSelection('批量退款确认')}>批量退款</Button></>}
+          />
+          <footer className="page-footer">© 2026 易宝支付有限公司 版权所有</footer>
+        </div>
+      );
+    }
+
+    function VerifyPage({ onExport, loading }) {
+      const [form] = Form.useForm();
+      const doVerify = async () => {
+        try {
+          await form.validateFields();
+          message.success('券码核销成功');
+          form.resetFields(['code']);
+        } catch (error) {
+          message.error('请完善核销信息');
+        }
+      };
+      const logColumns = [
+        { title: '核销时间', dataIndex: 'time', key: 'time', width: 168 },
+        { title: '券码', dataIndex: 'code', key: 'code', width: 132 },
+        { title: '门店', dataIndex: 'store', key: 'store', width: 150 },
+        { title: '核销金额(元)', dataIndex: 'amount', key: 'amount', width: 126, align: 'right', render: (v) => currency(v) },
+        { title: '操作员', dataIndex: 'operator', key: 'operator', width: 110 },
+        { title: '状态', dataIndex: 'statusText', key: 'status', width: 108, render: (_, record) => <StatusDot status={record.status} text={record.statusText} /> },
+      ];
+      const abnormalColumns = [
+        { title: '拦截时间', dataIndex: 'time', key: 'time', width: 168 },
+        { title: '券码', dataIndex: 'code', key: 'code', width: 132 },
+        { title: '门店', dataIndex: 'store', key: 'store', width: 150 },
+        { title: '异常类型', dataIndex: 'statusText', key: 'status', width: 108, render: (_, record) => <StatusDot status={record.status} text={record.statusText} /> },
+        { title: '拦截说明', dataIndex: 'reason', key: 'reason', width: 140 },
+      ];
+      return (
+        <div className="page-stack">
+          <section className="verify-panel">
+            <div className="card-title">券码核销工作台</div>
+            <Form form={form} layout="vertical" className="verify-form" initialValues={{ store: 's1' }}>
+              <Form.Item label="核销门店" name="store" rules={[{ required: true, message: '请选择核销门店' }]}>
+                <Select options={stores.filter((s) => s.status === 'open').map((s) => ({ value: s.key, label: s.storeName }))} />
+              </Form.Item>
+              <div className="verify-box"><div><ScanOutlined style={{ fontSize: 28 }} /><div style={{ marginTop: 8 }}>扫码核销区域</div><div className="card-subtitle">扫码枪输入后自动识别券码</div></div></div>
+              <Form.Item label="手动输入券码" name="code" rules={[{ required: true, message: '请输入券码' }, { min: 8, message: '券码长度不少于 8 位' }]}>
+                <Input placeholder="请输入或扫码录入券码" />
+              </Form.Item>
+              <Space>
+                <Button onClick={() => form.resetFields(['code'])}>重 置</Button>
+                <Button type="primary" onClick={doVerify}>核 销</Button>
+              </Space>
+            </Form>
+          </section>
+          <div className="metric-grid">
+            <MetricCard title="今日核销总数(张)" value="1,286" trend="+6.1%" />
+            <MetricCard title="今日核销金额(元)" value="196,800.00" trend="+8.4%" />
+            <MetricCard title="待核销券数量(张)" value="8,926" trend="-2.1%" direction="down" />
+            <MetricCard title="异常拦截数(次)" value="18" trend="+3 次" direction="down" />
+          </div>
+          <DataTablePanel title="实时核销流水记录" loading={loading} columns={logColumns} data={verifyLogs} actions={<Button onClick={onExport}>下载Excel</Button>} />
+          <DataTablePanel title="异常核销记录" loading={loading} columns={abnormalColumns} data={abnormalLogs} actions={<Button onClick={onExport}>下载Excel</Button>} />
+          <footer className="page-footer">© 2026 易宝支付有限公司 版权所有</footer>
+        </div>
+      );
+    }
+
+    function StorePage({ onQuery, onReset, onExport, loading, openStoreModal, openSimpleModal, openStoreDrawer }) {
+      const fields = [
+        { name: 'status', label: '营业状态', node: <Select defaultValue="all" options={[{ value: 'all', label: '全部状态' }, { value: 'open', label: '营业中' }, { value: 'closed', label: '暂停营业' }]} /> },
+        { name: 'area', label: '区域', node: <Select defaultValue="all" options={[{ value: 'all', label: '全部区域' }, { value: 'east', label: '华东' }, { value: 'north', label: '华北' }, { value: 'south', label: '华南' }]} /> },
+      ];
+      const columns = [
+        { title: '门店名称', dataIndex: 'storeName', key: 'storeName', width: 168 },
+        { title: '区域', dataIndex: 'area', key: 'area', width: 90 },
+        { title: '地址', dataIndex: 'address', key: 'address', width: 260, ellipsis: true },
+        { title: '营业状态', dataIndex: 'statusText', key: 'status', width: 110, render: (_, record) => <StatusDot status={record.status} text={record.statusText} /> },
+        { title: '绑定账号', dataIndex: 'account', key: 'account', width: 168 },
+        {
+          title: '操作',
+          key: 'actions',
+          width: 190,
+          fixed: 'right',
+          render: (_, record) => (
+            <CompactOperations
+              actions={[
+                { key: 'edit', label: '编辑', onClick: () => openStoreModal(record) },
+                { key: 'toggle', label: record.status === 'open' ? '暂停营业' : '恢复营业', onClick: () => openSimpleModal(record.status === 'open' ? '确认暂停营业？' : '确认恢复营业？', `${record.storeName} 的营业状态将被变更。`) },
+                { key: 'account', label: '配置子账号', onClick: () => openSimpleModal('配置核销子账号', `${record.storeName} 可配置门店核销子账号。`) },
+                { key: 'data', label: '查看数据', onClick: () => openStoreDrawer(record) },
+              ]}
+            />
+          ),
+        },
+      ];
+      return (
+        <div className="page-stack">
+          <QueryPanel fields={fields} onQuery={onQuery} onReset={onReset} loading={loading} />
+          <div className="metric-grid">
+            <MetricCard title="总门店数(家)" value="48" trend="+2 家" />
+            <MetricCard title="营业中(家)" value="42" trend="+1 家" />
+            <MetricCard title="暂停营业(家)" value="6" trend="-1 家" direction="down" />
+            <MetricCard title="今日活跃核销门店(家)" value="36" trend="+3 家" />
+          </div>
+          <DataTablePanel title="门店信息管理" loading={loading} columns={columns} data={stores} actions={<><Button type="primary" onClick={() => openStoreModal(null)}>新 增</Button><Button onClick={onExport}>下载Excel</Button></>} />
+          <footer className="page-footer">© 2026 易宝支付有限公司 版权所有</footer>
+        </div>
+      );
+    }
+
+    function ChannelPage({ onQuery, onReset, loading, openChannelModal, openSimpleModal }) {
+      const fields = [
+        { name: 'status', label: '合作状态', node: <Select defaultValue="all" options={[{ value: 'all', label: '全部状态' }, { value: 'active', label: '合作中' }, { value: 'paused', label: '暂停合作' }]} /> },
+      ];
+      const columns = [
+        { title: '渠道名称', dataIndex: 'channelName', key: 'channelName', width: 160 },
+        { title: '分佣比例', dataIndex: 'commissionRate', key: 'commissionRate', width: 108, render: (v) => `${v}%` },
+        { title: '销售额(元)', dataIndex: 'salesAmount', key: 'salesAmount', width: 128, align: 'right', render: (v) => currency(v) },
+        { title: '待结算金额(元)', dataIndex: 'unsettledAmount', key: 'unsettledAmount', width: 146, align: 'right', render: (v) => currency(v) },
+        { title: '合作状态', dataIndex: 'statusText', key: 'status', width: 110, render: (_, record) => <StatusDot status={record.status} text={record.statusText} /> },
+        {
+          title: '操作',
+          key: 'actions',
+          width: 214,
+          fixed: 'right',
+          render: (_, record) => (
+            <CompactOperations
+              actions={[
+                { key: 'commission', label: '修改分佣', onClick: () => openChannelModal(record) },
+                { key: 'goods', label: '商品上下架', onClick: () => openSimpleModal('渠道商品上下架', `${record.channelName} 的渠道商品状态将被更新。`) },
+                { key: 'settle', label: '对账结算', onClick: () => openSimpleModal('渠道对账结算确认', `${record.channelName} 待结算金额为 ${currency(record.unsettledAmount)} 元。`) },
+              ]}
+            />
+          ),
+        },
+      ];
+      return (
+        <div className="page-stack">
+          <QueryPanel fields={fields} onQuery={onQuery} onReset={onReset} loading={loading} />
+          <div className="metric-grid">
+            <MetricCard title="渠道总数(个)" value="12" trend="+1 个" />
+            <MetricCard title="总营收(元)" value="2,415,400.00" trend="+9.6%" />
+            <MetricCard title="待结算佣金(元)" value="144,989.00" trend="+4.8%" />
+            <MetricCard title="平均分佣(%)" value="6.8" trend="-0.2%" direction="down" />
+          </div>
+          <div className="chart-card">
+            <div className="card-title">各渠道营收占比数据</div>
+            <ChartBox type="Pie" config={{ data: channels.map((c) => ({ channel: c.channelName, value: c.salesAmount })), angleField: 'value', colorField: 'channel', radius: 0.78 }} />
+          </div>
+          <DataTablePanel title="分销渠道管理" loading={loading} columns={columns} data={channels} actions={<Button type="primary" onClick={() => openChannelModal(null)}>新 增</Button>} />
+          <footer className="page-footer">© 2026 易宝支付有限公司 版权所有</footer>
+        </div>
+      );
+    }
+
+    function BossLedgerPreview() {
+      const initialPage = new URLSearchParams(window.location.search).get('page');
+      const validInitialPage = ['dashboard', 'traffic', 'orders', 'verify', 'stores', 'channels'].includes(initialPage) ? initialPage : 'dashboard';
+      const [collapsed, setCollapsed] = React.useState(false);
+      const [activePrimary, setActivePrimary] = React.useState(validInitialPage === 'orders' || validInitialPage === 'verify' ? 'order' : validInitialPage === 'stores' || validInitialPage === 'channels' ? 'store' : 'overview');
+      const [activePage, setActivePage] = React.useState(validInitialPage);
+      const [openKeys, setOpenKeys] = React.useState([validInitialPage === 'orders' || validInitialPage === 'verify' ? 'order' : validInitialPage === 'stores' || validInitialPage === 'channels' ? 'store' : 'overview']);
+      const [loading, setLoading] = React.useState(false);
+      const [drawer, setDrawer] = React.useState({ open: false, type: '', record: null });
+      const [storeModal, setStoreModal] = React.useState({ open: false, record: null });
+      const [channelModal, setChannelModal] = React.useState({ open: false, record: null });
+      const [storeForm] = Form.useForm();
+      const [channelForm] = Form.useForm();
+
+      const pageMeta = {
+        dashboard: { title: '经营首页数据大盘', primary: 'overview' },
+        traffic: { title: '客流经营分析', primary: 'overview' },
+        orders: { title: '全部订单列表', primary: 'order' },
+        verify: { title: '券码核销工作台', primary: 'order' },
+        stores: { title: '门店信息管理', primary: 'store' },
+        channels: { title: '分销渠道管理', primary: 'store' },
+      };
+
+      const switchPage = (pageKey) => {
+        setActivePage(pageKey);
+        setActivePrimary(pageMeta[pageKey].primary);
+        setOpenKeys([pageMeta[pageKey].primary]);
+      };
+
+      const doQuery = () => {
+        setLoading(true);
+        setTimeout(() => {
+          setLoading(false);
+          message.success('查询完成');
+        }, 700);
+      };
+      const resetQuery = () => message.success('查询条件已重置');
+      const doExport = () => message.success('导出任务已创建，请在下载中心查看');
+      const openSimpleModal = (title, content) => {
+        Modal.confirm({
+          title,
+          content,
+          okText: '确 认',
+          cancelText: '取 消',
+          onOk: () => message.success('操作已提交'),
+        });
+      };
+      const openStoreModal = (record) => {
+        setStoreModal({ open: true, record });
+        setTimeout(() => {
+          storeForm.setFieldsValue(record ? { storeName: record.storeName, area: record.area, status: record.status, account: record.account } : { status: 'open' });
+        });
+      };
+      const submitStore = async () => {
+        try {
+          await storeForm.validateFields();
+          setStoreModal({ open: false, record: null });
+          message.success('门店信息已保存');
+        } catch (error) {
+          message.error('请完善门店信息');
+        }
+      };
+      const openChannelModal = (record) => {
+        setChannelModal({ open: true, record });
+        setTimeout(() => {
+          channelForm.setFieldsValue(record ? { channelName: record.channelName, commissionRate: record.commissionRate, status: record.status } : { status: 'active', commissionRate: 8 });
+        });
+      };
+      const submitChannel = async () => {
+        try {
+          await channelForm.validateFields();
+          setChannelModal({ open: false, record: null });
+          message.success('渠道信息已保存');
+        } catch (error) {
+          message.error('请完善渠道信息');
+        }
+      };
+
+      const primaryItems = [
+        { key: 'overview', label: '经营总览', defaultPage: 'dashboard' },
+        { key: 'order', label: '订单核销管理', defaultPage: 'orders' },
+        { key: 'store', label: '门店与渠道管理', defaultPage: 'stores' },
+      ];
+
+      const menuGroups = {
+        overview: [
+          {
+            key: 'overview',
+            icon: <BarChartOutlined />,
+            label: '经营总览',
+            children: [
+              { key: 'dashboard', label: '经营首页数据大盘' },
+              { key: 'traffic', label: '客流经营分析' },
+            ],
+          },
+        ],
+        order: [
+          {
+            key: 'order',
+            icon: <ScanOutlined />,
+            label: '订单核销管理',
+            children: [
+              { key: 'orders', label: '全部订单列表' },
+              { key: 'verify', label: '券码核销工作台' },
+            ],
+          },
+        ],
+        store: [
+          {
+            key: 'store',
+            icon: <ShopOutlined />,
+            label: '门店与渠道管理',
+            children: [
+              { key: 'stores', label: '门店信息管理' },
+              { key: 'channels', label: '分销渠道管理' },
+            ],
+          },
+        ],
+      };
+      const currentMenuItems = menuGroups[activePrimary] || menuGroups.overview;
+
+      const tabs = Object.entries(pageMeta).map(([key, item]) => ({
+        key,
+        closable: key !== 'dashboard',
+        label: (
+          <Tooltip title={item.title.length > 6 ? item.title : ''}>
+            <span className="tab-label">
+              {activePage === key && <ReloadOutlined />}
+              <span className="tab-title">{item.title}</span>
+            </span>
+          </Tooltip>
+        ),
+      }));
+
+      const commonProps = { onQuery: doQuery, onReset: resetQuery, onExport: doExport, loading, openSimpleModal };
+      const pageNode = {
+        dashboard: <DashboardPage {...commonProps} />,
+        traffic: <TrafficPage {...commonProps} />,
+        orders: <OrderPage {...commonProps} openOrder={(record) => setDrawer({ open: true, type: 'order', record })} />,
+        verify: <VerifyPage {...commonProps} />,
+        stores: <StorePage {...commonProps} openStoreModal={openStoreModal} openStoreDrawer={(record) => setDrawer({ open: true, type: 'store', record })} />,
+        channels: <ChannelPage {...commonProps} openChannelModal={openChannelModal} />,
+      }[activePage];
+
+      return (
+        <ConfigProvider
+          locale={(antd.locales && antd.locales.zh_CN) || (antd.locale && antd.locale.zh_CN)}
+          theme={{
+            cssVar: true,
+            token: { colorPrimary: '#F36046', borderRadius: 4, lineWidth: 1 },
+          }}
+        >
+          <App>
+            <div className="boss-page">
+              <div className="topbar">
+                <div>上次登录时间：2026-07-09 09:18:32　登录 IP：10.24.18.66</div>
+                <div>10080090899 · Boss Ledger 商户后台　帮助中心　消息</div>
+              </div>
+              <header className="primary-nav">
+                <div className="logo-zone">
+                  <img className="logo" src="./assets/boss-ledger-logo.svg" alt="老板管账" />
+                </div>
+                <nav className="primary-items">
+                  {primaryItems.map((item) => (
+                    <div
+                      key={item.key}
+                      className={`primary-item ${activePrimary === item.key ? 'active' : ''}`}
+                      onClick={() => switchPage(item.defaultPage)}
+                    >
+                      {item.label}
+                    </div>
+                  ))}
+                </nav>
+              </header>
+              <div className="shell">
+                <aside className={`sider ${collapsed ? 'collapsed' : ''}`}>
+                  <div className="sider-menu">
+                    <Menu
+                      mode="inline"
+                      inlineCollapsed={collapsed}
+                      inlineCollapsedWidth={48}
+                      selectedKeys={[activePage]}
+                      openKeys={collapsed ? [] : openKeys}
+                      onOpenChange={setOpenKeys}
+                      onClick={({ key }) => pageMeta[key] && switchPage(key)}
+                      items={currentMenuItems}
+                    />
+                  </div>
+                  <div className="collapse-control" onClick={() => setCollapsed(!collapsed)}>
+                    {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                  </div>
+                </aside>
+                <main className="workspace">
+                  <div className="work-body">
+                    <div className="tab-strip">
+                      <Tabs className="boss-tabs" type="editable-card" hideAdd activeKey={activePage} onChange={switchPage} items={tabs} />
+                    </div>
+                    <section className="content">{pageNode}</section>
+                  </div>
+                </main>
+              </div>
+
+              <Drawer
+                title={(
+                  <div className="drawer-title-bar">
+                    <span className="drawer-title-text">{drawer.type === 'order' ? '订单详情' : '单门店数据'}</span>
+                    <Button
+                      type="text"
+                      className="drawer-close-button"
+                      icon={<CloseOutlined />}
+                      onClick={() => setDrawer({ open: false, type: '', record: null })}
+                    />
+                  </div>
+                )}
+                width={720}
+                open={drawer.open}
+                closeIcon={false}
+                onClose={() => setDrawer({ open: false, type: '', record: null })}
+                footer={<Space style={{ display: 'flex', justifyContent: 'flex-end' }}><Button onClick={() => setDrawer({ open: false, type: '', record: null })}>取 消</Button></Space>}
+              >
+                {drawer.type === 'order' && (
+                  <>
+                    <div className="drawer-section">
+                      <div className="drawer-section-title">订单基础信息</div>
+                      <Descriptions column={2} size="small">
+                        <Descriptions.Item label="订单号">{drawer.record?.orderNo}</Descriptions.Item>
+                        <Descriptions.Item label="用户手机号">{drawer.record?.phone}</Descriptions.Item>
+                        <Descriptions.Item label="渠道">{drawer.record?.channel}</Descriptions.Item>
+                        <Descriptions.Item label="门店">{drawer.record?.store}</Descriptions.Item>
+                        <Descriptions.Item label="实收金额">{currency(drawer.record?.paidAmount || 0)} 元</Descriptions.Item>
+                        <Descriptions.Item label="订单状态">{drawer.record?.statusText}</Descriptions.Item>
+                        <Descriptions.Item label="有效期">{drawer.record?.validUntil}</Descriptions.Item>
+                      </Descriptions>
+                    </div>
+                    <div className="drawer-section">
+                      <div className="drawer-section-title">核销记录</div>
+                      <Descriptions column={2} size="small">
+                        <Descriptions.Item label="最近短信发送">2026-07-09 10:12:20</Descriptions.Item>
+                        <Descriptions.Item label="券码状态">{drawer.record?.statusText}</Descriptions.Item>
+                      </Descriptions>
+                    </div>
+                  </>
+                )}
+                {drawer.type === 'store' && (
+                  <>
+                    <div className="drawer-section">
+                      <div className="drawer-section-title">门店概况</div>
+                      <Descriptions column={2} size="small">
+                        <Descriptions.Item label="门店名称">{drawer.record?.storeName}</Descriptions.Item>
+                        <Descriptions.Item label="营业状态">{drawer.record?.statusText}</Descriptions.Item>
+                        <Descriptions.Item label="区域">{drawer.record?.area}</Descriptions.Item>
+                        <Descriptions.Item label="今日营收">{currency(drawer.record?.revenue || 0)} 元</Descriptions.Item>
+                      </Descriptions>
+                    </div>
+                    <ChartBox type="Column" config={{ data: hourlyTrafficData.slice(8, 22), xField: 'hour', yField: 'value' }} />
+                  </>
+                )}
+              </Drawer>
+
+              <Modal title={storeModal.record ? '编辑门店' : '新增门店'} open={storeModal.open} onCancel={() => setStoreModal({ open: false, record: null })} onOk={submitStore} okText="保 存" cancelText="取 消" width={656}>
+                <Form form={storeForm} layout="vertical">
+                  <Form.Item label="门店名称" name="storeName" rules={[{ required: true, message: '请输入门店名称' }]}><Input /></Form.Item>
+                  <Form.Item label="门店区域" name="area" rules={[{ required: true, message: '请选择门店区域' }]}><Select options={[{ value: '华东', label: '华东' }, { value: '华北', label: '华北' }, { value: '华南', label: '华南' }]} /></Form.Item>
+                  <Form.Item label="营业状态" name="status" rules={[{ required: true, message: '请选择营业状态' }]}><Select options={[{ value: 'open', label: '营业中' }, { value: 'closed', label: '暂停营业' }]} /></Form.Item>
+                  <Form.Item label="绑定账号" name="account"><Input /></Form.Item>
+                </Form>
+              </Modal>
+
+              <Modal title={channelModal.record ? '修改分佣比例' : '新增渠道'} open={channelModal.open} onCancel={() => setChannelModal({ open: false, record: null })} onOk={submitChannel} okText="保 存" cancelText="取 消" width={656}>
+                <Form form={channelForm} layout="vertical">
+                  <Form.Item label="渠道名称" name="channelName" rules={[{ required: true, message: '请输入渠道名称' }]}><Input disabled={!!channelModal.record} /></Form.Item>
+                  <Form.Item label="分佣比例" name="commissionRate" rules={[{ required: true, message: '请输入分佣比例' }]}><InputNumber min={0} max={30} addonAfter="%" style={{ width: '100%' }} /></Form.Item>
+                  <Form.Item label="合作状态" name="status" rules={[{ required: true, message: '请选择合作状态' }]}><Select options={[{ value: 'active', label: '合作中' }, { value: 'paused', label: '暂停合作' }]} /></Form.Item>
+                </Form>
+              </Modal>
+            </div>
+          </App>
+        </ConfigProvider>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<BossLedgerPreview />);
+  </script>
+</body>
+</html>

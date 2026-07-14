@@ -1,0 +1,1552 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Boss Ledger - 跨境旅游业务运营后台</title>
+  <link rel="stylesheet" href="./vendor/antd-reset.css" />
+  <style>
+    :root {
+      --primary: #F36046;
+      --primary-hover: #FF7A66;
+      --selected-bg: #FEF2F0;
+      --page-bg: #F4F4F4;
+      --topbar-bg: #3A3A3A;
+      --border: #E5E6EB;
+      --divider: #F0F0F0;
+      --text: #1F2329;
+      --text-secondary: #4E5969;
+      --text-tertiary: #86909C;
+      --topbar-text: #B8B8B8;
+      --success: #52C41A;
+      --warning: #FAAD14;
+      --error: #FF4D4F;
+      --processing: #1677FF;
+    }
+
+    html,
+    body,
+    #root {
+      height: 100%;
+      margin: 0;
+      background: var(--page-bg);
+    }
+
+    body {
+      color: var(--text);
+      font: 14px/22px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    .boss-page {
+      min-width: 1180px;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--page-bg);
+    }
+
+    .topbar {
+      height: 28px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--topbar-text);
+      background: var(--topbar-bg);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .primary-nav {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      position: relative;
+      z-index: 5;
+    }
+
+    .logo-zone {
+      width: 208px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+    }
+
+    .logo {
+      width: 142px;
+      height: 42px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .primary-items {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 28px;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      padding-right: 32px;
+    }
+
+    .primary-item {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      color: var(--text-secondary);
+      position: relative;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .primary-item.active {
+      color: var(--primary);
+    }
+
+    .primary-item.active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 2px;
+      background: var(--primary);
+    }
+
+    .shell {
+      display: flex;
+      height: calc(100vh - 92px);
+      overflow: hidden;
+    }
+
+    .sider {
+      width: 208px;
+      flex: 0 0 208px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--divider);
+      transition: width .2s ease, flex-basis .2s ease;
+    }
+
+    .sider.collapsed {
+      width: 48px;
+      flex-basis: 48px;
+      overflow: hidden;
+    }
+
+    .sider-menu {
+      flex: 1;
+      width: 207px;
+      padding-top: 4px;
+      overflow: auto;
+    }
+
+    .sider-menu .ant-menu {
+      border-inline-end: 0 !important;
+      font-weight: 400;
+      width: 207px !important;
+    }
+
+    .sider.collapsed .ant-menu-inline-collapsed,
+    .sider.collapsed .sider-menu,
+    .sider.collapsed .sider-menu .ant-menu {
+      width: 48px !important;
+    }
+
+    .sider.collapsed .ant-menu-submenu-arrow {
+      display: none !important;
+    }
+
+    .sider-menu .ant-menu-item,
+    .sider-menu .ant-menu-submenu-title {
+      width: 207px !important;
+      height: 40px !important;
+      line-height: 40px !important;
+      margin: 0 !important;
+      border-radius: 0 !important;
+      font-weight: 400 !important;
+    }
+
+    .sider-menu .ant-menu-item .anticon,
+    .sider-menu .ant-menu-submenu-title .anticon {
+      margin-inline-end: 8px !important;
+    }
+
+    .sider.collapsed .sider-menu .ant-menu-item,
+    .sider.collapsed .sider-menu .ant-menu-submenu-title {
+      width: 48px !important;
+      padding-inline: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      text-align: center;
+    }
+
+    .sider.collapsed .sider-menu .ant-menu-title-content {
+      display: none !important;
+    }
+
+    .sider.collapsed .sider-menu .ant-menu-item-icon,
+    .sider.collapsed .sider-menu .ant-menu-submenu-title .ant-menu-item-icon,
+    .sider.collapsed .sider-menu .ant-menu-item .anticon,
+    .sider.collapsed .sider-menu .ant-menu-submenu-title .anticon {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      margin-inline-end: 0 !important;
+      min-width: 0 !important;
+      font-size: 16px !important;
+    }
+
+    .sider-menu .ant-menu-submenu-selected > .ant-menu-submenu-title,
+    .sider-menu .ant-menu-submenu-selected > .ant-menu-submenu-title .anticon {
+      color: var(--primary) !important;
+    }
+
+    .sider-menu .ant-menu-item-selected {
+      color: var(--primary) !important;
+      background: var(--selected-bg) !important;
+      position: relative;
+    }
+
+    .sider-menu .ant-menu-item-selected::after {
+      border-inline-end: 2px solid var(--primary) !important;
+    }
+
+    .collapse-control {
+      height: 48px;
+      border-top: 1px solid #EBEBEB;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-secondary);
+      font-size: 16px;
+    }
+
+    .workspace {
+      flex: 1;
+      min-width: 0;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .work-body {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .tab-strip {
+      height: 48px;
+      padding: 4px 16px 0;
+      background: var(--page-bg);
+      flex: 0 0 auto;
+    }
+
+    .boss-tabs,
+    .boss-tabs .ant-tabs-nav {
+      height: 44px;
+      margin: 0 !important;
+    }
+
+    .boss-tabs .ant-tabs-nav::before {
+      border-bottom: 0 !important;
+    }
+
+    .boss-tabs .ant-tabs-tab {
+      height: 44px !important;
+      padding: 0 12px !important;
+      margin: 0 !important;
+      border: 0 !important;
+      background: #EDEDED !important;
+      border-radius: 4px 4px 0 0 !important;
+      color: var(--text-secondary);
+    }
+
+    .boss-tabs .ant-tabs-tab + .ant-tabs-tab::before {
+      content: "";
+      width: 1px;
+      height: 24px;
+      background: #E6E6E6;
+      position: absolute;
+      left: -1px;
+      top: 10px;
+    }
+
+    .boss-tabs .ant-tabs-tab-active {
+      background: #fff !important;
+      border-radius: 8px 8px 0 0 !important;
+    }
+
+    .boss-tabs .ant-tabs-tab-active::before,
+    .boss-tabs .ant-tabs-tab-active + .ant-tabs-tab::before {
+      display: none;
+    }
+
+    .boss-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+      color: var(--primary) !important;
+    }
+
+    .boss-tabs .ant-tabs-tab-remove {
+      color: var(--text-tertiary) !important;
+      margin-left: 4px !important;
+    }
+
+    .tab-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 112px;
+      white-space: nowrap;
+    }
+
+    .tab-label .anticon {
+      color: var(--text-tertiary);
+      font-size: 12px;
+    }
+
+    .tab-title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .content {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 0 16px 0;
+      background: var(--page-bg);
+    }
+
+    .query-panel,
+    .table-panel,
+    .module-panel {
+      background: #fff;
+      border: 0;
+      border-radius: 8px;
+    }
+
+    .query-panel {
+      padding: 16px;
+      border-top-left-radius: 0;
+    }
+
+    .query-panel + .table-panel,
+    .query-panel + .module-panel,
+    .table-panel + .module-panel,
+    .module-panel + .table-panel {
+      margin-top: 16px;
+    }
+
+    .query-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      width: 100%;
+    }
+
+    .query-grid .ant-form-item {
+      margin-bottom: 0;
+    }
+
+    .query-grid .ant-form-item-row {
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    .query-grid .ant-form-item-label {
+      flex: 0 0 auto;
+      padding-right: 0;
+    }
+
+    .query-grid .ant-form-item-label > label {
+      margin-right: 8px;
+      color: var(--text-secondary);
+    }
+
+    .query-grid .ant-form-item-control {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .query-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      grid-column: 3 / 4;
+    }
+
+    .query-actions .expand-btn {
+      padding-inline: 0;
+      color: var(--text-secondary);
+    }
+
+    .query-actions .expand-btn .anticon {
+      margin-right: 4px;
+    }
+
+    .table-panel {
+      overflow: hidden;
+    }
+
+    .table-stats {
+      padding: 16px 16px 0;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      background: transparent;
+      padding: 0;
+    }
+
+    .stat-item {
+      min-width: 0;
+      padding: 16px;
+      background: #F6F6F6;
+    }
+
+    .stat-title {
+      color: var(--text-tertiary);
+      font-size: 14px;
+      line-height: 22px;
+    }
+
+    .stat-value {
+      margin-top: 4px;
+      color: rgba(0, 0, 0, .85);
+      font-size: 22px;
+      line-height: 30px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .toolbar {
+      min-height: 64px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .toolbar-title {
+      height: 32px;
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+      font-weight: 500;
+      color: rgba(0, 0, 0, .85);
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+
+    .column-setting-btn {
+      width: 32px;
+      height: 32px;
+      background: #FAFAFA;
+      color: var(--text-secondary);
+      border-color: transparent !important;
+      box-shadow: none !important;
+    }
+
+    .column-setting-btn:hover,
+    .column-setting-btn:focus {
+      border-color: transparent !important;
+      box-shadow: none !important;
+    }
+
+    .table-panel .ant-table-wrapper {
+      padding: 0 16px;
+    }
+
+    .ant-table-thead > tr > th {
+      font-weight: 500 !important;
+      white-space: nowrap;
+    }
+
+    .ant-table-cell {
+      font-weight: 400;
+    }
+
+    .amount-cell,
+    .amount-cell .ant-table-cell {
+      text-align: right !important;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .operation-column .ant-btn-link {
+      padding: 0 !important;
+      height: 22px;
+      font-weight: 400;
+    }
+
+    .operation-column .primary-action {
+      color: var(--primary);
+      font-weight: 400;
+    }
+
+    .operation-buttons {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      white-space: nowrap;
+    }
+
+    .table-pagination {
+      padding: 16px;
+      display: flex;
+      justify-content: flex-end;
+      background: #fff;
+    }
+
+    .status-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .status-dot::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-tertiary);
+    }
+
+    .status-dot.success::before { background: var(--success); }
+    .status-dot.warning::before { background: var(--warning); }
+    .status-dot.error::before { background: var(--error); }
+    .status-dot.processing::before { background: var(--processing); }
+    .status-dot.default::before { background: var(--text-tertiary); }
+
+    .two-line {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .primary-text {
+      color: var(--text);
+      line-height: 22px;
+    }
+
+    .secondary-text {
+      color: var(--text-tertiary);
+      line-height: 20px;
+      font-size: 12px;
+    }
+
+    .risk-high { color: var(--error); }
+    .risk-mid { color: var(--warning); }
+
+    .drawer-title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .drawer-title-text {
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .drawer-title-close {
+      color: var(--text-tertiary);
+    }
+
+    .drawer-section {
+      margin-bottom: 24px;
+    }
+
+    .drawer-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .drawer-section-title {
+      margin-bottom: 12px;
+      font-weight: 500;
+      color: rgba(0, 0, 0, .85);
+    }
+
+    .modal-form .ant-form-item-label {
+      padding-right: 0;
+    }
+
+    .modal-form .ant-form-item-label > label {
+      margin-right: 8px;
+    }
+
+    .page-footer {
+      height: 24px;
+      padding-top: 16px;
+      text-align: center;
+      color: var(--text-tertiary);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="./vendor/react.production.min.js"></script>
+  <script src="./vendor/react-dom.production.min.js"></script>
+  <script src="./vendor/dayjs.min.js"></script>
+  <script src="./vendor/dayjs-zh-cn.js"></script>
+  <script src="./vendor/antd.min.js"></script>
+  <script src="./vendor/ant-design-icons.umd.js"></script>
+  <script src="./vendor/babel.min.js"></script>
+  <script type="text/babel">
+    dayjs.locale('zh-cn');
+
+    const {
+      App,
+      Button,
+      Checkbox,
+      ConfigProvider,
+      DatePicker,
+      Descriptions,
+      Drawer,
+      Dropdown,
+      Form,
+      Input,
+      Menu,
+      Modal,
+      Pagination,
+      Popover,
+      Radio,
+      Select,
+      Space,
+      Table,
+      Tabs,
+      Tag,
+      Timeline,
+      Tooltip,
+    } = antd;
+
+    const AntIcons = window.icons || window.antdIcons || window.AntDesignIcons || {};
+    const {
+      AuditOutlined,
+      BankOutlined,
+      CloseOutlined,
+      DownOutlined,
+      FileDoneOutlined,
+      FileSearchOutlined,
+      GlobalOutlined,
+      MenuFoldOutlined,
+      MenuUnfoldOutlined,
+      MoreOutlined,
+      PayCircleOutlined,
+      ReloadOutlined,
+      SafetyCertificateOutlined,
+      SettingOutlined,
+      SwapOutlined,
+      TeamOutlined,
+      UpOutlined,
+    } = AntIcons;
+
+    const { RangePicker } = DatePicker;
+    const { TextArea } = Input;
+
+    const PAGE_CONFIG = {
+      orders: { title: '订单运营', primary: 'travel' },
+      fulfillment: { title: '资源履约', primary: 'travel' },
+      materials: { title: '游客材料', primary: 'travel' },
+      payments: { title: '支付与汇率', primary: 'travel' },
+    };
+
+    const PRIMARY_ITEMS = [
+      { key: 'travel', label: '跨境旅游', defaultPage: 'orders' },
+      { key: 'finance', label: '资金管理', defaultPage: 'payments' },
+      { key: 'risk', label: '风险中心', defaultPage: 'orders' },
+      { key: 'system', label: '系统管理', defaultPage: 'orders' },
+    ];
+
+    const MENU_GROUPS = {
+      travel: {
+        openKeys: ['orderGroup', 'fulfillmentGroup', 'materialGroup', 'paymentGroup'],
+        items: [
+          {
+            key: 'orderGroup',
+            icon: <GlobalOutlined />,
+            label: '订单运营',
+            children: [
+              { key: 'orders', label: '跨境旅游订单' },
+            ],
+          },
+          {
+            key: 'fulfillmentGroup',
+            icon: <SafetyCertificateOutlined />,
+            label: '资源履约',
+            children: [
+              { key: 'fulfillment', label: '供应商确认监控' },
+            ],
+          },
+          {
+            key: 'materialGroup',
+            icon: <FileDoneOutlined />,
+            label: '游客材料',
+            children: [
+              { key: 'materials', label: '材料审核处理' },
+            ],
+          },
+          {
+            key: 'paymentGroup',
+            icon: <PayCircleOutlined />,
+            label: '支付与汇率',
+            children: [
+              { key: 'payments', label: '支付流水核验' },
+            ],
+          },
+        ],
+      },
+      finance: {
+        openKeys: ['paymentGroup'],
+        items: [
+          {
+            key: 'paymentGroup',
+            icon: <BankOutlined />,
+            label: '支付与汇率',
+            children: [
+              { key: 'payments', label: '支付流水核验' },
+            ],
+          },
+        ],
+      },
+      risk: {
+        openKeys: ['orderGroup', 'paymentGroup'],
+        items: [
+          {
+            key: 'orderGroup',
+            icon: <FileSearchOutlined />,
+            label: '风险订单',
+            children: [
+              { key: 'orders', label: '出行临近风险' },
+            ],
+          },
+          {
+            key: 'paymentGroup',
+            icon: <PayCircleOutlined />,
+            label: '支付异常',
+            children: [
+              { key: 'payments', label: '异常支付核验' },
+            ],
+          },
+        ],
+      },
+      system: {
+        openKeys: ['orderGroup'],
+        items: [
+          {
+            key: 'orderGroup',
+            icon: <AuditOutlined />,
+            label: '操作审计',
+            children: [
+              { key: 'orders', label: '订单操作日志' },
+            ],
+          },
+        ],
+      },
+    };
+
+    const orderRows = [
+      {
+        key: '1',
+        orderNo: 'TRV202607090018',
+        traveler: '林可欣',
+        phone: '138****6210',
+        product: '东京迪士尼三日自由行',
+        destination: '日本东京',
+        travelDate: '2026-07-15',
+        orderStatusText: '凭证待交付',
+        orderStatus: 'warning',
+        riskText: '高风险',
+        risk: 'error',
+        fulfillmentText: '确认成功',
+        fulfillment: 'success',
+        paymentText: '支付成功',
+        payment: 'success',
+      },
+      {
+        key: '2',
+        orderNo: 'TRV202607090022',
+        traveler: '王启明',
+        phone: '136****9042',
+        product: '巴黎博物馆通票',
+        destination: '法国巴黎',
+        travelDate: '2026-07-20',
+        orderStatusText: '材料待补',
+        orderStatus: 'warning',
+        riskText: '中风险',
+        risk: 'warning',
+        fulfillmentText: '待确认',
+        fulfillment: 'warning',
+        paymentText: '支付成功',
+        payment: 'success',
+      },
+      {
+        key: '3',
+        orderNo: 'TRV202607080137',
+        traveler: '陈嘉宁',
+        phone: '159****3188',
+        product: '普吉岛接送机套餐',
+        destination: '泰国普吉',
+        travelDate: '2026-08-02',
+        orderStatusText: '待出行',
+        orderStatus: 'processing',
+        riskText: '低风险',
+        risk: 'processing',
+        fulfillmentText: '凭证已交付',
+        fulfillment: 'success',
+        paymentText: '异常待核验',
+        payment: 'warning',
+      },
+    ];
+
+    const fulfillmentRows = [
+      {
+        key: '1',
+        orderNo: 'TRV202607090018',
+        supplier: 'JPN LocalPass',
+        confirmText: '确认成功',
+        confirmStatus: 'success',
+        confirmCount: 2,
+        timeout: '距出行 6 天',
+        failReason: '-',
+        voucherText: '未交付',
+        voucherStatus: 'warning',
+        travelDate: '2026-07-15',
+      },
+      {
+        key: '2',
+        orderNo: 'TRV202607090041',
+        supplier: 'Euro Ticket Hub',
+        confirmText: '确认失败',
+        confirmStatus: 'error',
+        confirmCount: 3,
+        timeout: '已超时 2 小时',
+        failReason: '供应商库存返回不一致',
+        voucherText: '未交付',
+        voucherStatus: 'warning',
+        travelDate: '2026-07-13',
+      },
+      {
+        key: '3',
+        orderNo: 'TRV202607080099',
+        supplier: 'SEA Transfer',
+        confirmText: '确认超时',
+        confirmStatus: 'error',
+        confirmCount: 1,
+        timeout: '已超时 46 分钟',
+        failReason: '供应商接口无响应',
+        voucherText: '交付失败',
+        voucherStatus: 'error',
+        travelDate: '2026-07-12',
+      },
+    ];
+
+    const materialRows = [
+      {
+        key: '1',
+        orderNo: 'TRV202607090022',
+        traveler: '王启明',
+        credential: 'P****8126',
+        materialType: '签证',
+        materialText: '待补材料',
+        materialStatus: 'warning',
+        submitTime: '2026-07-09 10:12',
+        reviewer: '材料审核组',
+      },
+      {
+        key: '2',
+        orderNo: 'TRV202607090018',
+        traveler: '林可欣',
+        credential: 'P****6201',
+        materialType: '护照',
+        materialText: '待审核',
+        materialStatus: 'warning',
+        submitTime: '2026-07-09 09:48',
+        reviewer: '李曼',
+      },
+      {
+        key: '3',
+        orderNo: 'TRV202607080137',
+        traveler: '陈嘉宁',
+        credential: 'P****3077',
+        materialType: '保险',
+        materialText: '审核通过',
+        materialStatus: 'success',
+        submitTime: '2026-07-08 17:26',
+        reviewer: '周扬',
+      },
+    ];
+
+    const paymentRows = [
+      {
+        key: '1',
+        paymentNo: 'PAY202607090871',
+        orderNo: 'TRV202607080137',
+        currency: 'THB',
+        originalAmount: '18,600.00',
+        cnyAmount: '3,812.42',
+        fxRate: '0.20497',
+        lockText: '锁汇失败',
+        lockStatus: 'error',
+        serviceFee: '38.12',
+        fxDiff: '-16.40',
+        paymentText: '异常待核验',
+        paymentStatus: 'warning',
+      },
+      {
+        key: '2',
+        paymentNo: 'PAY202607090912',
+        orderNo: 'TRV202607090018',
+        currency: 'JPY',
+        originalAmount: '92,000.00',
+        cnyAmount: '4,532.84',
+        fxRate: '0.04927',
+        lockText: '已锁汇',
+        lockStatus: 'success',
+        serviceFee: '45.33',
+        fxDiff: '8.12',
+        paymentText: '支付成功',
+        paymentStatus: 'success',
+      },
+      {
+        key: '3',
+        paymentNo: 'PAY202607090936',
+        orderNo: 'TRV202607090022',
+        currency: 'EUR',
+        originalAmount: '520.00',
+        cnyAmount: '4,107.64',
+        fxRate: '7.89931',
+        lockText: '已锁汇',
+        lockStatus: 'success',
+        serviceFee: '41.08',
+        fxDiff: '12.56',
+        paymentText: '支付成功',
+        paymentStatus: 'success',
+      },
+    ];
+
+    function StatusDot({ status, text }) {
+      return <span className={`status-dot ${status}`}>{text}</span>;
+    }
+
+    function RiskTag({ status, text }) {
+      const colorMap = { error: 'error', warning: 'warning', processing: 'processing', default: 'default' };
+      return <Tag color={colorMap[status] || 'default'}>{text}</Tag>;
+    }
+
+    function ColumnSetting({ options, value, onChange }) {
+      return (
+        <Popover
+          placement="bottomRight"
+          trigger="click"
+          content={<Checkbox.Group style={{ display: 'grid', gap: 8 }} options={options} value={value} onChange={onChange} />}
+        >
+          <Tooltip title="列设置">
+            <Button className="column-setting-btn" icon={<SettingOutlined />} />
+          </Tooltip>
+        </Popover>
+      );
+    }
+
+    function MoreActions({ items }) {
+      return (
+        <Dropdown menu={{ items }} trigger={['click']}>
+          <Button type="link">更多 <DownOutlined /></Button>
+        </Dropdown>
+      );
+    }
+
+    function QueryPanel({ fields, form, loading, onQuery }) {
+      const [expanded, setExpanded] = React.useState(false);
+      const visibleFields = fields.length > 6 && !expanded ? fields.slice(0, 5) : fields;
+      const fillerCount = (2 - (visibleFields.length % 3) + 3) % 3;
+      const actionCell = (
+        <div className="query-actions">
+          {fields.length > 6 && (
+            <Button className="expand-btn" type="link" onClick={() => setExpanded(!expanded)}>
+              {expanded ? <UpOutlined /> : <DownOutlined />}{expanded ? '收 起' : '展 开'}
+            </Button>
+          )}
+          <Button onClick={() => { form.resetFields(); onQuery(); }}>重 置</Button>
+          <Button type="primary" loading={loading} onClick={onQuery}>查 询</Button>
+        </div>
+      );
+
+      return (
+        <section className="query-panel">
+          <Form form={form}>
+            <div className="query-grid">
+              {visibleFields.map((field) => <React.Fragment key={field.key}>{field.node}</React.Fragment>)}
+              {Array.from({ length: fillerCount }).map((_, index) => <div key={`query-filler-${index}`} />)}
+              {actionCell}
+            </div>
+          </Form>
+        </section>
+      );
+    }
+
+    function TableStats({ items }) {
+      return (
+        <div className="table-stats">
+          <div className="stat-grid">
+            {items.map((item) => (
+              <div className="stat-item" key={item.title}>
+                <div className="stat-title">{item.title}</div>
+                <div className="stat-value">{item.value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function TravelerCell({ name, phone }) {
+      return (
+        <div className="two-line">
+          <span className="primary-text">{name}</span>
+          <span className="secondary-text">{phone}</span>
+        </div>
+      );
+    }
+
+    function ProductCell({ product, destination }) {
+      return (
+        <div className="two-line">
+          <span className="primary-text">{product}</span>
+          <span className="secondary-text">{destination}</span>
+        </div>
+      );
+    }
+
+    function useTableTools(columns) {
+      const initial = columns.filter((column) => column.key !== 'actions').map((column) => column.key);
+      const [visible, setVisible] = React.useState(initial);
+      const merged = columns.filter((column) => column.key === 'actions' || visible.includes(column.key));
+      const options = columns
+        .filter((column) => column.key !== 'actions')
+        .map((column) => ({ label: column.title, value: column.key }));
+      return { visible, setVisible, merged, options };
+    }
+
+    function OrdersPage({ openDrawer }) {
+      const [form] = Form.useForm();
+      const [loading, setLoading] = React.useState(false);
+      const { message } = App.useApp();
+      const queryFields = [
+        { key: 'orderNo', node: <Form.Item label="订单编号" name="orderNo"><Input placeholder="请输入订单编号" /></Form.Item> },
+        { key: 'phone', node: <Form.Item label="游客手机号" name="phone"><Input placeholder="请输入游客手机号" /></Form.Item> },
+        { key: 'destination', node: <Form.Item label="目的地" name="destination"><Select placeholder="请选择目的地" options={[{ label: '全部目的地', value: 'all' }, { label: '日本东京', value: 'tokyo' }, { label: '法国巴黎', value: 'paris' }, { label: '泰国普吉', value: 'phuket' }]} /></Form.Item> },
+        { key: 'travelDate', node: <Form.Item label="出行日期" name="travelDate"><RangePicker style={{ width: '100%' }} placeholder={['请选择开始日期', '请选择结束日期']} /></Form.Item> },
+        { key: 'status', node: <Form.Item label="订单状态" name="status"><Select placeholder="请选择订单状态" options={[{ label: '全部状态', value: 'all' }, { label: '材料待补', value: 'material' }, { label: '凭证待交付', value: 'voucher' }, { label: '待出行', value: 'traveling' }]} /></Form.Item> },
+        { key: 'risk', node: <Form.Item label="风险等级" name="risk"><Select placeholder="请选择风险等级" options={[{ label: '全部等级', value: 'all' }, { label: '高风险', value: 'high' }, { label: '中风险', value: 'mid' }, { label: '低风险', value: 'low' }]} /></Form.Item> },
+        { key: 'productType', node: <Form.Item label="产品类型" name="productType"><Select placeholder="请选择产品类型" options={[{ label: '全部类型', value: 'all' }, { label: '当地玩乐', value: 'local' }, { label: '酒店套餐', value: 'hotel' }, { label: '接送机', value: 'transfer' }]} /></Form.Item> },
+        { key: 'supplier', node: <Form.Item label="供应商" name="supplier"><Select placeholder="请选择供应商" options={[{ label: '全部供应商', value: 'all' }, { label: 'JPN LocalPass', value: 'jpn' }, { label: 'Euro Ticket Hub', value: 'euro' }]} /></Form.Item> },
+      ];
+      const columns = [
+        { title: '订单编号', dataIndex: 'orderNo', key: 'orderNo', width: 160, fixed: 'left', render: (value) => <Button type="link" className="primary-action" onClick={() => openDrawer('订单详情')}>{value}</Button> },
+        { title: '游客信息', key: 'traveler', width: 130, render: (_, record) => <TravelerCell name={record.traveler} phone={record.phone} /> },
+        { title: '产品目的地', key: 'product', width: 220, render: (_, record) => <ProductCell product={record.product} destination={record.destination} /> },
+        { title: '出行日期', dataIndex: 'travelDate', key: 'travelDate', width: 120 },
+        { title: '订单状态', key: 'orderStatus', width: 120, render: (_, record) => <StatusDot status={record.orderStatus} text={record.orderStatusText} /> },
+        { title: '风险等级', key: 'risk', width: 100, render: (_, record) => <RiskTag status={record.risk} text={record.riskText} /> },
+        { title: '履约状态', key: 'fulfillment', width: 130, render: (_, record) => <StatusDot status={record.fulfillment} text={record.fulfillmentText} /> },
+        { title: '支付状态', key: 'payment', width: 130, render: (_, record) => <StatusDot status={record.payment} text={record.paymentText} /> },
+        { title: '操作', key: 'actions', width: 250, fixed: 'right', className: 'operation-column', render: () => <div className="operation-buttons"><Button className="primary-action" type="link" onClick={() => openDrawer('订单详情')}>查看详情</Button><Button type="link" onClick={() => openDrawer('订单状态跟踪')}>跟踪状态</Button><Button type="link" onClick={() => openDrawer('操作日志')}>查看日志</Button></div> },
+      ];
+      const tools = useTableTools(columns);
+      const onQuery = () => {
+        setLoading(true);
+        setTimeout(() => {
+          setLoading(false);
+          message.success('查询完成');
+        }, 500);
+      };
+      return (
+        <>
+          <QueryPanel fields={queryFields} form={form} loading={loading} onQuery={onQuery} />
+          <section className="table-panel">
+            <TableStats items={[
+              { title: '订单总量(单)', value: '1,286' },
+              { title: '临近出行风险(单)', value: '37' },
+              { title: '凭证待交付(单)', value: '24' },
+              { title: '材料待补(单)', value: '18' },
+              { title: '支付异常(单)', value: '9' },
+            ]} />
+            <div className="toolbar">
+              <div className="toolbar-title">查询列表</div>
+              <div className="toolbar-actions">
+                <Button type="primary" onClick={() => message.success('下载任务已创建')}>下载Excel</Button>
+                <ColumnSetting options={tools.options} value={tools.visible} onChange={tools.setVisible} />
+              </div>
+            </div>
+            <Table loading={loading} rowKey="key" columns={tools.merged} dataSource={orderRows} pagination={false} scroll={{ x: 1280 }} />
+            <div className="table-pagination"><Pagination current={1} pageSize={10} total={1286} showTotal={(total) => `共 ${total} 条`} locale={{ items_per_page: '条/页', jump_to: '跳至', jump_to_confirm: '确定', page: '页' }} /></div>
+          </section>
+        </>
+      );
+    }
+
+    function FulfillmentPage({ openDrawer, openProcess }) {
+      const [form] = Form.useForm();
+      const [loading, setLoading] = React.useState(false);
+      const { message } = App.useApp();
+      const queryFields = [
+        { key: 'orderNo', node: <Form.Item label="订单编号" name="orderNo"><Input placeholder="请输入订单编号" /></Form.Item> },
+        { key: 'supplier', node: <Form.Item label="供应商" name="supplier"><Select placeholder="请选择供应商" options={[{ label: '全部供应商', value: 'all' }, { label: 'JPN LocalPass', value: 'jpn' }, { label: 'Euro Ticket Hub', value: 'euro' }, { label: 'SEA Transfer', value: 'sea' }]} /></Form.Item> },
+        { key: 'confirmStatus', node: <Form.Item label="确认状态" name="confirmStatus"><Select placeholder="请选择确认状态" options={[{ label: '全部状态', value: 'all' }, { label: '确认失败', value: 'fail' }, { label: '确认超时', value: 'timeout' }, { label: '人工确认中', value: 'manual' }]} /></Form.Item> },
+        { key: 'voucherStatus', node: <Form.Item label="凭证状态" name="voucherStatus"><Select placeholder="请选择凭证状态" options={[{ label: '全部状态', value: 'all' }, { label: '未交付', value: 'none' }, { label: '已交付', value: 'done' }, { label: '交付失败', value: 'fail' }]} /></Form.Item> },
+        { key: 'travelDate', node: <Form.Item label="出行日期" name="travelDate"><RangePicker style={{ width: '100%' }} placeholder={['请选择开始日期', '请选择结束日期']} /></Form.Item> },
+        { key: 'timeout', node: <Form.Item label="超时时长" name="timeout"><Select placeholder="请选择超时时长" options={[{ label: '全部时长', value: 'all' }, { label: '超过 30 分钟', value: '30m' }, { label: '超过 2 小时', value: '2h' }, { label: '超过 24 小时', value: '24h' }]} /></Form.Item> },
+      ];
+      const columns = [
+        { title: '订单编号', dataIndex: 'orderNo', key: 'orderNo', width: 160, fixed: 'left' },
+        { title: '供应商', dataIndex: 'supplier', key: 'supplier', width: 150 },
+        { title: '确认状态', key: 'confirmStatus', width: 120, render: (_, record) => <StatusDot status={record.confirmStatus} text={record.confirmText} /> },
+        { title: '确认次数', dataIndex: 'confirmCount', key: 'confirmCount', width: 100 },
+        { title: '超时时长', dataIndex: 'timeout', key: 'timeout', width: 130 },
+        { title: '失败原因', dataIndex: 'failReason', key: 'failReason', width: 220, ellipsis: true },
+        { title: '凭证状态', key: 'voucherStatus', width: 120, render: (_, record) => <StatusDot status={record.voucherStatus} text={record.voucherText} /> },
+        { title: '出行日期', dataIndex: 'travelDate', key: 'travelDate', width: 120 },
+        { title: '操作', key: 'actions', width: 260, fixed: 'right', className: 'operation-column', render: (_, record) => <div className="operation-buttons"><Button className="primary-action" type="link" onClick={() => openProcess('重试确认')}>重试确认</Button><Button type="link" onClick={() => openProcess('转人工确认')}>转人工</Button><Button type="link" onClick={() => openDrawer('出行凭证交付')}>交付凭证</Button></div> },
+      ];
+      const tools = useTableTools(columns);
+      const onQuery = () => {
+        setLoading(true);
+        setTimeout(() => {
+          setLoading(false);
+          message.success('查询完成');
+        }, 500);
+      };
+      return (
+        <>
+          <QueryPanel fields={queryFields} form={form} loading={loading} onQuery={onQuery} />
+          <section className="table-panel">
+            <TableStats items={[
+              { title: '待确认(单)', value: '42' },
+              { title: '确认失败(单)', value: '11' },
+              { title: '确认超时(单)', value: '7' },
+              { title: '人工确认中(单)', value: '13' },
+              { title: '凭证待交付(单)', value: '24' },
+            ]} />
+            <div className="toolbar">
+              <div className="toolbar-title">供应商确认列表</div>
+              <div className="toolbar-actions">
+                <Button type="primary" onClick={() => message.success('下载任务已创建')}>下载Excel</Button>
+                <ColumnSetting options={tools.options} value={tools.visible} onChange={tools.setVisible} />
+              </div>
+            </div>
+            <Table loading={loading} rowKey="key" columns={tools.merged} dataSource={fulfillmentRows} pagination={false} scroll={{ x: 1320 }} />
+            <div className="table-pagination"><Pagination current={1} pageSize={10} total={238} showTotal={(total) => `共 ${total} 条`} locale={{ items_per_page: '条/页', jump_to: '跳至', jump_to_confirm: '确定', page: '页' }} /></div>
+          </section>
+        </>
+      );
+    }
+
+    function MaterialsPage({ openDrawer, openProcess }) {
+      const [form] = Form.useForm();
+      const [loading, setLoading] = React.useState(false);
+      const { message, modal } = App.useApp();
+      const queryFields = [
+        { key: 'orderNo', node: <Form.Item label="订单编号" name="orderNo"><Input placeholder="请输入订单编号" /></Form.Item> },
+        { key: 'traveler', node: <Form.Item label="游客姓名" name="traveler"><Input placeholder="请输入游客姓名" /></Form.Item> },
+        { key: 'credential', node: <Form.Item label="证件号" name="credential"><Input placeholder="请输入证件号" /></Form.Item> },
+        { key: 'materialStatus', node: <Form.Item label="材料状态" name="materialStatus"><Select placeholder="请选择材料状态" options={[{ label: '全部状态', value: 'all' }, { label: '待审核', value: 'review' }, { label: '审核驳回', value: 'reject' }, { label: '待补材料', value: 'supplement' }]} /></Form.Item> },
+        { key: 'materialType', node: <Form.Item label="材料类型" name="materialType"><Select placeholder="请选择材料类型" options={[{ label: '全部材料', value: 'all' }, { label: '护照', value: 'passport' }, { label: '签证', value: 'visa' }, { label: '保险', value: 'insurance' }]} /></Form.Item> },
+        { key: 'travelDate', node: <Form.Item label="出行日期" name="travelDate"><RangePicker style={{ width: '100%' }} placeholder={['请选择开始日期', '请选择结束日期']} /></Form.Item> },
+      ];
+      const passMaterial = () => {
+        modal.confirm({
+          title: '确认材料审核通过？',
+          content: '审核通过后将更新订单材料状态，并写入操作日志。',
+          okText: '确 认',
+          cancelText: '取 消',
+          onOk: () => message.success('材料审核已通过'),
+        });
+      };
+      const columns = [
+        { title: '订单编号', dataIndex: 'orderNo', key: 'orderNo', width: 160, fixed: 'left' },
+        { title: '游客信息', dataIndex: 'traveler', key: 'traveler', width: 120 },
+        { title: '游客证件', dataIndex: 'credential', key: 'credential', width: 130 },
+        { title: '材料类型', dataIndex: 'materialType', key: 'materialType', width: 100, render: (value) => <Tag>{value}</Tag> },
+        { title: '材料状态', key: 'materialStatus', width: 120, render: (_, record) => <StatusDot status={record.materialStatus} text={record.materialText} /> },
+        { title: '提交时间', dataIndex: 'submitTime', key: 'submitTime', width: 160 },
+        { title: '审核人', dataIndex: 'reviewer', key: 'reviewer', width: 120 },
+        { title: '操作', key: 'actions', width: 292, fixed: 'right', className: 'operation-column', render: () => <div className="operation-buttons"><Button className="primary-action" type="link" onClick={() => openDrawer('游客材料详情')}>查看材料</Button><Button type="link" onClick={passMaterial}>审核通过</Button><Button type="link" onClick={() => openProcess('审核驳回')}>审核驳回</Button><MoreActions items={[{ key: 'notice', label: '补材料通知', onClick: () => openProcess('补材料通知') }]} /></div> },
+      ];
+      const tools = useTableTools(columns);
+      const onQuery = () => {
+        setLoading(true);
+        setTimeout(() => {
+          setLoading(false);
+          message.success('查询完成');
+        }, 500);
+      };
+      return (
+        <>
+          <QueryPanel fields={queryFields} form={form} loading={loading} onQuery={onQuery} />
+          <section className="table-panel">
+            <TableStats items={[
+              { title: '待上传(人)', value: '16' },
+              { title: '待审核(人)', value: '43' },
+              { title: '审核驳回(人)', value: '9' },
+              { title: '待补材料(人)', value: '18' },
+              { title: '已通过(人)', value: '352' },
+            ]} />
+            <div className="toolbar">
+              <div className="toolbar-title">材料审核列表</div>
+              <div className="toolbar-actions">
+                <Button onClick={() => message.success('材料下载任务已创建')}>批量下载材料</Button>
+                <Button type="primary" onClick={() => message.success('下载任务已创建')}>下载Excel</Button>
+                <ColumnSetting options={tools.options} value={tools.visible} onChange={tools.setVisible} />
+              </div>
+            </div>
+            <Table loading={loading} rowKey="key" columns={tools.merged} dataSource={materialRows} pagination={false} scroll={{ x: 1280 }} />
+            <div className="table-pagination"><Pagination current={1} pageSize={10} total={438} showTotal={(total) => `共 ${total} 条`} locale={{ items_per_page: '条/页', jump_to: '跳至', jump_to_confirm: '确定', page: '页' }} /></div>
+          </section>
+        </>
+      );
+    }
+
+    function PaymentsPage({ openDrawer, openProcess }) {
+      const [form] = Form.useForm();
+      const [loading, setLoading] = React.useState(false);
+      const { message } = App.useApp();
+      const queryFields = [
+        { key: 'paymentNo', node: <Form.Item label="支付单号" name="paymentNo"><Input placeholder="请输入支付单号" /></Form.Item> },
+        { key: 'orderNo', node: <Form.Item label="订单编号" name="orderNo"><Input placeholder="请输入订单编号" /></Form.Item> },
+        { key: 'currency', node: <Form.Item label="支付币种" name="currency"><Select placeholder="请选择支付币种" options={[{ label: '全部币种', value: 'all' }, { label: 'CNY', value: 'CNY' }, { label: 'USD', value: 'USD' }, { label: 'EUR', value: 'EUR' }, { label: 'JPY', value: 'JPY' }, { label: 'THB', value: 'THB' }]} /></Form.Item> },
+        { key: 'paymentStatus', node: <Form.Item label="支付状态" name="paymentStatus"><Select placeholder="请选择支付状态" options={[{ label: '全部状态', value: 'all' }, { label: '支付成功', value: 'success' }, { label: '支付失败', value: 'fail' }, { label: '异常待核验', value: 'abnormal' }]} /></Form.Item> },
+        { key: 'lockStatus', node: <Form.Item label="锁汇状态" name="lockStatus"><Select placeholder="请选择锁汇状态" options={[{ label: '全部状态', value: 'all' }, { label: '已锁汇', value: 'locked' }, { label: '锁汇失败', value: 'fail' }, { label: '未锁汇', value: 'none' }]} /></Form.Item> },
+        { key: 'paymentTime', node: <Form.Item label="支付时间" name="paymentTime"><RangePicker style={{ width: '100%' }} placeholder={['请选择开始日期', '请选择结束日期']} /></Form.Item> },
+        { key: 'abnormalType', node: <Form.Item label="异常类型" name="abnormalType"><Select placeholder="请选择异常类型" options={[{ label: '全部类型', value: 'all' }, { label: '金额不一致', value: 'amount' }, { label: '锁汇失败', value: 'fx' }, { label: '汇差异常', value: 'diff' }]} /></Form.Item> },
+      ];
+      const columns = [
+        { title: '支付单号', dataIndex: 'paymentNo', key: 'paymentNo', width: 160, fixed: 'left' },
+        { title: '订单编号', dataIndex: 'orderNo', key: 'orderNo', width: 160 },
+        { title: '支付币种', dataIndex: 'currency', key: 'currency', width: 100 },
+        { title: '原币金额', dataIndex: 'originalAmount', key: 'originalAmount', width: 130, className: 'amount-cell' },
+        { title: '人民币金额(元)', dataIndex: 'cnyAmount', key: 'cnyAmount', width: 150, className: 'amount-cell' },
+        { title: '汇率', dataIndex: 'fxRate', key: 'fxRate', width: 110, className: 'amount-cell' },
+        { title: '锁汇状态', key: 'lockStatus', width: 120, render: (_, record) => <StatusDot status={record.lockStatus} text={record.lockText} /> },
+        { title: '服务费(元)', dataIndex: 'serviceFee', key: 'serviceFee', width: 120, className: 'amount-cell' },
+        { title: '汇差(元)', dataIndex: 'fxDiff', key: 'fxDiff', width: 110, className: 'amount-cell' },
+        { title: '支付状态', key: 'paymentStatus', width: 130, render: (_, record) => <StatusDot status={record.paymentStatus} text={record.paymentText} /> },
+        { title: '操作', key: 'actions', width: 260, fixed: 'right', className: 'operation-column', render: () => <div className="operation-buttons"><Button className="primary-action" type="link" onClick={() => openDrawer('支付流水详情')}>查看流水</Button><Button type="link" onClick={() => openDrawer('汇率与锁汇记录')}>锁汇记录</Button><Button type="link" onClick={() => openProcess('支付异常核验')}>异常核验</Button></div> },
+      ];
+      const tools = useTableTools(columns);
+      const onQuery = () => {
+        setLoading(true);
+        setTimeout(() => {
+          setLoading(false);
+          message.success('查询完成');
+        }, 500);
+      };
+      return (
+        <>
+          <QueryPanel fields={queryFields} form={form} loading={loading} onQuery={onQuery} />
+          <section className="table-panel">
+            <TableStats items={[
+              { title: '支付成功金额(元)', value: '8,742,913.28' },
+              { title: '异常待核验(笔)', value: '9' },
+              { title: '锁汇失败(笔)', value: '4' },
+              { title: '服务费合计(元)', value: '64,217.32' },
+              { title: '汇差合计(元)', value: '3,482.11' },
+            ]} />
+            <div className="toolbar">
+              <div className="toolbar-title">支付流水列表</div>
+              <div className="toolbar-actions">
+                <Button type="primary" onClick={() => message.success('下载任务已创建')}>下载Excel</Button>
+                <ColumnSetting options={tools.options} value={tools.visible} onChange={tools.setVisible} />
+              </div>
+            </div>
+            <Table loading={loading} rowKey="key" columns={tools.merged} dataSource={paymentRows} pagination={false} scroll={{ x: 1480 }} />
+            <div className="table-pagination"><Pagination current={1} pageSize={10} total={927} showTotal={(total) => `共 ${total} 条`} locale={{ items_per_page: '条/页', jump_to: '跳至', jump_to_confirm: '确定', page: '页' }} /></div>
+          </section>
+        </>
+      );
+    }
+
+    function DetailDrawer({ open, title, onClose }) {
+      return (
+        <Drawer
+          title={(
+            <div className="drawer-title-bar">
+              <span className="drawer-title-text">{title}</span>
+              <Button className="drawer-title-close" type="text" icon={<CloseOutlined />} onClick={onClose} />
+            </div>
+          )}
+          width={760}
+          open={open}
+          onClose={onClose}
+          closable={false}
+          footer={<Space style={{ display: 'flex', justifyContent: 'flex-end' }}><Button onClick={onClose}>取 消</Button><Button type="primary" onClick={onClose}>确 认</Button></Space>}
+        >
+          <div className="drawer-section">
+            <div className="drawer-section-title">订单基础信息</div>
+            <Descriptions column={3} size="small">
+              <Descriptions.Item label="订单编号">TRV202607090018</Descriptions.Item>
+              <Descriptions.Item label="目的地">日本东京</Descriptions.Item>
+              <Descriptions.Item label="出行日期">2026-07-15</Descriptions.Item>
+              <Descriptions.Item label="游客">林可欣</Descriptions.Item>
+              <Descriptions.Item label="订单状态"><StatusDot status="warning" text="凭证待交付" /></Descriptions.Item>
+              <Descriptions.Item label="风险等级"><RiskTag status="error" text="高风险" /></Descriptions.Item>
+            </Descriptions>
+          </div>
+          <div className="drawer-section">
+            <div className="drawer-section-title">履约与材料</div>
+            <Descriptions column={2} size="small">
+              <Descriptions.Item label="供应商">JPN LocalPass</Descriptions.Item>
+              <Descriptions.Item label="确认状态"><StatusDot status="success" text="确认成功" /></Descriptions.Item>
+              <Descriptions.Item label="凭证状态"><StatusDot status="warning" text="未交付" /></Descriptions.Item>
+              <Descriptions.Item label="材料状态"><StatusDot status="warning" text="待审核" /></Descriptions.Item>
+            </Descriptions>
+          </div>
+          <div className="drawer-section">
+            <div className="drawer-section-title">支付与汇率</div>
+            <Descriptions column={3} size="small">
+              <Descriptions.Item label="支付币种">JPY</Descriptions.Item>
+              <Descriptions.Item label="原币金额">92,000.00</Descriptions.Item>
+              <Descriptions.Item label="人民币金额">4,532.84</Descriptions.Item>
+              <Descriptions.Item label="汇率">0.04927</Descriptions.Item>
+              <Descriptions.Item label="锁汇状态"><StatusDot status="success" text="已锁汇" /></Descriptions.Item>
+              <Descriptions.Item label="支付状态"><StatusDot status="success" text="支付成功" /></Descriptions.Item>
+            </Descriptions>
+          </div>
+          <div className="drawer-section">
+            <div className="drawer-section-title">状态轨迹</div>
+            <Timeline
+              items={[
+                { children: '2026-07-09 09:18 支付成功，生成跨境旅游订单' },
+                { children: '2026-07-09 09:24 向供应商发起资源确认' },
+                { children: '2026-07-09 10:08 供应商确认成功，待交付出行凭证' },
+                { color: 'red', children: '2026-07-09 10:42 系统标记出行临近高风险' },
+              ]}
+            />
+          </div>
+        </Drawer>
+      );
+    }
+
+    function ProcessModal({ open, title, onCancel }) {
+      const [form] = Form.useForm();
+      const { message } = App.useApp();
+      const isReject = title === '审核驳回';
+      const isNotice = title === '补材料通知';
+      const isVerify = title === '支付异常核验';
+      const isManual = title === '转人工确认';
+      return (
+        <Modal
+          title={title}
+          open={open}
+          onCancel={onCancel}
+          width={656}
+          okText="确 认"
+          cancelText="取 消"
+          onOk={() => {
+            form.validateFields().then(() => {
+              message.success(`${title}已提交`);
+              onCancel();
+              form.resetFields();
+            });
+          }}
+        >
+          <Form className="modal-form" form={form} layout="horizontal" labelCol={{ flex: '88px' }}>
+            {isManual && (
+              <Form.Item label="人工处理人" name="operator" rules={[{ required: true, message: '请选择人工处理人' }]}>
+                <Select placeholder="请选择人工处理人" options={[{ label: '履约一组-赵倩', value: 'zq' }, { label: '履约二组-钱宇', value: 'qy' }]} />
+              </Form.Item>
+            )}
+            {isReject && (
+              <Form.Item label="审核结果" name="reviewResult" initialValue="reject" rules={[{ required: true, message: '请选择审核结果' }]}>
+                <Radio.Group options={[{ label: '审核驳回', value: 'reject' }, { label: '待补材料', value: 'supplement' }]} />
+              </Form.Item>
+            )}
+            {isNotice && (
+              <>
+                <Form.Item label="补材料项" name="items" rules={[{ required: true, message: '请选择补材料项' }]}>
+                  <Checkbox.Group options={['护照首页', '签证页', '保险凭证', '游客授权书']} />
+                </Form.Item>
+                <Form.Item label="通知渠道" name="channels" rules={[{ required: true, message: '请选择通知渠道' }]}>
+                  <Checkbox.Group options={['短信', '邮件', '站内信']} />
+                </Form.Item>
+              </>
+            )}
+            {isVerify && (
+              <Form.Item label="核验结论" name="verifyResult" rules={[{ required: true, message: '请选择核验结论' }]}>
+                <Radio.Group options={[{ label: '正常', value: 'normal' }, { label: '异常', value: 'abnormal' }, { label: '待进一步核验', value: 'pending' }]} />
+              </Form.Item>
+            )}
+            <Form.Item label="处理备注" name="remark" rules={[{ required: true, message: '请输入处理备注' }]}>
+              <TextArea rows={4} placeholder="请输入处理备注" />
+            </Form.Item>
+          </Form>
+        </Modal>
+      );
+    }
+
+    function CrossBorderTravelOpsPage() {
+      const [collapsed, setCollapsed] = React.useState(false);
+      const [activePage, setActivePage] = React.useState('orders');
+      const [openKeys, setOpenKeys] = React.useState(MENU_GROUPS.travel.openKeys);
+      const [tabs, setTabs] = React.useState(['orders']);
+      const [drawerOpen, setDrawerOpen] = React.useState(false);
+      const [drawerTitle, setDrawerTitle] = React.useState('订单详情');
+      const [processOpen, setProcessOpen] = React.useState(false);
+      const [processTitle, setProcessTitle] = React.useState('处理');
+      const activePrimary = PAGE_CONFIG[activePage].primary;
+
+      const activatePage = (pageKey) => {
+        setActivePage(pageKey);
+        setOpenKeys(MENU_GROUPS[PAGE_CONFIG[pageKey].primary].openKeys);
+        setTabs((prev) => prev.includes(pageKey) ? prev : [...prev, pageKey]);
+      };
+
+      const openDrawer = (title) => {
+        setDrawerTitle(title);
+        setDrawerOpen(true);
+      };
+
+      const openProcess = (title) => {
+        setProcessTitle(title);
+        setProcessOpen(true);
+      };
+
+      const removeTab = (targetKey) => {
+        if (tabs.length === 1) return;
+        const nextTabs = tabs.filter((key) => key !== targetKey);
+        setTabs(nextTabs);
+        if (activePage === targetKey) {
+          activatePage(nextTabs[nextTabs.length - 1]);
+        }
+      };
+
+      const tabItems = tabs.map((key) => ({
+        key,
+        closable: tabs.length > 1,
+        label: (
+          <Tooltip title={PAGE_CONFIG[key].title.length > 6 ? PAGE_CONFIG[key].title : ''}>
+            <span className="tab-label">
+              {activePage === key && <ReloadOutlined />}
+              <span className="tab-title">{PAGE_CONFIG[key].title}</span>
+            </span>
+          </Tooltip>
+        ),
+      }));
+
+      return (
+        <div className="boss-page">
+          <div className="topbar">
+            <div>上次登录时间：2026-07-09 09:18:32　登录 IP：10.24.18.66　当前身份：跨境旅游运营主管</div>
+            <div>10080090899 · Boss Ledger 商户后台　帮助中心　消息</div>
+          </div>
+          <header className="primary-nav">
+            <div className="logo-zone"><img className="logo" src="./assets/boss-ledger-logo.svg" alt="老板管账" /></div>
+            <nav className="primary-items">
+              {PRIMARY_ITEMS.map((item) => (
+                <div key={item.key} className={`primary-item ${activePrimary === item.key ? 'active' : ''}`} onClick={() => activatePage(item.defaultPage)}>
+                  {item.label}
+                </div>
+              ))}
+            </nav>
+          </header>
+          <div className="shell">
+            <aside className={`sider ${collapsed ? 'collapsed' : ''}`}>
+              <div className="sider-menu">
+                <Menu
+                  mode="inline"
+                  inlineCollapsed={collapsed}
+                  inlineCollapsedWidth={48}
+                  selectedKeys={[activePage]}
+                  openKeys={collapsed ? [] : openKeys}
+                  onOpenChange={setOpenKeys}
+                  onClick={({ key }) => activatePage(key)}
+                  items={MENU_GROUPS[activePrimary].items}
+                />
+              </div>
+              <div className="collapse-control" onClick={() => setCollapsed(!collapsed)}>
+                {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              </div>
+            </aside>
+            <main className="workspace">
+              <div className="work-body">
+                <div className="tab-strip">
+                  <Tabs
+                    className="boss-tabs"
+                    type="editable-card"
+                    hideAdd
+                    activeKey={activePage}
+                    onChange={activatePage}
+                    onEdit={(targetKey, action) => action === 'remove' && removeTab(targetKey)}
+                    items={tabItems}
+                  />
+                </div>
+                <section className="content">
+                  {activePage === 'orders' && <OrdersPage openDrawer={openDrawer} />}
+                  {activePage === 'fulfillment' && <FulfillmentPage openDrawer={openDrawer} openProcess={openProcess} />}
+                  {activePage === 'materials' && <MaterialsPage openDrawer={openDrawer} openProcess={openProcess} />}
+                  {activePage === 'payments' && <PaymentsPage openDrawer={openDrawer} openProcess={openProcess} />}
+                  <footer className="page-footer">© 2026 易宝支付有限公司 版权所有</footer>
+                </section>
+              </div>
+            </main>
+          </div>
+          <DetailDrawer open={drawerOpen} title={drawerTitle} onClose={() => setDrawerOpen(false)} />
+          <ProcessModal open={processOpen} title={processTitle} onCancel={() => setProcessOpen(false)} />
+        </div>
+      );
+    }
+
+    function Root() {
+      return (
+        <ConfigProvider
+          locale={(antd.locales && antd.locales.zh_CN) || (antd.locale && antd.locale.zh_CN)}
+          theme={{
+            cssVar: true,
+            token: {
+              colorPrimary: '#F36046',
+              colorLink: '#F36046',
+              colorInfo: '#F36046',
+              lineWidth: 1,
+              controlHeight: 32,
+              borderRadius: 4,
+            },
+          }}
+        >
+          <App>
+            <CrossBorderTravelOpsPage />
+          </App>
+        </ConfigProvider>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
+  </script>
+</body>
+</html>

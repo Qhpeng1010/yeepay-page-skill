@@ -1,0 +1,1157 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Boss Ledger - 商户白名单配置</title>
+  <link rel="stylesheet" href="./vendor/antd-reset.css" />
+  <style>
+    :root {
+      --primary: #F36046;
+      --primary-hover: #FF7A66;
+      --selected-bg: #FEF2F0;
+      --page-bg: #F4F4F4;
+      --topbar-bg: #3A3A3A;
+      --divider: #F0F0F0;
+      --text: #1F2329;
+      --text-secondary: #4E5969;
+      --text-tertiary: #86909C;
+      --topbar-text: #B8B8B8;
+      --success: #52C41A;
+      --warning: #FAAD14;
+      --error: #FF4D4F;
+      --processing: #1677FF;
+    }
+
+    html,
+    body,
+    #root {
+      height: 100%;
+      margin: 0;
+      background: var(--page-bg);
+    }
+
+    body {
+      color: var(--text);
+      font: 14px/22px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    .boss-page {
+      min-width: 1180px;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--page-bg);
+    }
+
+    .topbar {
+      height: 28px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--topbar-text);
+      background: var(--topbar-bg);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .primary-nav {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      position: relative;
+      z-index: 5;
+    }
+
+    .logo-zone {
+      width: 208px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+    }
+
+    .logo {
+      width: 128px;
+      height: 40px;
+      display: block;
+      object-fit: contain;
+    }
+
+    .primary-items {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 32px;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      padding-right: 32px;
+    }
+
+    .primary-item {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      color: var(--text-secondary);
+      position: relative;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .primary-item.active {
+      color: var(--primary);
+    }
+
+    .primary-item.active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 2px;
+      background: var(--primary);
+    }
+
+    .shell {
+      display: flex;
+      height: calc(100vh - 92px);
+      overflow: hidden;
+    }
+
+    .sider {
+      width: 208px;
+      flex: 0 0 208px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      transition: width .2s ease, flex-basis .2s ease;
+    }
+
+    .sider.collapsed {
+      width: 48px;
+      flex-basis: 48px;
+      overflow: hidden;
+    }
+
+    .sider-menu {
+      flex: 1;
+      width: 207px;
+      padding-top: 4px;
+      overflow: auto;
+    }
+
+    .sider-menu .ant-menu {
+      border-inline-end: 0 !important;
+      width: 207px !important;
+      font-weight: 400;
+    }
+
+    .sider.collapsed .ant-menu-inline-collapsed {
+      width: 48px !important;
+    }
+
+    .sider.collapsed .sider-menu,
+    .sider.collapsed .sider-menu .ant-menu {
+      width: 48px !important;
+    }
+
+    .sider.collapsed .ant-menu-submenu-arrow {
+      display: none !important;
+    }
+
+    .sider-menu .ant-menu-item,
+    .sider-menu .ant-menu-submenu-title {
+      width: 207px !important;
+      height: 40px !important;
+      line-height: 40px !important;
+      margin: 0 !important;
+      border-radius: 0 !important;
+      font-weight: 400 !important;
+    }
+
+    .sider-menu .ant-menu-item .anticon,
+    .sider-menu .ant-menu-submenu-title .anticon {
+      margin-inline-end: 8px !important;
+    }
+
+    .sider-menu .ant-menu-submenu-selected > .ant-menu-submenu-title,
+    .sider-menu .ant-menu-item-selected {
+      color: var(--primary) !important;
+      background: transparent !important;
+    }
+
+    .sider-menu .ant-menu-sub .ant-menu-item-selected {
+      background: var(--selected-bg) !important;
+      position: relative;
+    }
+
+    .sider-menu .ant-menu-sub .ant-menu-item-selected::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 2px;
+      height: 40px;
+      background: var(--primary);
+    }
+
+    .sider.collapsed .ant-menu-item,
+    .sider.collapsed .ant-menu-submenu-title {
+      width: 48px !important;
+      padding-inline: 0 !important;
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .sider.collapsed .ant-menu-title-content {
+      display: none !important;
+    }
+
+    .sider.collapsed .ant-menu-item .anticon,
+    .sider.collapsed .ant-menu-submenu-title .anticon {
+      margin-inline-end: 0 !important;
+      font-size: 16px;
+    }
+
+    .sider-toggle {
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding-left: 16px;
+      color: var(--text-secondary);
+      border-top: 1px solid #EBEBEB;
+      cursor: pointer;
+      flex: 0 0 48px;
+    }
+
+    .sider.collapsed .sider-toggle {
+      width: 48px;
+      padding-left: 16px;
+    }
+
+    .workspace {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--page-bg);
+    }
+
+    .tabs-area {
+      height: 48px;
+      padding: 4px 16px 0;
+      flex: 0 0 48px;
+      background: var(--page-bg);
+    }
+
+    .tabs-area .ant-tabs-nav {
+      margin: 0 !important;
+      height: 44px;
+    }
+
+    .tabs-area .ant-tabs-tab {
+      height: 44px !important;
+      padding: 0 12px !important;
+      border: 0 !important;
+      border-radius: 4px 4px 0 0 !important;
+      background: #ECECEC !important;
+      color: var(--text-secondary);
+    }
+
+    .tabs-area .ant-tabs-tab-active {
+      background: #fff !important;
+      border-radius: 8px 8px 0 0 !important;
+    }
+
+    .tabs-area .ant-tabs-tab-active .ant-tabs-tab-btn {
+      color: var(--primary) !important;
+    }
+
+    .tabs-area .ant-tabs-content-holder,
+    .tabs-area .ant-tabs-nav::before {
+      display: none !important;
+    }
+
+    .tab-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 128px;
+    }
+
+    .tab-title {
+      display: inline-block;
+      max-width: 86px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tab-label [data-boss-tab-static-icon] {
+      color: var(--text-tertiary);
+    }
+
+    .content-scroll {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 0 16px;
+      background: var(--page-bg);
+    }
+
+    .query-panel {
+      background: #fff;
+      border-radius: 0 8px 8px 8px;
+      padding: 16px;
+    }
+
+    .query-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      width: 100%;
+    }
+
+    .query-grid .ant-form-item {
+      margin-bottom: 0;
+    }
+
+    .query-actions {
+      grid-column: 3;
+      justify-self: end;
+      text-align: right;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .query-actions.collapsed {
+      grid-row: 2;
+    }
+
+    .query-actions.expanded {
+      grid-row: 3;
+    }
+
+    .query-toggle,
+    .query-toggle:hover,
+    .query-toggle:focus,
+    .query-toggle:active {
+      padding: 0 !important;
+      color: var(--text-secondary) !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      background: transparent !important;
+      font-weight: 400;
+    }
+
+    .table-panel {
+      margin-top: 16px;
+      background: #fff;
+      border-radius: 8px;
+      padding: 0 16px;
+    }
+
+    .toolbar {
+      min-height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .toolbar-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text);
+      line-height: 32px;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+
+    .column-setting-btn,
+    .column-setting-btn:hover,
+    .column-setting-btn:focus,
+    .column-setting-btn:active {
+      width: 32px;
+      height: 32px;
+      background: #FAFAFA !important;
+      border-color: transparent !important;
+      box-shadow: none !important;
+      outline: none !important;
+      color: var(--text-secondary) !important;
+    }
+
+    .status-dot {
+      display: inline-flex;
+      align-items: center;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    .status-dot::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      margin-right: 6px;
+      background: var(--text-tertiary);
+    }
+
+    .status-dot.success::before {
+      background: var(--success);
+    }
+
+    .status-dot.warning::before {
+      background: var(--warning);
+    }
+
+    .status-dot.processing::before {
+      background: var(--processing);
+    }
+
+    .status-dot.error::before {
+      background: var(--error);
+    }
+
+    .row-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .row-actions .ant-btn-link {
+      padding: 0 !important;
+      height: auto;
+      color: var(--primary) !important;
+      font-weight: 400 !important;
+      box-shadow: none !important;
+      background: transparent !important;
+    }
+
+    .table-pagination {
+      display: flex;
+      justify-content: flex-end;
+      padding: 16px 0;
+    }
+
+    .footer {
+      height: 32px;
+      margin-top: 12px;
+      text-align: center;
+      color: var(--text-tertiary);
+      font-size: 12px;
+      line-height: 20px;
+      padding-top: 0;
+    }
+
+    .empty-page {
+      min-height: 480px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      border-radius: 0 8px 8px 8px;
+    }
+
+    .detail-section {
+      margin-bottom: 24px;
+    }
+
+    .detail-section-title {
+      margin-bottom: 12px;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .drawer-title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .ant-drawer-header {
+      min-height: 56px;
+      padding: 16px 24px !important;
+      border-bottom: 1px solid #F0F0F0 !important;
+    }
+
+    .ant-drawer-body {
+      padding: 24px !important;
+    }
+
+    .ant-drawer-footer {
+      height: 56px;
+      padding: 12px 24px !important;
+      border-top: 1px solid #F0F0F0 !important;
+      text-align: right;
+    }
+
+    .ant-btn-primary {
+      background: var(--primary) !important;
+      border-color: var(--primary) !important;
+      box-shadow: none !important;
+      font-weight: 400;
+    }
+
+    .ant-modal .ant-modal-content {
+      padding: 0;
+    }
+
+    .ant-modal .ant-modal-header {
+      border-bottom: 1px solid #F0F0F0;
+      padding: 20px 24px 16px;
+      margin-bottom: 0;
+    }
+
+    .ant-modal .ant-modal-body {
+      padding: 24px 24px 0;
+    }
+
+    .ant-modal .ant-modal-footer {
+      border-top: 1px solid #F0F0F0;
+      padding: 16px 24px;
+      margin-top: 0;
+    }
+
+    .ant-modal-confirm .ant-modal-body {
+      padding: 24px !important;
+    }
+
+    .ant-select-selector,
+    .ant-picker {
+      border-radius: 4px !important;
+    }
+
+    .ant-form-item-label {
+      padding-right: 0 !important;
+    }
+
+    .ant-form-item-label > label::after {
+      margin-inline-start: 0 !important;
+      margin-inline-end: 8px !important;
+    }
+
+    .modal-form .ant-form-item-label {
+      max-width: none !important;
+    }
+
+    .modal-form .ant-form-item-control {
+      flex: 1 1 0 !important;
+      min-width: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="./vendor/react.production.min.js"></script>
+  <script src="./vendor/react-dom.production.min.js"></script>
+  <script src="./vendor/dayjs.min.js"></script>
+  <script src="./vendor/dayjs-zh-cn.js"></script>
+  <script src="./vendor/antd.min.js"></script>
+  <script src="./vendor/ant-design-icons.umd.js"></script>
+  <script src="./vendor/babel.min.js"></script>
+  <script type="text/babel">
+const App = antd.App;
+const Button = antd.Button;
+const Checkbox = antd.Checkbox;
+const ConfigProvider = antd.ConfigProvider;
+const DatePicker = antd.DatePicker;
+const Descriptions = antd.Descriptions;
+const Drawer = antd.Drawer;
+const Dropdown = antd.Dropdown;
+const Empty = antd.Empty;
+const Form = antd.Form;
+const Input = antd.Input;
+const Menu = antd.Menu;
+const Modal = antd.Modal;
+const Pagination = antd.Pagination;
+const Select = antd.Select;
+const Space = antd.Space;
+const Table = antd.Table;
+const Tabs = antd.Tabs;
+const Tooltip = antd.Tooltip;
+const message = antd.message;
+const AntIcons = window.icons || window.antdIcons || window.AntDesignIcons || {};
+const CloseOutlined = AntIcons.CloseOutlined;
+const DashboardOutlined = AntIcons.DashboardOutlined;
+const DownOutlined = AntIcons.DownOutlined;
+const FileTextOutlined = AntIcons.FileTextOutlined;
+const MenuFoldOutlined = AntIcons.MenuFoldOutlined;
+const MenuUnfoldOutlined = AntIcons.MenuUnfoldOutlined;
+const OrderedListOutlined = AntIcons.OrderedListOutlined;
+const ReloadOutlined = AntIcons.ReloadOutlined;
+const ScheduleOutlined = AntIcons.ScheduleOutlined;
+const SettingOutlined = AntIcons.SettingOutlined;
+const UpOutlined = AntIcons.UpOutlined;
+
+dayjs.locale('zh-cn');
+const RangePicker = DatePicker.RangePicker;
+const TextArea = Input.TextArea;
+
+const queryFields = [
+  { key: 'merchantNo', label: '商户编号' },
+  { key: 'merchantName', label: '商户名称' },
+  { key: 'whitelistType', label: '白名单类型' },
+  { key: 'status', label: '状态' },
+  { key: 'createdAt', label: '创建时间' },
+  { key: 'scope', label: '生效范围' },
+  { key: 'operator', label: '操作人' },
+];
+
+const whitelistRows = [
+  {
+    key: 'WL202607120001',
+    merchantNo: 'M202607120001',
+    merchantName: '上海海棠餐饮管理有限公司',
+    whitelistType: '结算加急白名单',
+    scope: '单商户',
+    validPeriod: '2026-07-12 至 2026-09-30',
+    status: 'success',
+    statusText: '生效中',
+    creator: '王敏',
+    reviewer: '刘洋',
+    updatedAt: '2026-07-12 10:24:36',
+    reason: '重点商户暑期交易量提升，需支持加急结算。',
+    remark: '每周复核一次交易异常情况。',
+  },
+  {
+    key: 'WL202607120002',
+    merchantNo: 'M202607110018',
+    merchantName: '杭州云栖酒店管理有限公司',
+    whitelistType: '风控豁免白名单',
+    scope: '门店组',
+    validPeriod: '2026-07-15 至 2026-08-31',
+    status: 'processing',
+    statusText: '待生效',
+    creator: '周明',
+    reviewer: '赵琳',
+    updatedAt: '2026-07-11 17:02:18',
+    reason: '线下门店设备升级期间，需临时放宽部分校验。',
+    remark: '到期后自动失效。',
+  },
+  {
+    key: 'WL202607100009',
+    merchantNo: 'M202606300032',
+    merchantName: '深圳星程商旅服务有限公司',
+    whitelistType: '产品权限白名单',
+    scope: '商户集团',
+    validPeriod: '2026-06-30 至 2026-07-10',
+    status: 'default',
+    statusText: '已过期',
+    creator: '陈晨',
+    reviewer: '刘洋',
+    updatedAt: '2026-07-10 23:59:59',
+    reason: '试点开通企业差旅产品权限。',
+    remark: '试点结束，待业务方确认是否续期。',
+  },
+  {
+    key: 'WL202607080006',
+    merchantNo: 'M202605210076',
+    merchantName: '北京远景票务代理有限公司',
+    whitelistType: '交易限额白名单',
+    scope: '单商户',
+    validPeriod: '2026-06-01 至 2026-12-31',
+    status: 'error',
+    statusText: '已停用',
+    creator: '李娜',
+    reviewer: '马俊',
+    updatedAt: '2026-07-08 09:18:42',
+    reason: '大额票务场景需提高单笔交易上限。',
+    remark: '发现异常退款率升高，已人工停用。',
+  },
+  {
+    key: 'WL202607070011',
+    merchantNo: 'M202604180129',
+    merchantName: '广州悦享出行科技有限公司',
+    whitelistType: '产品权限白名单',
+    scope: '单商户',
+    validPeriod: '2026-07-07 至 2026-10-07',
+    status: 'success',
+    statusText: '生效中',
+    creator: '赵琳',
+    reviewer: '刘洋',
+    updatedAt: '2026-07-07 14:52:09',
+    reason: '联合运营活动期间开通新产品权限。',
+    remark: '活动结束前一周复核。',
+  },
+];
+
+function StatusDot(props) {
+  return <span className={`status-dot ${props.status}`}>{props.text}</span>;
+}
+
+function ShellTabs(props) {
+  const items = [
+    { key: 'merchant-whitelist', title: '商户白名单配置' },
+    { key: 'approval-records', title: '审批记录' },
+    { key: 'operation-log', title: '操作日志' },
+  ].map((item) => ({
+    key: item.key,
+    label: (
+      <Tooltip title={item.title.length > 6 ? item.title : ''}>
+        <span className="tab-label">
+          {item.key === props.activeTab ? <ReloadOutlined data-boss-tab-static-icon /> : null}
+          <span className="tab-title">{item.title}</span>
+          <CloseOutlined />
+        </span>
+      </Tooltip>
+    ),
+  }));
+
+  return (
+    <div className="tabs-area" data-boss-shell="tabs">
+      <Tabs type="card" activeKey={props.activeTab} items={items} onChange={props.setActiveTab} />
+    </div>
+  );
+}
+
+function EmptyTabPage(props) {
+  return (
+    <main className="content-scroll" data-boss-shell="content">
+      <div className="empty-page">
+        <Empty description={`${props.title}暂无数据`} />
+      </div>
+      <footer className="footer">© 2026 易宝支付有限公司 版权所有</footer>
+    </main>
+  );
+}
+
+function WhitelistPage() {
+  const formHook = Form.useForm();
+  const form = formHook[0];
+  const modalFormHook = Form.useForm();
+  const modalForm = modalFormHook[0];
+  const loadingState = React.useState(false);
+  const loading = loadingState[0];
+  const setLoading = loadingState[1];
+  const modalOpenState = React.useState(false);
+  const modalOpen = modalOpenState[0];
+  const setModalOpen = modalOpenState[1];
+  const submittingState = React.useState(false);
+  const submitting = submittingState[0];
+  const setSubmitting = submittingState[1];
+  const drawerOpenState = React.useState(false);
+  const drawerOpen = drawerOpenState[0];
+  const setDrawerOpen = drawerOpenState[1];
+  const currentRowState = React.useState(whitelistRows[0]);
+  const currentRow = currentRowState[0];
+  const setCurrentRow = currentRowState[1];
+  const checkedColumnsState = React.useState(['merchantNo', 'merchantName', 'whitelistType', 'scope', 'validPeriod', 'statusText', 'creator', 'updatedAt']);
+  const checkedColumns = checkedColumnsState[0];
+  const setCheckedColumns = checkedColumnsState[1];
+  const queryExpandedState = React.useState(false);
+  const queryExpanded = queryExpandedState[0];
+  const setQueryExpanded = queryExpandedState[1];
+
+  const runSearch = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      message.success('查询完成');
+    }, 500);
+  };
+
+  const resetSearch = () => {
+    form.resetFields();
+    message.success('查询条件已重置');
+  };
+
+  const submitCreate = () => {
+    modalForm.validateFields().then(() => {
+      Modal.confirm({
+        title: '提交确认',
+        content: '确认提交该商户白名单配置吗？提交后将进入配置生效校验。',
+        okText: '确 认',
+        cancelText: '取 消',
+        width: 416,
+        onOk: () => {
+          setSubmitting(true);
+          return new Promise((resolve) => {
+            setTimeout(() => {
+              setSubmitting(false);
+              setModalOpen(false);
+              modalForm.resetFields();
+              message.success('新增白名单配置成功');
+              resolve();
+            }, 500);
+          });
+        },
+      });
+    });
+  };
+
+  const openDetail = (record) => {
+    setCurrentRow(record);
+    setDrawerOpen(true);
+  };
+
+  const baseColumns = [
+    { title: '商户编号', dataIndex: 'merchantNo', key: 'merchantNo', width: 150 },
+    { title: '商户名称', dataIndex: 'merchantName', key: 'merchantName', width: 220 },
+    { title: '白名单类型', dataIndex: 'whitelistType', key: 'whitelistType', width: 150 },
+    { title: '生效范围', dataIndex: 'scope', key: 'scope', width: 120 },
+    { title: '有效期', dataIndex: 'validPeriod', key: 'validPeriod', width: 210 },
+    { title: '状态', dataIndex: 'statusText', key: 'statusText', width: 110, render: (_, record) => <StatusDot status={record.status} text={record.statusText} /> },
+    { title: '创建人', dataIndex: 'creator', key: 'creator', width: 100 },
+    { title: '更新时间', dataIndex: 'updatedAt', key: 'updatedAt', width: 170 },
+  ];
+
+  const columns = baseColumns
+    .filter((item) => checkedColumns.includes(item.key))
+    .concat([
+      {
+        title: '操作',
+        key: 'action',
+        fixed: 'right',
+        width: 180,
+        render: (_, record) => (
+          <span className="row-actions">
+            <Button type="link" onClick={() => openDetail(record)}>查看详情</Button>
+            <Button type="link" onClick={() => message.success('已进入编辑预留流程')}>编辑</Button>
+            <Dropdown
+              menu={{
+                items: [
+                  { key: 'disable', label: '停用' },
+                  { key: 'log', label: '查看日志' },
+                ],
+                onClick: (info) => {
+                  if (info.key === 'disable') {
+                    Modal.confirm({
+                      title: '停用确认',
+                      content: `确认停用 ${record.merchantName} 的白名单配置吗？`,
+                      okText: '确 认',
+                      cancelText: '取 消',
+                      width: 416,
+                      onOk: () => message.success('停用操作已提交'),
+                    });
+                  } else {
+                    message.success('已打开操作日志预留流程');
+                  }
+                },
+              }}
+            >
+              <Button type="link">更多</Button>
+            </Dropdown>
+          </span>
+        ),
+      },
+    ]);
+
+  const columnMenu = (
+    <div style={{ padding: 8, width: 180, background: '#fff' }}>
+      <Checkbox.Group
+        value={checkedColumns}
+        onChange={setCheckedColumns}
+        options={baseColumns.map((item) => ({ label: item.title, value: item.key }))}
+      />
+    </div>
+  );
+
+  return (
+    <main className="content-scroll" data-boss-shell="content">
+      <section className="query-panel">
+        <Form form={form} layout="horizontal" colon>
+          <div className="query-grid" data-boss-query-grid="3">
+            <Form.Item name="merchantNo" label="商户编号">
+              <Input placeholder="请输入商户编号" allowClear />
+            </Form.Item>
+            <Form.Item name="merchantName" label="商户名称">
+              <Input placeholder="请输入商户名称" allowClear />
+            </Form.Item>
+            <Form.Item name="whitelistType" label="白名单类型">
+              <Select placeholder="请选择白名单类型" allowClear options={[
+                { value: 'settle', label: '结算加急白名单' },
+                { value: 'risk', label: '风控豁免白名单' },
+                { value: 'product', label: '产品权限白名单' },
+                { value: 'limit', label: '交易限额白名单' },
+              ]} />
+            </Form.Item>
+            <Form.Item name="status" label="状态">
+              <Select placeholder="请选择状态" allowClear options={[
+                { value: 'success', label: '生效中' },
+                { value: 'processing', label: '待生效' },
+                { value: 'default', label: '已过期' },
+                { value: 'error', label: '已停用' },
+              ]} />
+            </Form.Item>
+            <Form.Item name="createdAt" label="创建时间">
+              <RangePicker style={{ width: '100%' }} placeholder={['请选择开始日期', '请选择结束日期']} />
+            </Form.Item>
+            {queryExpanded ? (
+              <Form.Item name="scope" label="生效范围">
+                <Select placeholder="请选择生效范围" allowClear options={[
+                  { value: 'single', label: '单商户' },
+                  { value: 'group', label: '商户集团' },
+                  { value: 'store', label: '门店组' },
+                ]} />
+              </Form.Item>
+            ) : null}
+            {queryExpanded ? (
+              <Form.Item name="operator" label="操作人">
+                <Input placeholder="请输入操作人" allowClear />
+              </Form.Item>
+            ) : null}
+            <div className={queryExpanded ? 'query-actions expanded' : 'query-actions collapsed'} data-boss-query-actions>
+              <Button type="link" className="query-toggle" icon={queryExpanded ? <UpOutlined /> : <DownOutlined />} onClick={() => setQueryExpanded(!queryExpanded)}>
+                {queryExpanded ? '收 起' : '展 开'}
+              </Button>
+              <Button onClick={resetSearch}>重 置</Button>
+              <Button type="primary" onClick={runSearch}>查 询</Button>
+            </div>
+          </div>
+        </Form>
+      </section>
+
+      <section className="table-panel" data-boss-table-module>
+        <div className="toolbar">
+          <div className="toolbar-title">查询列表</div>
+          <div className="toolbar-actions">
+            <Button type="primary" onClick={() => setModalOpen(true)}>新 增</Button>
+            <Button onClick={() => message.success('下载任务已创建')}>下载Excel</Button>
+            <Dropdown dropdownRender={() => columnMenu} trigger={['click']}>
+              <Tooltip title="列设置">
+                <Button className="column-setting-btn" icon={<SettingOutlined />} />
+              </Tooltip>
+            </Dropdown>
+          </div>
+        </div>
+        <Table
+          rowKey="key"
+          loading={loading}
+          columns={columns}
+          dataSource={whitelistRows}
+          pagination={false}
+          scroll={{ x: 1420 }}
+          locale={{ emptyText: <Empty description="暂无白名单配置" /> }}
+        />
+        <div className="table-pagination">
+          <Pagination
+            current={1}
+            total={48}
+            pageSize={10}
+            showSizeChanger
+            pageSizeOptions={['10', '20', '50']}
+            showTotal={(total) => `共 ${total} 条`}
+            locale={{ items_per_page: '条/页', jump_to: '跳至', page: '页' }}
+          />
+        </div>
+      </section>
+
+      <footer className="footer">© 2026 易宝支付有限公司 版权所有</footer>
+
+      <Modal
+        title="新增白名单配置"
+        open={modalOpen}
+        width={500}
+        okText="确 认"
+        cancelText="取 消"
+        confirmLoading={submitting}
+        onOk={submitCreate}
+        onCancel={() => setModalOpen(false)}
+        destroyOnClose
+      >
+        <Form
+          form={modalForm}
+          className="modal-form"
+          layout="horizontal"
+          labelCol={{ flex: '84px' }}
+          wrapperCol={{ flex: '1' }}
+          colon
+        >
+          <Form.Item name="merchantNo" label="商户编号" rules={[{ required: true, message: '请输入商户编号' }]}>
+            <Input placeholder="请输入商户编号" />
+          </Form.Item>
+          <Form.Item name="whitelistType" label="白名单类型" rules={[{ required: true, message: '请选择白名单类型' }]}>
+            <Select placeholder="请选择白名单类型" options={[
+              { value: 'settle', label: '结算加急白名单' },
+              { value: 'risk', label: '风控豁免白名单' },
+              { value: 'product', label: '产品权限白名单' },
+              { value: 'limit', label: '交易限额白名单' },
+            ]} />
+          </Form.Item>
+          <Form.Item name="scope" label="生效范围" rules={[{ required: true, message: '请选择生效范围' }]}>
+            <Select placeholder="请选择生效范围" options={[
+              { value: 'single', label: '单商户' },
+              { value: 'group', label: '商户集团' },
+              { value: 'store', label: '门店组' },
+            ]} />
+          </Form.Item>
+          <Form.Item name="validPeriod" label="有效期" rules={[{ required: true, message: '请选择有效期' }]}>
+            <RangePicker style={{ width: '100%' }} placeholder={['请选择开始日期', '请选择结束日期']} />
+          </Form.Item>
+          <Form.Item name="reason" label="申请原因" rules={[{ required: true, message: '请输入申请原因' }]}>
+            <TextArea rows={2} maxLength={100} placeholder="请输入申请原因" />
+          </Form.Item>
+          <Form.Item name="remark" label="备注">
+            <TextArea rows={2} maxLength={100} placeholder="请输入备注" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Drawer
+        width={808}
+        open={drawerOpen}
+        closeIcon={false}
+        title={<div className="drawer-title-bar"><span>白名单配置详情</span><Button type="text" icon={<CloseOutlined />} onClick={() => setDrawerOpen(false)} /></div>}
+        footer={<Button onClick={() => setDrawerOpen(false)}>关 闭</Button>}
+        onClose={() => setDrawerOpen(false)}
+      >
+        <div className="detail-section">
+          <div className="detail-section-title">基础信息</div>
+          <Descriptions column={3}>
+            <Descriptions.Item label="商户编号">{currentRow.merchantNo}</Descriptions.Item>
+            <Descriptions.Item label="商户名称">{currentRow.merchantName}</Descriptions.Item>
+            <Descriptions.Item label="当前状态"><StatusDot status={currentRow.status} text={currentRow.statusText} /></Descriptions.Item>
+            <Descriptions.Item label="创建人">{currentRow.creator}</Descriptions.Item>
+            <Descriptions.Item label="审批人">{currentRow.reviewer}</Descriptions.Item>
+            <Descriptions.Item label="更新时间">{currentRow.updatedAt}</Descriptions.Item>
+          </Descriptions>
+        </div>
+        <div className="detail-section">
+          <div className="detail-section-title">配置信息</div>
+          <Descriptions column={3}>
+            <Descriptions.Item label="白名单类型">{currentRow.whitelistType}</Descriptions.Item>
+            <Descriptions.Item label="生效范围">{currentRow.scope}</Descriptions.Item>
+            <Descriptions.Item label="有效期" span={2}>{currentRow.validPeriod}</Descriptions.Item>
+            <Descriptions.Item label="申请原因" span={3}>{currentRow.reason}</Descriptions.Item>
+            <Descriptions.Item label="备注" span={3}>{currentRow.remark}</Descriptions.Item>
+          </Descriptions>
+        </div>
+        <div className="detail-section">
+          <div className="detail-section-title">审批与操作信息</div>
+          <Descriptions column={3}>
+            <Descriptions.Item label="审批结果">审批通过</Descriptions.Item>
+            <Descriptions.Item label="审批时间">{currentRow.updatedAt}</Descriptions.Item>
+            <Descriptions.Item label="操作来源">Boss Ledger</Descriptions.Item>
+            <Descriptions.Item label="最近操作">配置更新</Descriptions.Item>
+            <Descriptions.Item label="操作渠道">后台运营</Descriptions.Item>
+            <Descriptions.Item label="复核要求">到期前 7 天复核</Descriptions.Item>
+          </Descriptions>
+        </div>
+      </Drawer>
+    </main>
+  );
+}
+
+function BossLedgerPreview() {
+  const collapsedState = React.useState(false);
+  const collapsed = collapsedState[0];
+  const setCollapsed = collapsedState[1];
+  const activeTabState = React.useState('merchant-whitelist');
+  const activeTab = activeTabState[0];
+  const setActiveTab = activeTabState[1];
+  const openKeysState = React.useState(['merchant-config']);
+  const openKeys = openKeysState[0];
+  const setOpenKeys = openKeysState[1];
+
+  const menuItems = [
+    {
+      key: 'merchant-config',
+      icon: <OrderedListOutlined />,
+      label: '商户配置管理',
+      children: [
+        { key: 'merchant-whitelist', label: '商户白名单配置' },
+        { key: 'merchant-tag', label: '商户标签管理' },
+        { key: 'merchant-limit', label: '交易限额配置' },
+      ],
+    },
+    {
+      key: 'approval-center',
+      icon: <ScheduleOutlined />,
+      label: '审批中心',
+      children: [
+        { key: 'approval-records', label: '审批记录' },
+        { key: 'operation-log', label: '操作日志' },
+      ],
+    },
+    {
+      key: 'report-center',
+      icon: <FileTextOutlined />,
+      label: '报表中心',
+      children: [
+        { key: 'export-task', label: '导出任务' },
+        { key: 'audit-report', label: '配置审计报表' },
+      ],
+    },
+  ];
+
+  return (
+    <ConfigProvider
+      theme={{
+        cssVar: true,
+        token: {
+          colorPrimary: '#F36046',
+          borderRadius: 4,
+          lineWidth: 1,
+        },
+      }}
+    >
+      <App>
+        <div className="boss-page">
+          <div className="topbar" data-boss-shell="topbar">
+            <span>上次登录时间：2026-07-12 09:18:32　登录IP：10.64.18.26</span>
+            <span>当前登录：运营管理员　帮助中心　退出</span>
+          </div>
+          <div className="primary-nav" data-boss-shell="primary-nav">
+            <div className="logo-zone">
+              <img className="logo" src="../../specs/boss logo.svg" alt="Boss Ledger logo" data-boss-logo-source="specs/boss logo.svg" />
+            </div>
+            <div className="primary-items">
+              {['首页', '数据报表', '帐号管理', '商户管理', '资金管理', '系统管理'].map((item) => (
+                <div key={item} className={`primary-item ${item === '商户管理' ? 'active' : ''}`}>{item}</div>
+              ))}
+            </div>
+          </div>
+          <div className="shell">
+            <aside className={`sider ${collapsed ? 'collapsed' : ''}`} data-boss-shell="sider">
+              <div className="sider-menu">
+                <Menu
+                  mode="inline"
+                  inlineCollapsed={collapsed}
+                  selectedKeys={[activeTab]}
+                  openKeys={collapsed ? [] : openKeys}
+                  onOpenChange={setOpenKeys}
+                  items={menuItems}
+                  onClick={(info) => setActiveTab(info.key)}
+                />
+              </div>
+              <div className="sider-toggle" data-boss-sider-collapse onClick={() => setCollapsed(!collapsed)}>
+                {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              </div>
+            </aside>
+            <section className="workspace">
+              <ShellTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+              {activeTab === 'merchant-whitelist' ? <WhitelistPage /> : <EmptyTabPage title={activeTab === 'approval-records' ? '审批记录' : '当前页面'} />}
+            </section>
+          </div>
+        </div>
+      </App>
+    </ConfigProvider>
+  );
+}
+
+ReactDOM.render(<BossLedgerPreview />, document.getElementById('root'));
+  </script>
+</body>
+</html>

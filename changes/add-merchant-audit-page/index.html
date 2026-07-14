@@ -1,0 +1,1268 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Boss Ledger - 商户资料审核</title>
+  <link rel="stylesheet" href="./vendor/antd-reset.css" />
+  <style>
+    :root {
+      --primary: #F36046;
+      --primary-hover: #FF7A66;
+      --selected-bg: #FEF2F0;
+      --page-bg: #F4F4F4;
+      --topbar-bg: #3A3A3A;
+      --border: #E5E6EB;
+      --divider: #F0F0F0;
+      --text: #1F2329;
+      --text-secondary: #4E5969;
+      --text-tertiary: #86909C;
+      --topbar-text: #B8B8B8;
+      --success: #52C41A;
+      --warning: #FAAD14;
+      --error: #FF4D4F;
+      --processing: #1677FF;
+    }
+
+    html,
+    body,
+    #root {
+      height: 100%;
+      margin: 0;
+      background: var(--page-bg);
+    }
+
+    body {
+      color: var(--text);
+      font: 14px/22px -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    .boss-page {
+      min-width: 1120px;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--page-bg);
+    }
+
+    .topbar {
+      height: 28px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--topbar-text);
+      background: var(--topbar-bg);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .primary-nav {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      position: relative;
+      z-index: 5;
+    }
+
+    .logo-zone {
+      width: 208px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+    }
+
+    .logo {
+      width: 128px;
+      height: 40px;
+      display: block;
+      object-fit: contain;
+    }
+
+    .primary-items {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 28px;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      padding-right: 32px;
+    }
+
+    .primary-item {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      color: var(--text-secondary);
+      position: relative;
+      white-space: nowrap;
+    }
+
+    .primary-item.active {
+      color: var(--primary);
+    }
+
+    .primary-item.active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 2px;
+      background: var(--primary);
+    }
+
+    .shell {
+      display: flex;
+      height: calc(100vh - 92px);
+      overflow: hidden;
+    }
+
+    .sider {
+      width: 208px;
+      flex: 0 0 208px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--divider);
+      transition: width .2s ease, flex-basis .2s ease;
+    }
+
+    .sider.collapsed {
+      width: 48px;
+      flex-basis: 48px;
+      overflow: hidden;
+    }
+
+    .sider-menu {
+      flex: 1;
+      width: 207px;
+      padding-top: 4px;
+      overflow: auto;
+    }
+
+    .sider-menu .ant-menu {
+      border-inline-end: 0 !important;
+      font-weight: 400;
+      width: 207px !important;
+    }
+
+    .sider.collapsed .ant-menu-inline-collapsed {
+      width: 48px !important;
+    }
+
+    .sider.collapsed .sider-menu,
+    .sider.collapsed .sider-menu .ant-menu {
+      width: 48px !important;
+    }
+
+    .sider.collapsed .ant-menu-submenu-arrow {
+      display: none !important;
+    }
+
+    .sider-menu .ant-menu-item,
+    .sider-menu .ant-menu-submenu-title {
+      width: 207px !important;
+      height: 40px !important;
+      line-height: 40px !important;
+      margin: 0 !important;
+      border-radius: 0 !important;
+      font-weight: 400 !important;
+    }
+
+    .sider-menu .ant-menu-item .anticon,
+    .sider-menu .ant-menu-submenu-title .anticon {
+      margin-inline-end: 8px !important;
+    }
+
+    .sider.collapsed .sider-menu .ant-menu-item,
+    .sider.collapsed .sider-menu .ant-menu-submenu-title {
+      width: 48px !important;
+      padding-inline: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      text-align: center;
+    }
+
+    .sider.collapsed .sider-menu .ant-menu-title-content {
+      display: none !important;
+    }
+
+    .sider.collapsed .sider-menu .ant-menu-item-icon,
+    .sider.collapsed .sider-menu .ant-menu-submenu-title .ant-menu-item-icon,
+    .sider.collapsed .sider-menu .ant-menu-item .anticon,
+    .sider.collapsed .sider-menu .ant-menu-submenu-title .anticon {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      margin-inline-end: 0 !important;
+      min-width: 0 !important;
+      font-size: 16px !important;
+    }
+
+    .sider-menu .ant-menu-submenu-selected > .ant-menu-submenu-title,
+    .sider-menu .ant-menu-submenu-selected > .ant-menu-submenu-title .anticon {
+      color: var(--primary) !important;
+    }
+
+    .sider-menu .ant-menu-item-selected {
+      color: var(--primary) !important;
+      background: var(--selected-bg) !important;
+    }
+
+    .sider-menu .ant-menu-item-selected::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--primary);
+    }
+
+    .collapse-control {
+      height: 48px;
+      border-top: 1px solid #EBEBEB;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding-left: 16px;
+      color: var(--text-tertiary);
+      cursor: pointer;
+    }
+
+    .sider.collapsed .collapse-control {
+      justify-content: center;
+      padding-left: 0;
+    }
+
+    .workspace {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--page-bg);
+    }
+
+    .work-body {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tab-strip {
+      height: 48px;
+      flex: 0 0 auto;
+      padding-top: 4px;
+      padding-left: 16px;
+      background: var(--page-bg);
+      box-sizing: border-box;
+    }
+
+    .boss-tabs.ant-tabs {
+      height: 44px;
+    }
+
+    .boss-tabs .ant-tabs-nav {
+      margin: 0 !important;
+      height: 44px;
+    }
+
+    .boss-tabs .ant-tabs-nav::before {
+      border-bottom: 0 !important;
+    }
+
+    .boss-tabs .ant-tabs-tab {
+      height: 44px;
+      margin: 0 !important;
+      padding: 0 12px !important;
+      background: #eee !important;
+      border: 0 !important;
+      border-radius: 4px 4px 0 0 !important;
+      color: var(--text-secondary);
+    }
+
+    .boss-tabs .ant-tabs-tab-active {
+      background: #fff !important;
+      border-radius: 8px 8px 0 0 !important;
+    }
+
+    .boss-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+      color: var(--primary) !important;
+    }
+
+    .tab-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0;
+      max-width: 144px;
+    }
+
+    .tab-label .tab-title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tab-label .anticon {
+      color: #B8B8B8;
+      font-size: 14px;
+      flex: 0 0 auto;
+      margin-inline-end: 8px;
+    }
+
+    .boss-tabs .ant-tabs-tab-remove {
+      color: #B8B8B8 !important;
+      margin-left: 4px !important;
+    }
+
+    .boss-tabs .ant-tabs-ink-bar {
+      display: none;
+    }
+
+    .content {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 0 16px 16px;
+      background: var(--page-bg);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .query-panel {
+      background: #fff;
+      padding: 16px;
+      border-radius: 0 8px 8px 8px;
+    }
+
+    .query-panel .ant-form-item {
+      margin: 0;
+    }
+
+    .ant-form-item-label > label {
+      column-gap: 8px;
+    }
+
+    .ant-form-horizontal .ant-form-item-label {
+      padding-inline-end: 8px;
+    }
+
+    .ant-form-vertical .ant-form-item-label {
+      padding-bottom: 8px;
+    }
+
+    .ant-form-item-label > label::after {
+      margin-inline-start: 0 !important;
+      margin-inline-end: 0 !important;
+    }
+
+    .query-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      width: 100%;
+    }
+
+    .query-grid .ant-form-item {
+      min-width: 0;
+    }
+
+    .query-grid .ant-form-item-row {
+      column-gap: 8px;
+      flex-wrap: nowrap;
+    }
+
+    .query-grid .ant-form-item-label {
+      flex: 0 0 auto;
+      padding-inline-end: 0;
+      margin-right: 0;
+    }
+
+    .query-grid .ant-form-item-control {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .query-grid .ant-picker,
+    .query-grid .ant-select,
+    .query-grid .ant-input-affix-wrapper {
+      width: 100%;
+    }
+
+    .query-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      column-gap: 8px;
+      min-width: 0;
+    }
+
+    .query-toggle {
+      padding-left: 0 !important;
+      padding-right: 8px !important;
+      border-color: transparent !important;
+      box-shadow: none !important;
+    }
+
+    .table-panel {
+      flex: 0 0 auto;
+      min-height: 0;
+      margin-top: 12px;
+      padding: 0 16px;
+      background: #fff;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: visible;
+    }
+
+    .toolbar {
+      min-height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 0;
+      box-sizing: border-box;
+    }
+
+    .toolbar-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text);
+      line-height: 32px;
+      flex: 0 0 auto;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+
+    .table-body {
+      flex: 0 0 auto;
+      min-width: 0;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .table-panel .ant-table-wrapper {
+      min-width: 0;
+      min-height: auto;
+    }
+
+    .table-pagination {
+      min-height: 64px;
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 16px 0;
+      box-sizing: border-box;
+      background: #fff;
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    .table-body .ant-table-wrapper + .table-pagination {
+      margin-top: 0;
+    }
+
+    .table-pagination .ant-pagination {
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
+
+    .table-fill {
+      display: none;
+    }
+
+    .status-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-dot::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex: 0 0 auto;
+      background: var(--text-tertiary);
+    }
+
+    .status-dot.warning::before { background: var(--warning); }
+    .status-dot.success::before { background: var(--success); }
+    .status-dot.error::before { background: var(--error); }
+    .status-dot.processing::before { background: var(--processing); }
+
+    .ant-table-wrapper .ant-table-thead > tr > th {
+      font-weight: 500;
+      background: #FAFAFA;
+    }
+
+    .ant-table-wrapper .ant-table-tbody > tr > td {
+      font-weight: 400;
+    }
+
+    .ant-table-wrapper .ant-table-thead > tr > th.operation-column,
+    .ant-table-wrapper .ant-table-tbody > tr > td.operation-column {
+      text-align: left;
+    }
+
+    .operation-buttons {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-content: flex-start;
+    }
+
+    .operation-buttons .ant-btn-link {
+      padding-left: 0;
+      padding-right: 0;
+      height: auto;
+      line-height: 22px;
+    }
+
+    .amount-cell {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .drawer-section {
+      margin-bottom: 24px;
+    }
+
+    .drawer-title-bar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .drawer-title-text {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .drawer-title-close {
+      color: var(--text-secondary);
+      border: 0;
+      box-shadow: none;
+    }
+
+    .drawer-section-title {
+      margin-bottom: 12px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .audit-modal .ant-modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      border-top: 1px solid var(--divider);
+      padding: 12px 24px;
+      margin-top: 0;
+    }
+
+    .audit-modal .ant-modal-header {
+      border-bottom: 1px solid var(--divider);
+      padding: 16px 24px;
+      margin-bottom: 0;
+    }
+
+    .audit-modal .ant-modal-body {
+      padding: 24px;
+    }
+
+    .audit-modal .ant-modal-content {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .audit-modal .ant-form-item {
+      margin-bottom: 16px;
+    }
+
+    .audit-modal .ant-form-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .page-footer {
+      height: 24px;
+      flex: 0 0 auto;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      color: #A8ABB2;
+      background: var(--page-bg);
+      font-size: 12px;
+      line-height: 20px;
+      margin-top: 12px;
+    }
+
+    .column-setting-button {
+      background: #FAFAFA !important;
+      border-color: transparent !important;
+      box-shadow: none !important;
+    }
+
+    .column-setting-button:hover,
+    .column-setting-button:focus {
+      background: #FAFAFA !important;
+      border-color: transparent !important;
+      color: var(--primary) !important;
+    }
+
+    .column-setting-panel {
+      width: 176px;
+      padding: 12px;
+      background: #fff;
+      border-radius: 4px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .column-setting-title {
+      margin-bottom: 8px;
+      color: var(--text);
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="./vendor/react.production.min.js"></script>
+  <script src="./vendor/react-dom.production.min.js"></script>
+  <script src="./vendor/dayjs.min.js"></script>
+  <script src="./vendor/dayjs-zh-cn.js"></script>
+  <script src="./vendor/antd.min.js"></script>
+  <script src="./vendor/ant-design-icons.umd.js"></script>
+  <script src="./vendor/babel.min.js"></script>
+
+  <script type="text/babel">
+    const {
+      App,
+      Button,
+      Checkbox,
+      ConfigProvider,
+      DatePicker,
+      Descriptions,
+      Drawer,
+      Dropdown,
+      Empty,
+      Form,
+      Input,
+      Menu,
+      Modal,
+      Pagination,
+      Radio,
+      Select,
+      Space,
+      Table,
+      Tabs,
+      Timeline,
+      Tooltip,
+      message,
+      theme,
+    } = antd;
+
+    const AntIcons = window.icons || window.antdIcons || window.AntDesignIcons || {};
+
+    const {
+      AuditOutlined,
+      BankOutlined,
+      CloseOutlined,
+      DownOutlined,
+      FileSearchOutlined,
+      MenuFoldOutlined,
+      MenuUnfoldOutlined,
+      ReloadOutlined,
+      SafetyCertificateOutlined,
+      SettingOutlined,
+      TeamOutlined,
+      ToolOutlined,
+      UpOutlined,
+    } = AntIcons;
+
+    dayjs.locale('zh-cn');
+
+    const { RangePicker } = DatePicker;
+    const { TextArea } = Input;
+
+    const rows = [
+      {
+        key: 'AUD202607080001',
+        auditNo: 'AUD202607080001',
+        merchantNo: 'M10023981',
+        merchantName: '上海海川科技有限公司',
+        materialType: '主体资料',
+        submitTime: '2026-07-08 09:32:10',
+        status: 'pending',
+        statusText: '待审核',
+        node: '初审',
+        auditor: '-',
+      },
+      {
+        key: 'AUD202607070018',
+        auditNo: 'AUD202607070018',
+        merchantNo: 'M10022873',
+        merchantName: '杭州云桥信息服务有限公司',
+        materialType: '结算资料',
+        submitTime: '2026-07-07 16:15:48',
+        status: 'success',
+        statusText: '审核通过',
+        node: '复审',
+        auditor: '李敏',
+      },
+      {
+        key: 'AUD202607070011',
+        auditNo: 'AUD202607070011',
+        merchantNo: 'M10021106',
+        merchantName: '北京星澜餐饮管理有限公司',
+        materialType: '证照资料',
+        submitTime: '2026-07-07 11:02:33',
+        status: 'error',
+        statusText: '审核驳回',
+        node: '初审',
+        auditor: '王磊',
+      },
+      {
+        key: 'AUD202607060027',
+        auditNo: 'AUD202607060027',
+        merchantNo: 'M10019852',
+        merchantName: '深圳前海嘉汇贸易有限公司',
+        materialType: '联系人资料',
+        submitTime: '2026-07-06 18:45:22',
+        status: 'processing',
+        statusText: '处理中',
+        node: '系统校验',
+        auditor: '-',
+      },
+    ];
+
+    function StatusDot({ status, text }) {
+      const cls = status === 'pending' ? 'warning' : status;
+      return <span className={`status-dot ${cls}`}>{text}</span>;
+    }
+
+    function MerchantAuditPage() {
+      const [form] = Form.useForm();
+      const [auditForm] = Form.useForm();
+      const [loading, setLoading] = React.useState(false);
+      const [drawerOpen, setDrawerOpen] = React.useState(false);
+      const [modalOpen, setModalOpen] = React.useState(false);
+      const [auditResult, setAuditResult] = React.useState('pass');
+      const [selectedRow, setSelectedRow] = React.useState(rows[0]);
+      const [collapsed, setCollapsed] = React.useState(false);
+      const [openKeys, setOpenKeys] = React.useState(['audit']);
+      const [activeTab, setActiveTab] = React.useState('merchantAudit');
+      const [queryExpanded, setQueryExpanded] = React.useState(false);
+      const [visibleColumnKeys, setVisibleColumnKeys] = React.useState([
+        'auditNo',
+        'merchantNo',
+        'merchantName',
+        'materialType',
+        'submitTime',
+        'status',
+        'node',
+        'auditor',
+        'actions',
+      ]);
+
+      const queryFields = [
+        {
+          key: 'auditNo',
+          node: (
+            <Form.Item label="审核单号" name="auditNo">
+              <Input placeholder="请输入审核单号" allowClear />
+            </Form.Item>
+          ),
+        },
+        {
+          key: 'merchantNo',
+          node: (
+            <Form.Item label="商户审核编号" name="merchantNo">
+              <Input placeholder="请输入商户编号" allowClear />
+            </Form.Item>
+          ),
+        },
+        {
+          key: 'merchantName',
+          node: (
+            <Form.Item label="商户名称" name="merchantName">
+              <Input placeholder="请输入商户名称" allowClear />
+            </Form.Item>
+          ),
+        },
+        {
+          key: 'materialType',
+          node: (
+            <Form.Item label="资料类型" name="materialType">
+              <Select
+                placeholder="请选择资料类型"
+                options={[
+                  { label: '全部', value: 'all' },
+                  { label: '主体资料', value: 'base' },
+                  { label: '证照资料', value: 'license' },
+                  { label: '结算资料', value: 'settlement' },
+                  { label: '联系人资料', value: 'contact' },
+                ]}
+              />
+            </Form.Item>
+          ),
+        },
+        {
+          key: 'status',
+          node: (
+            <Form.Item label="审核状态" name="status">
+              <Select
+                options={[
+                  { label: '待审核', value: 'pending' },
+                  { label: '审核通过', value: 'success' },
+                  { label: '审核驳回', value: 'error' },
+                  { label: '处理中', value: 'processing' },
+                  { label: '已失效', value: 'disabled' },
+                ]}
+              />
+            </Form.Item>
+          ),
+        },
+        {
+          key: 'submitTime',
+          node: (
+            <Form.Item label="提交时间" name="submitTime">
+              <RangePicker style={{ width: '100%' }} />
+            </Form.Item>
+          ),
+        },
+        {
+          key: 'node',
+          node: (
+            <Form.Item label="当前节点" name="node">
+              <Select
+                placeholder="请选择当前节点"
+                options={[
+                  { label: '全部', value: 'all' },
+                  { label: '初审', value: 'first' },
+                  { label: '复审', value: 'second' },
+                  { label: '系统校验', value: 'system' },
+                ]}
+              />
+            </Form.Item>
+          ),
+        },
+        {
+          key: 'auditor',
+          node: (
+            <Form.Item label="审核人" name="auditor">
+              <Input placeholder="请输入审核人" allowClear />
+            </Form.Item>
+          ),
+        },
+      ];
+
+      const visibleQueryFields = queryExpanded ? queryFields : queryFields.slice(0, 5);
+      const shouldShowQueryToggle = queryFields.length > 6;
+
+      const openDrawer = (record) => {
+        setSelectedRow(record);
+        setDrawerOpen(true);
+      };
+
+      const openAudit = (record) => {
+        setSelectedRow(record);
+        setAuditResult('pass');
+        auditForm.resetFields();
+        setModalOpen(true);
+      };
+
+      const doQuery = () => {
+        setLoading(true);
+        setTimeout(() => {
+          setLoading(false);
+          message.success('查询完成');
+        }, 700);
+      };
+
+      const resetQuery = () => {
+        form.resetFields();
+        message.success('查询条件已重置');
+      };
+
+      const submitAudit = async () => {
+        try {
+          await auditForm.validateFields();
+          Modal.confirm({
+            title: auditResult === 'pass' ? '确认审核通过？' : '确认审核驳回？',
+            content: auditResult === 'pass'
+              ? '通过后商户资料将进入后续生效流程。'
+              : '驳回后商户需要按原因重新提交资料。',
+            okText: '确 认',
+            cancelText: '取 消',
+            onOk: () => {
+              setModalOpen(false);
+              setDrawerOpen(false);
+              message.success(auditResult === 'pass' ? '审核通过成功' : '审核驳回成功');
+            },
+          });
+        } catch (error) {
+          message.error('请完善审核信息');
+        }
+      };
+
+      const baseColumns = [
+        { title: '审核单号', dataIndex: 'auditNo', key: 'auditNo', width: 156 },
+        { title: '商户编号', dataIndex: 'merchantNo', key: 'merchantNo', width: 120 },
+        {
+          title: '商户名称',
+          dataIndex: 'merchantName',
+          key: 'merchantName',
+          width: 200,
+          ellipsis: true,
+        },
+        { title: '资料类型', dataIndex: 'materialType', key: 'materialType', width: 110 },
+        { title: '提交时间', dataIndex: 'submitTime', key: 'submitTime', width: 168 },
+        {
+          title: '审核状态',
+          dataIndex: 'statusText',
+          key: 'status',
+          width: 118,
+          render: (_, record) => <StatusDot status={record.status} text={record.statusText} />,
+        },
+        { title: '当前节点', dataIndex: 'node', key: 'node', width: 100 },
+        { title: '审核人', dataIndex: 'auditor', key: 'auditor', width: 96 },
+        {
+          title: '操作',
+          key: 'actions',
+          width: 128,
+          fixed: 'right',
+          className: 'operation-column',
+          render: (_, record) => (
+            <div className="operation-buttons">
+              <Button type="link" onClick={() => openDrawer(record)}>查看</Button>
+              {record.status === 'pending' && (
+                <Button type="link" onClick={() => openAudit(record)}>审核</Button>
+              )}
+            </div>
+          ),
+        },
+      ];
+
+      const columns = baseColumns.filter((column) => column.key === 'actions' || visibleColumnKeys.includes(column.key));
+      const columnOptions = baseColumns
+        .filter((column) => column.key !== 'actions')
+        .map((column) => ({ label: column.title, value: column.key }));
+
+      const columnSettingContent = (
+        <div className="column-setting-panel" onClick={(event) => event.stopPropagation()}>
+          <div className="column-setting-title">列设置</div>
+          <Checkbox.Group
+            value={visibleColumnKeys.filter((key) => key !== 'actions')}
+            onChange={(values) => setVisibleColumnKeys([...values, 'actions'])}
+          >
+            <Space direction="vertical" size={8}>
+              {columnOptions.map((option) => (
+                <Checkbox key={option.value} value={option.value}>{option.label}</Checkbox>
+              ))}
+            </Space>
+          </Checkbox.Group>
+        </div>
+      );
+
+      const tabs = [
+        { key: 'dashboard', title: '数据报表', closable: true },
+        { key: 'merchantAudit', title: '商户资料审核', closable: true },
+        { key: 'operator', title: '操作员管理', closable: true },
+      ].map((item) => ({
+        key: item.key,
+        closable: item.closable,
+        label: (
+          <Tooltip title={item.title.length > 6 ? item.title : ''}>
+            <span className="tab-label">
+              {activeTab === item.key && <ReloadOutlined />}
+              <span className="tab-title">{item.title}</span>
+            </span>
+          </Tooltip>
+        ),
+      }));
+
+      const menuItems = [
+        {
+          key: 'audit',
+          icon: <AuditOutlined />,
+          label: '商户审核',
+          children: [
+            { key: 'merchant-audit', label: '商户资料审核' },
+            { key: 'settlement-audit', label: '结算资料审核' },
+            { key: 'account-audit', label: '账户变更审核' },
+          ],
+        },
+        { key: 'merchant', icon: <TeamOutlined />, label: '商户资料' },
+        { key: 'config', icon: <ToolOutlined />, label: '配置管理' },
+        { key: 'risk', icon: <SafetyCertificateOutlined />, label: '风控审核' },
+      ];
+
+      return (
+        <div className="boss-page">
+          <div className="topbar">
+            <div>上次登录时间：2026-07-08 09:18:32　登录 IP：10.24.18.66</div>
+            <div>10080090899 · Boss Ledger 审核后台　帮助中心　消息</div>
+          </div>
+
+          <header className="primary-nav">
+            <div className="logo-zone">
+              <img className="logo" src="./assets/boss-ledger-logo.svg" alt="老板管账" />
+            </div>
+            <nav className="primary-items">
+              <div className="primary-item">首页</div>
+              <div className="primary-item">数据报表</div>
+              <div className="primary-item active">商户管理</div>
+              <div className="primary-item">资金管理</div>
+              <div className="primary-item">对账管理</div>
+              <div className="primary-item">系统管理</div>
+            </nav>
+          </header>
+
+          <div className="shell">
+            <aside className={`sider ${collapsed ? 'collapsed' : ''}`}>
+              <div className="sider-menu">
+                <Menu
+                  mode="inline"
+                  inlineCollapsed={collapsed}
+                  inlineCollapsedWidth={48}
+                  selectedKeys={['merchant-audit']}
+                  openKeys={collapsed ? [] : openKeys}
+                  onOpenChange={setOpenKeys}
+                  items={menuItems}
+                />
+              </div>
+              <div className="collapse-control" onClick={() => setCollapsed(!collapsed)}>
+                {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              </div>
+            </aside>
+
+            <main className="workspace">
+              <div className="work-body">
+                <div className="tab-strip">
+                  <Tabs
+                    className="boss-tabs"
+                    type="editable-card"
+                    hideAdd
+                    activeKey={activeTab}
+                    onChange={setActiveTab}
+                    items={tabs}
+                  />
+                </div>
+
+                <section className="content">
+                  <section className="query-panel">
+                    <Form
+                      form={form}
+                      layout="inline"
+                      initialValues={{
+                        status: 'pending',
+                        submitTime: [dayjs().subtract(7, 'day'), dayjs()],
+                      }}
+                      colon
+                    >
+                      <div className="query-grid">
+                        {visibleQueryFields.map((field) => (
+                          <React.Fragment key={field.key}>{field.node}</React.Fragment>
+                        ))}
+                        <div className="query-actions">
+                          {shouldShowQueryToggle && (
+                            <Button
+                              className="query-toggle"
+                              type="text"
+                              icon={queryExpanded ? <UpOutlined /> : <DownOutlined />}
+                              onClick={() => setQueryExpanded(!queryExpanded)}
+                            >
+                              {queryExpanded ? '收 起' : '展 开'}
+                            </Button>
+                          )}
+                          <Button onClick={resetQuery}>重 置</Button>
+                          <Button type="primary" loading={loading} onClick={doQuery}>查 询</Button>
+                        </div>
+                      </div>
+                    </Form>
+                  </section>
+
+                  <section className="table-panel">
+                    <div className="toolbar">
+                      <div className="toolbar-title">查询列表</div>
+                      <div className="toolbar-actions">
+                        <Button>下载Excel</Button>
+                        <Tooltip title="列设置">
+                          <Dropdown
+                            trigger={['click']}
+                            placement="bottomRight"
+                            dropdownRender={() => columnSettingContent}
+                          >
+                            <Button className="column-setting-button" icon={<SettingOutlined />} />
+                          </Dropdown>
+                        </Tooltip>
+                      </div>
+                    </div>
+
+                    <div className="table-body">
+                      <Table
+                        rowKey="key"
+                        loading={loading}
+                        columns={columns}
+                        dataSource={rows}
+                        pagination={false}
+                        scroll={{ x: 1160 }}
+                        locale={{ emptyText: <Empty description="暂无符合条件的审核任务" /> }}
+                      />
+                      <div className="table-pagination">
+                        <Pagination current={1} pageSize={10} total={48} showTotal={(total) => `共 ${total} 条`} />
+                      </div>
+                    </div>
+                    <div className="table-fill" />
+                  </section>
+                  <footer className="page-footer">© 2026 易宝支付有限公司 版权所有</footer>
+                </section>
+              </div>
+            </main>
+          </div>
+
+          <Drawer
+            title={(
+              <div className="drawer-title-bar">
+                <span className="drawer-title-text">商户资料详情</span>
+                <Button
+                  className="drawer-title-close"
+                  type="text"
+                  icon={<CloseOutlined />}
+                  onClick={() => setDrawerOpen(false)}
+                />
+              </div>
+            )}
+            width={720}
+            open={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            closable={false}
+            footer={
+              <Space style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <Button onClick={() => setDrawerOpen(false)}>取 消</Button>
+                {selectedRow?.status === 'pending' && (
+                  <Button type="primary" onClick={() => openAudit(selectedRow)}>审 核</Button>
+                )}
+              </Space>
+            }
+          >
+            <div className="drawer-section">
+              <div className="drawer-section-title">基础信息</div>
+              <Descriptions column={3} size="small">
+                <Descriptions.Item label="商户编号">{selectedRow?.merchantNo}</Descriptions.Item>
+                <Descriptions.Item label="商户名称">{selectedRow?.merchantName}</Descriptions.Item>
+                <Descriptions.Item label="商户类型">企业商户</Descriptions.Item>
+                <Descriptions.Item label="统一社会信用代码">91310115MA1K3A8Q2N</Descriptions.Item>
+                <Descriptions.Item label="提交人">merchant_admin</Descriptions.Item>
+                <Descriptions.Item label="提交时间">{selectedRow?.submitTime}</Descriptions.Item>
+              </Descriptions>
+            </div>
+            <div className="drawer-section">
+              <div className="drawer-section-title">证照资料</div>
+              <Descriptions column={3} size="small">
+                <Descriptions.Item label="营业执照">已上传</Descriptions.Item>
+                <Descriptions.Item label="法人证件">已上传</Descriptions.Item>
+                <Descriptions.Item label="资料有效期">2026-12-31</Descriptions.Item>
+              </Descriptions>
+            </div>
+            <div className="drawer-section">
+              <div className="drawer-section-title">结算信息</div>
+              <Descriptions column={3} size="small">
+                <Descriptions.Item label="开户银行">招商银行上海分行</Descriptions.Item>
+                <Descriptions.Item label="账户名称">{selectedRow?.merchantName}</Descriptions.Item>
+                <Descriptions.Item label="账户尾号">8392</Descriptions.Item>
+              </Descriptions>
+            </div>
+            <div className="drawer-section">
+              <div className="drawer-section-title">审核记录</div>
+              <Timeline
+                items={[
+                  { color: 'blue', children: '2026-07-08 09:32:10 merchant_admin 提交资料' },
+                  { color: selectedRow?.status === 'pending' ? 'gray' : 'green', children: `${selectedRow?.node || '-'} ${selectedRow?.statusText || '-'}` },
+                ]}
+              />
+            </div>
+          </Drawer>
+
+          <Modal
+            className="audit-modal"
+            title="审核处理"
+            open={modalOpen}
+            onCancel={() => setModalOpen(false)}
+            footer={[
+              <Button key="cancel" onClick={() => setModalOpen(false)}>取 消</Button>,
+              <Button key="confirm" type="primary" onClick={submitAudit}>确 认</Button>,
+            ]}
+          >
+            <Form form={auditForm} layout="vertical" initialValues={{ result: 'pass' }}>
+              <Form.Item label="审核结果" name="result" rules={[{ required: true, message: '请选择审核结果' }]}>
+                <Radio.Group onChange={(e) => setAuditResult(e.target.value)}>
+                  <Radio value="pass">通过</Radio>
+                  <Radio value="reject">驳回</Radio>
+                </Radio.Group>
+              </Form.Item>
+              {auditResult === 'reject' && (
+                <Form.Item label="驳回原因" name="rejectReason" rules={[{ required: true, message: '请输入驳回原因' }]}>
+                  <TextArea rows={4} maxLength={200} showCount placeholder="请输入驳回原因，最多 200 字" />
+                </Form.Item>
+              )}
+              <Form.Item label="审核备注" name="remark">
+                <TextArea rows={3} maxLength={200} showCount placeholder="可填写审核备注" />
+              </Form.Item>
+            </Form>
+          </Modal>
+        </div>
+      );
+    }
+
+    function Root() {
+      return (
+        <ConfigProvider
+          locale={(antd.locales && antd.locales.zh_CN) || (antd.locale && antd.locale.zh_CN)}
+          theme={{
+            cssVar: true,
+            token: {
+              colorPrimary: '#F36046',
+              colorLink: '#F36046',
+              colorInfo: '#F36046',
+              lineWidth: 1,
+              controlHeight: 32,
+              borderRadius: 4,
+            },
+          }}
+        >
+          <App>
+            <MerchantAuditPage />
+          </App>
+        </ConfigProvider>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
+  </script>
+</body>
+</html>
