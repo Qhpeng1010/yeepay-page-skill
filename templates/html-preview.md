@@ -79,7 +79,7 @@ When `{{theme}}` is Boss Ledger, `specs/themes/boss-ledger.md` is the highest-pr
 Boss Ledger previews must:
 
 - Re-read the current `specs/themes/boss-ledger.md` before generation and apply the latest rules in that file, not an older change package or prior conversation memory.
-- Use `changes/20260710-boss-ledger-settlement-record-query-list/preview.html` as the sole framework-shell visual and interaction baseline. Reuse its normalized topbar, primary navigation, Ant Design Menu sider, collapse control, multi-tabs, workspace, and content viewport; do not select a different historical change package as the shell source.
+- Use `templates/boss-ledger-shell/` as the sole reusable framework-shell implementation and visual/interaction baseline. Reuse its topbar, primary navigation, Ant Design Menu sider, collapse control, multi-tabs, workspace, and content viewport; do not select a historical change package as the shell source.
 - Treat primary / secondary / tertiary navigation labels and routes, selected/open menu keys, tab labels and routes, and route-to-content mappings as dynamic configuration. These values may change without changing the framework component hierarchy or CSS contract.
 - Treat multi-tabs as framework UI. Preserve their Ant Design editable-card implementation, size, appearance, active-only ReloadOutlined rule, switching, closing, and overflow behavior; replace only their configured data and routes.
 - Do not copy settlement-specific query fields, summary, table, pagination, drawer, records, or copy from the framework baseline into unrelated business content.

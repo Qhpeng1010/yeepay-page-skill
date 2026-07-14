@@ -19,7 +19,7 @@
 
 ### Fixed Boss Ledger Shell
 
-- Shell Baseline: `changes/20260710-boss-ledger-settlement-record-query-list/preview.html`
+- Shell Baseline: `templates/boss-ledger-shell/`
 - Shell Structure Redesigned: No
 - Primary Navigation Config: {{primary_navigation_config}}
 - Side Menu Config: {{side_menu_config}}

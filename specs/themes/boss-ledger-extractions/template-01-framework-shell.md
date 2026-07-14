@@ -13,9 +13,9 @@ Status: extracted as locked shell baseline
 
 The canonical visual and interaction baseline for the Boss Ledger framework shell is:
 
-`changes/20260710-boss-ledger-settlement-record-query-list/preview.html`
+`templates/boss-ledger-shell/`
 
-The baseline includes the complete framework layer:
+The template includes the complete framework layer:
 
 1. Top information bar
 2. Primary navigation
@@ -24,7 +24,7 @@ The baseline includes the complete framework layer:
 5. Multi-tab strip and tab interactions
 6. Business content viewport and scroll boundary
 
-The query panel, query summary, table, pagination, drawer, fields, records, and settlement-specific copy in that file are business content examples. They are not part of the framework shell.
+Historical page previews are visual QA references only. Query panels, summaries, tables, pagination, drawers, fields, records, and business copy are not part of the framework shell.
 
 New Boss Ledger outputs must preserve the baseline shell structure, class responsibilities, dimensions, visual states, and Ant Design component choices. Do not copy the baseline business content into unrelated pages.
 

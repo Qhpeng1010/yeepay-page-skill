@@ -11,7 +11,7 @@
 - 页面模板库固定使用 `specs/themes/boss-ledger-extractions/template-01` 到 `specs/themes/boss-ledger-extractions/template-12`，不得重做模板库。
 - 选择模板后，必须读取对应 `specs/themes/boss-ledger-extractions/template-xx-*.md` 文件。
 - 所有 Boss Ledger 页面都必须先读取 `specs/themes/boss-ledger-extractions/template-01-framework-shell.md`，再读取页面类型对应模板。
-- `template-01-framework-shell.md` 的 HTML 视觉与交互基础固定来自 `changes/20260710-boss-ledger-settlement-record-query-list/preview.html`；不得从其他历史 change 包重新选择或拼接框架层。
+- `template-01-framework-shell.md` 的 HTML 视觉与交互基础固定来自 `templates/boss-ledger-shell/`；不得从任何历史 change 包重新选择或拼接框架层。
 - 多标签栏属于 `template-01` 框架层，不属于任一业务页面模板。业务模板只提供 Tabs 下方的内容区结构。
 - 一级 / 二级 / 三级导航和 Tabs 的文案、key、路由、选中 / 展开状态属于动态配置，可以随业务需求变化，但不得改变框架结构和样式契约。
 - `page-design.md` 必须写明主页面模板、辅助模板、选择原因和业务模块顺序。

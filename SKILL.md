@@ -57,9 +57,9 @@ Mandatory automatic reading order:
 
 Canonical framework baseline:
 
-- Use `changes/20260710-boss-ledger-settlement-record-query-list/preview.html` as the sole Boss Ledger shell visual and interaction baseline.
+- Use `templates/boss-ledger-shell/` as the sole reusable Boss Ledger shell implementation and visual/interaction baseline.
 - Treat topbar, primary navigation, left Menu, sider collapse control, multi-tabs, workspace, and content viewport as an immutable platform shell.
-- Do not derive shell structure from another historical change package.
+- Do not derive shell structure from any historical change package.
 - Do not copy the baseline settlement query panel, table, pagination, drawer, or business copy into unrelated content templates.
 - Primary / secondary / tertiary navigation data, routes, selected/open keys, tab data, and route-to-content mapping remain dynamic configuration.
 

@@ -151,11 +151,11 @@ Boss Ledger 是易宝面向运营、商户、审核、财务、风控、客服�
 
 Boss Ledger 框架层的唯一 HTML 视觉与交互基准为：
 
-`changes/20260710-boss-ledger-settlement-record-query-list/preview.html`
+`templates/boss-ledger-shell/`
 
-该基准中的顶部信息栏、一级导航、左侧二级 / 三级导航、侧栏收起控制、多标签栏、内容滚动容器属于固定框架层；查询区、查询统计、表格、分页、抽屉以及结算业务文案属于内容区示例，不得固化为所有页面内容。完整冻结边界和动态配置契约以 `specs/themes/boss-ledger-extractions/template-01-framework-shell.md` 为准。
+该模板中的顶部信息栏、一级导航、左侧二级 / 三级导航、侧栏收起控制、多标签栏、内容滚动容器属于固定框架层；查询区、查询统计、表格、分页、抽屉以及业务文案属于内容区，不得固化为所有页面内容。完整冻结边界和动态配置契约以 `specs/themes/boss-ledger-extractions/template-01-framework-shell.md` 为准。
 
-后续页面不得重新设计或自由改写框架层。生成独立 `preview.html` 时允许复制基准框架实现以保证文件可直接打开，但复制后的框架 DOM、CSS 职责、Ant Design 组件和交互规则必须保持一致，只能注入导航、路由、Tabs 和内容区配置。
+后续页面不得重新设计或自由改写框架层。生成独立 `preview.html` 时应复用 `templates/boss-ledger-shell/` 中的结构与 CSS；复制到 change 包时只复制模板文件，不得引用任何历史页面。只能注入导航、路由、Tabs 和内容区配置。
 
 一级导航与二级 / 三级导航的名称、数量、顺序、key、路由、当前选中项和展开项均可随业务变化；多标签的名称、数量、顺序、路由、可关闭状态和当前激活项也可变化。这些变化不得改变导航层级上限、框架尺寸、布局、样式或交互机制。
 
