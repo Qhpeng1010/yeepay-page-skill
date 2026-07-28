@@ -1,0 +1,4 @@
+interface:
+  display_name: "Yeepay Page Skill V3"
+  short_description: "Generate Yeepay pages from routed Markdown specs"
+  default_prompt: "Use $yeepay-page-skill to route this request and generate a Yeepay page from the selected Markdown specifications."

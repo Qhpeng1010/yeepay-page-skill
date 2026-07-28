@@ -7,14 +7,24 @@ import { inflateSync } from 'node:zlib';
 
 const args = process.argv.slice(2);
 const previewArg = args.find((arg) => !arg.startsWith('--'));
-const saveScreenshot = !args.includes('--no-save-screenshot');
+const screenshotOnly = args.includes('--screenshot-only');
+const domOnly = args.includes('--dom-only');
+const saveScreenshot = !args.includes('--no-save-screenshot') && !domOnly;
+const fastMode = args.includes('--fast') || args.includes('--no-screenshot');
 
 if (!previewArg) {
-  console.error('Usage: node scripts/validate-boss-ledger-preview.mjs changes/{change-id}/preview.html');
+  console.error('Usage: node scripts/validate-boss-ledger-preview.mjs [--fast|--screenshot-only|--dom-only] changes/{change-id}/preview.html');
   process.exit(2);
 }
 
 const previewPath = isAbsolute(previewArg) ? previewArg : resolve(process.cwd(), previewArg);
+const rulesManifestPath = resolve(dirname(previewPath), 'rules-read.md');
+const rulesManifest = existsSync(rulesManifestPath) ? readFileSync(rulesManifestPath, 'utf8') : '';
+const selectedTemplateMatch = rulesManifest.match(/^- Selected business templates: (.+)$/m);
+const selectedTemplates = selectedTemplateMatch
+  ? selectedTemplateMatch[1].split(',').map((template) => template.trim()).filter(Boolean)
+  : [];
+const usesTemplate = (prefix) => selectedTemplates.some((template) => template.startsWith(prefix));
 
 const result = {
   validate: [],
@@ -41,6 +51,26 @@ function stripComments(value) {
     .replace(/\/\*[\s\S]*?\*\//g, '');
 }
 
+function hasNonZeroHorizontalPadding(source, classNames) {
+  const rulePattern = /([^{}]+)\{([^{}]*)\}/g;
+  let match;
+  while ((match = rulePattern.exec(source))) {
+    if (!classNames.some((className) => new RegExp(`\\.${className}\\b`).test(match[1]))) continue;
+    const declarations = match[2];
+    const explicit = declarations.match(/padding-(?:left|right|inline|inline-start|inline-end)\s*:\s*([^;]+)/gi) || [];
+    if (explicit.some((declaration) => !/:\s*0(?:px)?(?:\s*!important)?\s*$/i.test(declaration.trim()))) return true;
+
+    const shorthand = declarations.match(/(?:^|;)\s*padding\s*:\s*([^;]+)/i);
+    if (!shorthand) continue;
+    const values = shorthand[1].replace(/!important/gi, '').trim().split(/\s+/);
+    const horizontalValues = values.length === 1 ? [values[0]]
+      : values.length === 2 || values.length === 3 ? [values[1]]
+        : [values[1], values[3]];
+    if (horizontalValues.some((value) => !/^0(?:px)?$/i.test(value))) return true;
+  }
+  return false;
+}
+
 function findChrome() {
   const candidates = [
     process.env.CHROME_PATH,
@@ -59,7 +89,7 @@ function fileUrl(filePath) {
   return `file://${filePath.split('/').map(encodeURIComponent).join('/')}`;
 }
 
-function appendLocalPreviewScripts(html, previewFile) {
+function appendLocalPreviewAssets(html, previewFile) {
   const sources = [html];
   const baseDir = dirname(previewFile);
   const scriptPattern = /<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*><\/script>/gi;
@@ -74,6 +104,18 @@ function appendLocalPreviewScripts(html, previewFile) {
     const scriptPath = resolve(baseDir, src);
     if (existsSync(scriptPath) && statSync(scriptPath).isFile()) {
       sources.push(readFileSync(scriptPath, 'utf8'));
+    }
+  }
+
+  const stylesheetPattern = /<link\b[^>]*\brel=["']stylesheet["'][^>]*\bhref=["']([^"']+)["'][^>]*>|<link\b[^>]*\bhref=["']([^"']+)["'][^>]*\brel=["']stylesheet["'][^>]*>/gi;
+  while ((match = stylesheetPattern.exec(html))) {
+    const href = match[1] || match[2];
+    if (/^(?:https?:)?\/\//i.test(href) || href.startsWith('data:') || href.includes('/vendor/') || href.startsWith('./vendor/')) {
+      continue;
+    }
+    const stylesheetPath = resolve(baseDir, href);
+    if (existsSync(stylesheetPath) && statSync(stylesheetPath).isFile()) {
+      sources.push(readFileSync(stylesheetPath, 'utf8'));
     }
   }
 
@@ -213,16 +255,16 @@ function checkSource(html) {
     pass('charts', 'No `chart-fallback` formal chart marker found');
   }
 
-  if (/<\s*img\b[^>]*(class|alt|src)=["'][^"']*logo|<\s*img\b[^>]*(class|alt|src)=[^>]*boss-ledger-logo/i.test(source)) {
+  if (/<\s*img\b[^>]*(class|alt|src)=["'][^"']*logo|<\s*img\b[^>]*(class|alt|src)=[^>]*boss-ledger-logo|React\.createElement\(\s*["']img["'][\s\S]{0,500}(?:boss-shell-logo|data-boss-logo-source)/i.test(source)) {
     pass('validate', 'Logo is rendered through an img/image asset');
   } else {
     fail('validate', 'Boss Ledger logo must use an img/image asset with logo semantics');
   }
 
-  if (/(specs\/boss logo\.svg|specs\/boss%20logo\.svg|data-boss-logo-source=["']specs\/boss logo\.svg["'])/i.test(source)) {
-    pass('validate', 'Boss Ledger logo references the canonical specs logo asset');
+  if (/(modules\/boss-ledger\/assets\/boss-logo\.svg|data-boss-logo-source=["']modules\/boss-ledger\/assets\/boss-logo\.svg["'])/i.test(source)) {
+    pass('validate', 'Boss Ledger logo references the canonical module asset');
   } else {
-    fail('validate', 'Boss Ledger logo must reference or copy the canonical `specs/boss logo.svg` asset; custom generated logos are not allowed');
+    fail('validate', 'Boss Ledger logo must reference or copy the canonical `modules/boss-ledger/assets/boss-logo.svg` asset; custom generated logos are not allowed');
   }
 
   const contentBorderPattern = /(?:\.(?:content|business|query|filter|table|result|list|stat|summary|chart|workspace|panel|module|card)[^{]{0,80}\{[^}]*border\s*:\s*1px\b)|(?:data-boss-(?:content|query|table|summary|chart)[^>]*style=["'][^"']*border\s*:\s*1px\b)/i;
@@ -232,16 +274,156 @@ function checkSource(html) {
     pass('validate', 'No `border: 1px` detected on content business modules');
   }
 
-  if (/(grid-template-columns\s*:\s*(?:repeat\(\s*3\s*,|[^;]*\s[^;]*\s[^;]*;)|data-boss-query-grid=["']3["'])/i.test(source)) {
+  const hasQueryListModules = /\bboss-query-module\b/i.test(source) && /\bboss-result-module\b/i.test(source);
+  if (hasQueryListModules) {
+    const sharedWhiteRule = /\.boss-query-module\s*,\s*\.boss-result-module\s*\{[^}]*background\s*:\s*(?:#fff(?:fff)?|rgb\(\s*255\s*,\s*255\s*,\s*255\s*\))/i.test(source);
+    const queryWhiteRule = /\.boss-query-module(?:[^,{]*)\{[^}]*background\s*:\s*(?:#fff(?:fff)?|rgb\(\s*255\s*,\s*255\s*,\s*255\s*\))/i.test(source);
+    const resultWhiteRule = /\.boss-result-module(?:[^,{]*)\{[^}]*background\s*:\s*(?:#fff(?:fff)?|rgb\(\s*255\s*,\s*255\s*,\s*255\s*\))/i.test(source);
+    if (sharedWhiteRule || (queryWhiteRule && resultWhiteRule)) {
+      pass('validate', 'Query and result modules declare persistent white backgrounds');
+    } else {
+      fail('validate', 'Query-list pages must explicitly keep both .boss-query-module and .boss-result-module white for their full height');
+    }
+
+    if (/\.boss-content-stack\s*\{[^}]*gap\s*:\s*16px\b/i.test(source)) {
+      pass('validate', 'Query and result modules use the mandatory 16px sibling gap');
+    } else {
+      fail('validate', 'Query-list white modules must be separated by exactly 16px on .boss-content-stack');
+    }
+
+    const transparentOverride = /\.(?:boss-query-module|boss-result-module)[^{]*\{[^}]*(?:background|background-color)\s*:\s*(?:transparent|none)\b/i.test(source);
+    if (transparentOverride) {
+      fail('validate', 'Query/result module white backgrounds must not be overridden with transparent or none');
+    } else {
+      pass('validate', 'No transparent query/result module background override detected');
+    }
+
+    const queryOwnsInset = /\.boss-query-module(?:[^,{]*)\{[^}]*padding\s*:\s*16px\b/i.test(source);
+    const resultOwnsInset = /\.boss-result-module(?:[^,{]*)\{[^}]*padding\s*:\s*0\s+16px\s+16px\b/i.test(source);
+    const modulesOwnSingleInset = queryOwnsInset && resultOwnsInset;
+    if (modulesOwnSingleInset) {
+      pass('validate', 'Query module owns 16px inset and result module keeps the required zero top inset');
+    } else {
+      fail('validate', 'Query module must own 16px inset; result module must use 0 16px 16px so Toolbar starts at the top');
+    }
+
+    const repeatedResultPadding = hasNonZeroHorizontalPadding(source, [
+      'boss-result-summary', 'boss-result-toolbar', 'boss-table-body', 'boss-table-pagination'
+    ]);
+    if (repeatedResultPadding) {
+      fail('validate', 'Direct result summary/toolbar/table/pagination regions must not add horizontal padding on top of the module 16px inset');
+    } else {
+      pass('validate', 'Direct result regions do not stack a second horizontal content inset');
+    }
+
+    const hasQueryStatistic = /(?:h|React\.createElement)\(\s*Statistic\b|<Statistic\b/i.test(source);
+    if (hasQueryStatistic && !/\bboss-result-summary\b/i.test(source)) {
+      fail('validate', 'Query-list Statistic groups must use boss-result-summary so result padding ownership is auditable');
+    } else if (hasQueryStatistic) {
+      pass('validate', 'Query-list Statistic group uses boss-result-summary');
+    }
+
+    if (hasQueryStatistic && usesTemplate('template-05-')) {
+      const cardSummaryAboveToolbar = /boss-result-summary[\s\S]{0,1800}boss-result-toolbar/i.test(source);
+      const cardSummaryGap = /(?:boss-result-summary|settlement-summary)[^\{]*\{[^}]*margin-bottom\s*:\s*8px/i.test(source)
+        || /boss-result-summary\s*\+\s*boss-result-toolbar[^\{]*\{[^}]*margin-top\s*:\s*8px/i.test(source);
+      const equalWidthCards = /grid-template-columns\s*:\s*repeat\(\s*(?:var\(--boss-summary-columns[^)]*\)|\d+)\s*,\s*minmax\(\s*0\s*,\s*1fr\s*\)\s*\)/i.test(source);
+      if (cardSummaryAboveToolbar && cardSummaryGap && equalWidthCards) {
+        pass('validate', 'Card summary is evenly distributed above the Table Toolbar with a fixed 8px gap');
+      } else {
+        fail('validate', 'Card summary must use equal-width columns above the Table Toolbar with a fixed 8px gap');
+      }
+    }
+
+    const hasGrayStatisticCards = hasQueryStatistic && /(?:\.taipai-stat\b|\.statistic-card\b|background\s*:\s*#f6f6f6)/i.test(source);
+    if (hasGrayStatisticCards) {
+      const cardSummaryTopInset = /\.boss-result-summary(?:-[\w-]+)?[^\{]*\{[^}]*padding-top\s*:\s*16px/i.test(source)
+        || /\.boss-result-summary(?:-[\w-]+)?[^\{]*\{[^}]*padding\s*:\s*16px\s+0(?:\s|;|\})/i.test(source);
+      if (cardSummaryTopInset) {
+        pass('validate', 'Gray Statistic cards keep the mandatory 16px result content top inset');
+      } else {
+        fail('validate', 'Gray Statistic cards must declare padding-top: 16px on the result summary content area');
+      }
+    }
+  } else {
+    pass('validate', 'No query-list module pair detected; persistent white-module checks skipped');
+  }
+
+  const fixedWizardSkeleton = /data-boss-wizard-template\s*['"]?\s*:/i.test(source) || /data-boss-wizard-template=/i.test(source);
+  const hasQueryArea = !fixedWizardSkeleton && /(data-boss-query-grid|boss-query-grid|query-grid|queryFields|查询条件)/i.test(source);
+  if (!hasQueryArea) {
+    pass('validate', 'No query area detected; three-column query-grid check skipped');
+  } else if (/(grid-template-columns\s*:\s*(?:repeat\(\s*3\s*,|[^;]*\s[^;]*\s[^;]*;)|data-boss-query-grid=["']3["'])/i.test(source)) {
     pass('validate', 'Query area declares a three-column grid');
   } else {
     fail('validate', 'Query area must use a three-column grid before placing actions');
   }
 
-  if (/\.footer[^{]*\{[^}]*margin-top\s*:\s*12px(?:\s*;|[^0-9a-z%])/i.test(source)) {
-    pass('validate', 'Footer declares required 12px top spacing');
+  if (!hasQueryArea) {
+    pass('validate', 'No query area detected; query label-alignment check skipped');
   } else {
-    fail('validate', 'Platform footer must declare `.footer { margin-top: 12px; }` as external top spacing');
+    const hasStableQueryLabelColumn = /\.boss-query-grid\s+\.ant-form-item-label\s*\{[^}]*(?:flex\s*:\s*0\s+0\s+var\(--boss-query-label-width\)|max-width\s*:\s*var\(--boss-query-label-width\))/i.test(source);
+    const hasRightAlignedQueryLabels = /\.boss-query-grid\s+\.ant-form-item-label\s*\{[^}]*text-align\s*:\s*right/i.test(source)
+      && /\.boss-query-grid\s+\.ant-form-item-label\s*>\s*label\s*\{[^}]*justify-content\s*:\s*flex-end/i.test(source);
+    const usesHorizontalQueryForm = /React\.createElement\(\s*Form\s*,\s*\{[^}]*layout\s*:\s*['"]horizontal['"]/i.test(source)
+      || /\bh\(\s*Form\s*,\s*\{[^}]*layout\s*:\s*['"]horizontal['"]/i.test(source)
+      || /<Form\b[^>]*\blayout\s*=\s*['"]horizontal['"]/i.test(source);
+    if (hasStableQueryLabelColumn && hasRightAlignedQueryLabels && usesHorizontalQueryForm) {
+      pass('validate', 'Query form uses stable right-aligned horizontal labels');
+    } else {
+      fail('validate', 'Query-list conditions must use a horizontal Form with stable right-aligned label columns and aligned control edges');
+    }
+  }
+
+  const hasQueryExpand = hasQueryArea && /(?:DownOutlined|UpOutlined)/i.test(source) && /(?:展 开|收 起)/.test(source);
+  if (hasQueryExpand) {
+    const usesExpandContract = /className\s*:\s*['"][^'"]*boss-query-expand-button/i.test(source)
+      || /className\s*=\s*['"][^'"]*boss-query-expand-button/i.test(source);
+    const expandUsesPrimaryText = /\.boss-query-expand-button[^{}]*\{[^}]*color\s*:\s*(?:var\(--boss-text\)|rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*\.85\))/i.test(source);
+    if (usesExpandContract && expandUsesPrimaryText) {
+      pass('validate', 'Query expand/collapse text and icon use primary text color');
+    } else {
+      fail('validate', 'Query expand/collapse must use boss-query-expand-button with primary text color rgba(0, 0, 0, .85)');
+    }
+  } else {
+    pass('validate', 'No query expand/collapse control detected; primary-text color check skipped');
+  }
+
+  if (/data-boss-shell["']?\s*:\s*["']footer["']|data-boss-shell=["']footer["']/i.test(source)) {
+    pass('validate', 'Platform footer is owned by the canonical Shell');
+  } else {
+    fail('validate', 'Platform footer must be rendered by the canonical Shell');
+  }
+
+  if (/\.boss-shell-content[^{]*\{[^}]*padding\s*:\s*0\s+16px(?:\s*;|[^0-9a-z%])/i.test(source)) {
+    pass('validate', 'Shell content has no bottom padding');
+  } else {
+    fail('validate', 'Shell content must use `padding: 0 16px` with no bottom padding');
+  }
+
+  if (/\.boss-shell-footer[^{]*\{[^}]*margin\s*:\s*12px\s+0\s+0(?:\s*;|[^0-9a-z%])/i.test(source)) {
+    pass('validate', 'Shell footer has the required 12px top spacing');
+  } else {
+    fail('validate', 'Shell footer must use `margin: 12px 0 0`');
+  }
+
+  if (/\.boss-shell-footer[^{]*\{[^}]*(?:height\s*:\s*32px[\s\S]*flex\s*:\s*0\s+0\s+32px|flex\s*:\s*0\s+0\s+32px[\s\S]*height\s*:\s*32px)/i.test(source)) {
+    pass('validate', 'Shell footer keeps a fixed 32px height');
+  } else {
+    fail('validate', 'Shell footer must keep `height: 32px` and `flex: 0 0 32px`');
+  }
+
+  if (/\.boss-shell-footer[^{]*\{[^}]*position\s*:\s*(?:fixed|sticky)/i.test(source)) {
+    fail('validate', 'Shell footer must stay in normal content flow, not fixed or sticky');
+  } else {
+    pass('validate', 'Shell footer stays in the content scroll flow');
+  }
+
+  const shellEmptyRule = /\.boss-shell-empty\s*\{[^}]*flex\s*:\s*1[^}]*min-height\s*:\s*\d+px[^}]*display\s*:\s*flex[^}]*align-items\s*:\s*center[^}]*justify-content\s*:\s*center[^}]*background\s*:\s*#fff/i.test(source);
+  if (shellEmptyRule) {
+    pass('validate', 'Empty business routes use a full-height white module with centered Empty content');
+  } else {
+    fail('validate', 'Empty business routes must use .boss-shell-empty as a full-height white module with centered content');
   }
 
   if (/(?:const\s+Menu\s*=\s*antd\.Menu|antd\.Menu|<Menu\b|React\.createElement\(\s*Menu\b|ant-menu-inline)/i.test(source)) {
@@ -299,7 +481,18 @@ function checkSource(html) {
   }
 
   const hasStepsUsage = /(?:\bSteps\b|<Steps\b|React\.createElement\(\s*Steps\b|h\(\s*Steps\b)/i.test(source);
+  if (/wizard-field-grid/i.test(source)) {
+    const wizardSpacing = /\.wizard-field-grid\s*\{[^}]*gap\s*:\s*16px\b/i.test(source);
+    const hasInputNumber = /InputNumber|ant-input-number/i.test(source);
+    const wizardControlWidth = !hasInputNumber || /\.wizard-field-grid\s+\.ant-input-number-group-wrapper[^{]*\{[^}]*width\s*:\s*100%/i.test(source);
+    if (wizardSpacing && wizardControlWidth) {
+      pass('validate', 'Wizard form fields use 16px grid spacing and equal-width InputNumber controls');
+    } else {
+      fail('validate', 'Wizard form fields must use 16px row/column spacing and equal-width controls, including InputNumber addons');
+    }
+  }
   const stepsItemBlocks = extractStepsItemBlocks(source);
+  const declaredWizardStepsHaveDescriptions = /(?:const|let|var)\s+wizardSteps\s*=\s*\[[\s\S]*\btitle\s*:[\s\S]*\bdescription\s*:/i.test(source);
   if (hasStepsUsage && stepsItemBlocks.length > 0) {
     const invalidBlocks = stepsItemBlocks.filter((block) => {
       const titleCount = (block.match(/\btitle\s*:/g) || []).length;
@@ -311,10 +504,97 @@ function checkSource(html) {
     } else {
       fail('validate', 'Every Boss Ledger Wizard Steps item must include description; title-only Steps are not allowed');
     }
+  } else if (hasStepsUsage && declaredWizardStepsHaveDescriptions) {
+    pass('validate', 'Every Boss Ledger Wizard Steps item includes a description');
   } else if (hasStepsUsage) {
     fail('validate', 'Boss Ledger Steps usage must expose an items array whose every item includes description');
   } else {
     pass('validate', 'No Steps usage detected; Steps description rule skipped');
+  }
+
+  if (hasStepsUsage || /\bwizard-page\b|boss-wizard-page/i.test(source)) {
+    const duplicateWizardHeader = /(?:wizard-header|wizard-page-title|boss-wizard-page-header)/i.test(source);
+    const topWizardReturn = /(?:wizard-header|wizard-page-title|boss-wizard-page-header)[\s\S]{0,700}(返回列表|返回查询|退出新增)/i.test(source);
+    if (duplicateWizardHeader) {
+      fail('validate', 'Wizard content must use the active Tab as its only page title; duplicate Wizard header/title blocks are forbidden');
+    } else {
+      pass('validate', 'Wizard content does not render a duplicate page title block');
+    }
+    if (topWizardReturn) {
+      fail('validate', 'Wizard top header must not contain list-return actions; keep 返回列表 on the success Result page');
+    } else {
+      pass('validate', 'Wizard top header does not contain a list-return action');
+    }
+
+    const wizardGrayBlock = /(?:confirm-section|wizard-page|boss-wizard-page)[^{]*\{[^}]*background\s*:\s*#F6F6F6/i.test(source);
+    const wizardDivider = /(?:confirm-section|wizard-aside|wizard-page|boss-wizard-page)[^{]*\{[^}]*border(?:-(?:left|right|top|bottom))?\s*:/i.test(source);
+    if (wizardGrayBlock) {
+      fail('validate', 'Wizard business content must not use gray summary blocks; keep Wizard content white');
+    } else {
+      pass('validate', 'Wizard business content has no gray summary blocks');
+    }
+    if (wizardDivider) {
+      fail('validate', 'Wizard business content must not use decorative divider lines between form and illustration');
+    } else {
+      pass('validate', 'Wizard business content has no decorative divider lines');
+    }
+
+    const wizardActionFixed = /\.wizard-action-bar[^\{]*\{[^}]*position\s*:\s*fixed[^}]*bottom\s*:\s*0/i.test(source);
+    if (wizardActionFixed) {
+      pass('validate', 'Wizard bottom action bar is fixed at the workspace bottom');
+    } else {
+      fail('validate', 'Wizard bottom action bar must use position: fixed and bottom: 0');
+    }
+
+    const wizardContentCentered = /\.wizard-content-frame[^\{]*\{[^}]*justify-content\s*:\s*center/i.test(source);
+    if (wizardContentCentered) {
+      pass('validate', 'Wizard Steps and content group declares vertical centering');
+    } else {
+      fail('validate', 'Wizard Steps and content group must be vertically centered as one frame');
+    }
+
+    const wizardSplit = /(?:\.wizard-body-grid|\.wizard-content-grid)[^\{]*\{[^}]*grid-template-columns\s*:\s*(?:minmax\(0,\s*)?65%\)?\s+(?:minmax\(0,\s*)?35%\)?/i.test(source);
+    if (wizardSplit && !/65%\s*\+\s*45%|65fr[^}]*45fr/i.test(source)) {
+      pass('validate', 'Wizard form and illustration regions use the canonical 65% / 35% split');
+    } else {
+      fail('validate', 'Wizard must use a non-overflowing 65% / 35% form and illustration split');
+    }
+
+    const wizardDoubleColumn = /(?:\.wizard-field-grid|\.form-grid)[^\{]*\{[^}]*grid-template-columns\s*:\s*repeat\(\s*2\s*,/i.test(source);
+    if (wizardDoubleColumn) pass('validate', 'Wizard form uses an equal two-column field grid');
+    else fail('validate', 'Wizard left form must use an equal two-column field grid');
+
+    const wizardGap16 = /(?:\.wizard-field-grid|\.form-grid)[^\{]*\{[^}]*\b(?:gap|row-gap)\s*:\s*16px/i.test(source)
+      && /(?:\.wizard-field-grid|\.form-grid)[^\{]*\{[^}]*\b(?:gap|column-gap)\s*:\s*16px/i.test(source);
+    if (wizardGap16) pass('validate', 'Wizard field grid uses 16px horizontal and vertical spacing');
+    else fail('validate', 'Wizard field grid must use 16px row and column spacing');
+
+    const wizardGuideAsset = /(?:assets\/wizard-guide\.(?:png|jpe?g|webp)|wizard-guide-image)/i.test(source)
+      && /(?:<img\b|createElement\(\s*['"]img['"])/i.test(source);
+    if (wizardGuideAsset) pass('validate', 'Wizard uses a local illustration asset with an image element');
+    else fail('validate', 'Wizard must render the local illustration asset from assets/');
+
+    const wizardGuideCopy = /wizard-guide-title/i.test(source)
+      && /wizard-guide-text/i.test(source)
+      && /font-size\s*:\s*16px/i.test(source)
+      && /wizard-guide-text[^}]*font-size\s*:\s*14px/i.test(source);
+    if (wizardGuideCopy) pass('validate', 'Wizard guide includes required 16px primary and 14px secondary descriptions');
+    else fail('validate', 'Wizard guide must include a primary 16px description and secondary 14px description below the resource image');
+
+    const wizardStates = /validateFields\s*\(/i.test(source)
+      && /\bloading\s*[:=]/i.test(source)
+      && /Result[\s\S]{0,400}status\s*[:=]\s*['"]success['"]/i.test(source);
+    if (wizardStates) pass('validate', 'Wizard includes validation, submit loading, and success-result states');
+    else fail('validate', 'Wizard must include validation, submit loading, and success-result states');
+
+    const resultHasCustomIcon = /React\.createElement\(\s*Result\b[\s\S]{0,900}\bicon\s*:/i.test(source)
+      || /<Result\b[\s\S]{0,900}\bicon\s*=/i.test(source)
+      || /\.wizard-result[^\{]*\.ant-result-icon[^{]*\{/i.test(source);
+    if (resultHasCustomIcon) {
+      fail('validate', 'Wizard success Result must use the official Ant Design success icon without custom icon or icon-style overrides');
+    } else {
+      pass('validate', 'Wizard success Result uses the official icon presentation');
+    }
   }
 
   if (/\b(?:const|let|var)\s+Modal\s*=\s*antd\.Modal\b|antd\.Modal\b|Modal\.confirm\b|<Modal\b|React\.createElement\(\s*Modal\b/i.test(source)) {
@@ -323,7 +603,10 @@ function checkSource(html) {
     pass('validate', 'No Modal usage detected; official Modal structure check skipped');
   }
 
-  const hasConfirmationCopy = /(提交确认|二次确认|删除确认|停用确认|启用确认|撤销确认|作废确认|确认提交|确认删除|确认停用|确认启用|确认撤销|确认作废)/i.test(source);
+  const confirmationSource = source
+    .replace(/const\s+wizardSteps\s*=\s*\[[\s\S]*?\];/i, '')
+    .replace(/items\s*:\s*\[[\s\S]*?\]/i, '');
+  const hasConfirmationCopy = /(提交确认|二次确认|删除确认|停用确认|启用确认|撤销确认|作废确认|确认提交|确认删除|确认停用|确认启用|确认撤销|确认作废)/i.test(confirmationSource);
   const usesModalConfirm = /\bModal\.confirm\s*\(/i.test(source);
   const usesPopconfirmForConfirm = /\bPopconfirm\b|antd\.Popconfirm\b/i.test(source);
   const usesControlledModalForConfirm = /(?:h\(\s*Modal\b|React\.createElement\(\s*Modal\b|<Modal\b)[\s\S]{0,1200}(提交确认|二次确认|删除确认|停用确认|启用确认|撤销确认|作废确认|确认提交|确认删除|确认停用|确认启用|确认撤销|确认作废)/i.test(source);
@@ -355,6 +638,13 @@ function checkSource(html) {
       pass('validate', 'Modal.confirm body hard-codes padding: 24px !important on all sides');
     } else {
       fail('validate', 'Modal.confirm `.ant-modal-body` must hard-code padding: 24px !important on all sides');
+    }
+    const confirmThemeColor = /boss-confirm-button[\s\S]{0,500}(?:#F36046|colorPrimary\s*:\s*['"]#F36046['"])/i.test(source)
+      || /okButtonProps\s*:[\s\S]{0,500}(?:#F36046|boss-confirm-button)/i.test(source);
+    if (confirmThemeColor && !/boss-confirm-button[^}]*background\s*:\s*(?:#1677FF|#1890FF)/i.test(source)) {
+      pass('validate', 'Modal.confirm actions are constrained to the Boss Ledger theme color');
+    } else {
+      fail('validate', 'Modal.confirm actions must explicitly use Boss Ledger theme color #F36046 and cannot fall back to Ant Design blue');
     }
   } else {
     pass('validate', 'No Modal.confirm usage detected; confirm body padding rule skipped');
@@ -415,15 +705,197 @@ function checkSource(html) {
     pass('validate', 'Modal form label widths follow mixed-fixed/equal-adaptive strategy');
   }
 
-  if (/(data-boss-query-actions|query-actions|filter-actions)[\s\S]{0,240}(grid-column\s*:\s*(?:3|3\s*\/)|justify-self\s*:\s*end|margin-left\s*:\s*auto|text-align\s*:\s*right)/i.test(source)) {
+  if (usesTemplate('template-06-')) {
+    const modalHasHorizontalForm = /React\.createElement\(\s*Modal\b[\s\S]{0,8000}React\.createElement\(\s*Form\s*,\s*\{[^}]*layout\s*:\s*['"]horizontal['"]/i.test(source)
+      || /<Modal\b[\s\S]{0,8000}<Form\b[^>]*\blayout\s*=\s*['"]horizontal['"]/i.test(source);
+    const modalHasFixedLabelColumn = /React\.createElement\(\s*Modal\b[\s\S]{0,8000}labelCol\s*:\s*\{[^}]*flex\s*:\s*['"][^'"]*\d+px['"]/i.test(source)
+      || /<Modal\b[\s\S]{0,8000}\blabelCol\s*=\s*{{\s*flex\s*:\s*['"][^'"]*\d+px['"]/i.test(source);
+    if (modalHasHorizontalForm && modalHasFixedLabelColumn) {
+      pass('validate', 'Modal form uses right-aligned horizontal labels with one fixed label column');
+    } else {
+      fail('validate', 'Modal forms must use horizontal layout with right-aligned labels and one fixed label width based on the longest label');
+    }
+  } else {
+    pass('validate', 'Modal-form template not selected; Modal form alignment check skipped');
+  }
+
+  const hasDrawer = /\bDrawer\b/.test(source);
+  if (hasDrawer) {
+    const drawerHeaderUsesRightClose = /closeIcon\s*:\s*false[\s\S]{0,700}(?:drawer-title|关闭详情|CloseOutlined)/i.test(source)
+      && /Drawer[\s\S]{0,1400}extra\s*:\s*React\.createElement\(Button[\s\S]{0,300}(?:CloseOutlined|关闭详情)/i.test(source);
+    if (drawerHeaderUsesRightClose) {
+      pass('validate', 'Drawer header places title left and close icon right');
+    } else {
+      fail('validate', 'Drawer header must place title left and close icon right, with closeIcon disabled when customized');
+    }
+    if (/Drawer[\s\S]{0,1400}\bfooter\s*:/i.test(source) || /\.ant-drawer-footer/i.test(source)) {
+      pass('validate', 'Drawer business actions use the official footer action area');
+    } else {
+      fail('validate', 'Drawer business actions must be placed in the official footer action area');
+    }
+    if (/(?:drawer-footer-actions|ant-drawer-footer)[^{]{0,80}\{[^}]*text-align\s*:\s*right/i.test(source)
+      || /justify-content\s*:\s*flex-end/i.test(source)) {
+      pass('validate', 'Drawer footer actions are right-aligned');
+    } else {
+      fail('validate', 'Drawer footer actions must be right-aligned');
+    }
+    const drawerHeaderHasBusinessCopy = /Drawer[\s\S]{0,900}extra\s*:[\s\S]{0,500}(?:Badge|statusMap|启用|停用)/i.test(source);
+    if (drawerHeaderHasBusinessCopy) {
+      fail('validate', 'Drawer header may contain only the title and close icon; status and auxiliary business copy belong in the body');
+    } else {
+      pass('validate', 'Drawer header contains no status or auxiliary business copy');
+    }
+  } else {
+    pass('validate', 'No Drawer usage detected; Drawer header/footer checks skipped');
+  }
+
+  if (usesTemplate('template-07-')) {
+    const drawerHasVerticalForm = /React\.createElement\(\s*Drawer\b[\s\S]{0,8000}React\.createElement\(\s*Form\s*,\s*\{[^}]*layout\s*:\s*['"]vertical['"]/i.test(source)
+      || /<Drawer\b[\s\S]{0,8000}<Form\b[^>]*\blayout\s*=\s*['"]vertical['"]/i.test(source);
+    if (drawerHasVerticalForm) {
+      pass('validate', 'Drawer form uses vertical label-above-control alignment');
+    } else {
+      fail('validate', 'Drawer forms must use vertical layout with labels above controls and left/top alignment');
+    }
+  } else {
+    pass('validate', 'Drawer-form template not selected; Drawer form alignment check skipped');
+  }
+
+  if (usesTemplate('template-08-')) {
+    const pageHasVerticalForm = /React\.createElement\(\s*Form\s*,\s*\{[^}]*layout\s*:\s*['"]vertical['"]/i.test(source)
+      || /<Form\b[^>]*\blayout\s*=\s*['"]vertical['"]/i.test(source);
+    if (pageHasVerticalForm) {
+      pass('validate', 'New/edit page form uses vertical label-above-control alignment');
+    } else {
+      fail('validate', 'New/edit pages, including new tag pages, must use vertical forms with labels above controls');
+    }
+    const fullPageActionBarCss = /\.boss-full-page-action-bar[^\{]*\{[^}]*position\s*:\s*fixed/i.test(source)
+      && /\.boss-full-page-action-bar[^\{]*\{[^}]*height\s*:\s*48px/i.test(source)
+      && /\.boss-full-page-action-bar[^\{]*\{[^}]*bottom\s*:\s*32px/i.test(source)
+      && /\.boss-full-page-action-bar[^\{]*\{[^}]*left\s*:\s*208px/i.test(source)
+      && /\.boss-full-page-action-bar[^\{]*\{[^}]*right\s*:\s*0/i.test(source);
+    const fullPageActionBar = /(?:boss-full-page-action-bar|data-boss-full-page-action-bar)/i.test(source) && fullPageActionBarCss;
+    if (fullPageActionBar) {
+      pass('validate', 'Full-page form bottom action bar is fixed above the Footer at 48px height');
+    } else {
+      fail('validate', 'Full-page forms must use a workspace-level .boss-full-page-action-bar fixed above the Footer with height: 48px');
+    }
+    const fullPageSafeArea = /(?:sub-merchant-page|full-page-form|page-form)[^\{]*\{[^}]*padding-bottom\s*:\s*(?:6[4-9]|[7-9]\d)px/i.test(source);
+    if (fullPageSafeArea) {
+      pass('validate', 'Full-page form content reserves safe space for the fixed action bar and Footer');
+    } else {
+      fail('validate', 'Full-page form content must reserve bottom space so the final fields are not covered by the fixed action bar');
+    }
+  } else {
+    pass('validate', 'Full-page form template not selected; new/edit page form alignment check skipped');
+  }
+
+  if (!hasQueryArea) {
+    pass('validate', 'No query area detected; query-action alignment check skipped');
+  } else if (/(data-boss-query-actions|query-actions|filter-actions)[\s\S]{0,240}(grid-column\s*:\s*(?:3|3\s*\/)|justify-self\s*:\s*end|margin-left\s*:\s*auto|text-align\s*:\s*right)/i.test(source)) {
     pass('validate', 'Query action area is declared at the right side of the three-column grid');
   } else {
     fail('validate', 'Query action area must be in the rightmost column of the three-column grid');
   }
 
+  const hasTableOperationColumn = /(?:title\s*:\s*['"]操作['"]|data-boss-operation-column|operation-(?:links|actions|column))/i.test(source);
+  if (hasTableOperationColumn) {
+    if (/data-boss-operation-column/i.test(source)) {
+      pass('validate', 'Table operation wrapper includes the required theme-color marker');
+    } else {
+      fail('validate', 'Table operation wrapper must include `data-boss-operation-column`');
+    }
+
+    if (/colorPrimary\s*:\s*['"]#F36046['"][\s\S]{0,500}colorLink\s*:\s*['"]#F36046['"][\s\S]{0,500}colorLinkHover\s*:/i.test(source)
+      || /colorLink\s*:\s*['"]#F36046['"][\s\S]{0,500}colorLinkHover\s*:[\s\S]{0,500}colorPrimary\s*:\s*['"]#F36046['"]/i.test(source)) {
+      pass('validate', 'Boss Ledger primary and link theme tokens are explicitly configured');
+    } else {
+      fail('validate', 'Table operations require explicit `colorPrimary`, `colorLink: #F36046`, and `colorLinkHover` tokens');
+    }
+
+    if (/\[data-boss-operation-column\][\s\S]{0,700}\{[^}]*color\s*:\s*(?:#F36046|var\(--boss-primary\))/i.test(source)) {
+      pass('validate', 'Table operation column has a scoped primary-color CSS fallback');
+    } else {
+      fail('validate', 'Table operations require a scoped `[data-boss-operation-column]` primary-color CSS fallback');
+    }
+  } else {
+    pass('validate', 'No Table operation column detected; operation theme-color checks skipped');
+  }
+
+  const hasRenderedTable = /(?:h|React\.createElement)\(\s*Table\b|<Table\b/i.test(source);
+  const hasColumnSetting = /boss-column-setting-button/i.test(source) && /SettingOutlined/i.test(source);
+  const hasFunctionalColumnSetting = hasColumnSetting && /\b(?:Dropdown|Popover)\b/i.test(source) && /\bCheckbox\b/i.test(source);
+  if (hasRenderedTable && !hasFunctionalColumnSetting) {
+    fail('validate', 'Every query-list Table must include functional SettingOutlined column settings using Dropdown/Popover plus Checkbox');
+  } else if (hasRenderedTable) {
+    pass('validate', 'Table includes mandatory functional column visibility settings');
+  } else {
+    pass('validate', 'No rendered Table detected; mandatory column-setting check skipped');
+  }
+
+  if (hasColumnSetting) {
+    const columnSettingHasGrayBackground = /(?:column-setting|boss-column-setting-button)[^{}]{0,180}\{[^}]*background\s*:\s*#FAFAFA/i.test(source);
+    const columnSettingKeepsSecondaryColor = /(?:column-setting|boss-column-setting-button)[^{}]{0,220}\{[^}]*color\s*:\s*(?:rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*\.45\)|#666|#595959)/i.test(source);
+    const columnSettingIconKeepsSecondaryColor = /\.boss-column-setting-button\s+(?:\.anticon|svg)[^{}]*\{[^}]*color\s*:\s*rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*\.45\)/i.test(source);
+    if (columnSettingHasGrayBackground && columnSettingKeepsSecondaryColor && columnSettingIconKeepsSecondaryColor) {
+      pass('validate', 'Column setting Button and icon use #FAFAFA background with secondary text color in every state');
+    } else {
+      fail('validate', 'Column setting Button, .anticon, and SVG must keep secondary text color rgba(0, 0, 0, .45) in every state');
+    }
+  } else {
+    pass('validate', 'No column-setting control detected; color checks skipped');
+  }
+
+  const persistentTableHelper = /\b(?:selection-hint|table-helper-copy|toolbar-helper-copy)\b/i.test(source)
+    || /['"]请选择(?:订单|数据|记录)['"]/i.test(source)
+    || /['"]请先选择['"]/i.test(source);
+  if (persistentTableHelper) {
+    fail('validate', 'Table toolbar must not render persistent selection/helper copy such as 请选择订单');
+  } else {
+    pass('validate', 'Table toolbar contains no persistent selection/helper copy');
+  }
+
+  const hasPaginationConfig = /pagination\s*:/i.test(source);
+  if (hasPaginationConfig) {
+    const compactPagination = /pagination\s*:\s*\{[^}]{0,500}\bsize\s*:\s*['"](?:small|mini)['"]/i.test(source)
+      || /<Table\b[^>]*\bsize\s*=\s*['"](?:small|mini)['"]/i.test(source);
+    if (compactPagination) {
+      fail('validate', 'Pagination must use Ant Design default size; compact / mini sizing is forbidden');
+    } else {
+      pass('validate', 'Pagination uses Ant Design default size');
+    }
+  } else {
+    pass('validate', 'No pagination config detected; pagination size check skipped');
+  }
+
+  const buttonIconMatches = [...source.matchAll(/<Button\b[^>]*\bicon\s*=\s*\{/gi)].map((match) => match[0]);
+  const businessButtonIcons = buttonIconMatches.filter((block) => !/column-setting|列设置|aria-label/i.test(block));
+  if (businessButtonIcons.length > 0) {
+    fail('validate', 'Business action Buttons must be text-only; icons are reserved for icon-only tool affordances');
+  } else {
+    pass('validate', 'Business action Buttons do not use decorative icons');
+  }
+
+  const hasStatusColumn = /dataIndex\s*:\s*['"]status['"]|title\s*:\s*['"]状态['"]|状态列/i.test(source);
+  if (hasStatusColumn) {
+    if (/\bBadge\b|data-boss-status-badge/i.test(source)) {
+      pass('validate', 'Table status column uses a Badge status-dot presentation');
+    } else {
+      fail('validate', 'Table status columns must use Badge status dot plus Chinese text');
+    }
+    if (/<Tag\b|\bTag\s*\(/i.test(source)) {
+      fail('validate', 'Table status columns must not use Tag; use Badge status dot plus text');
+    } else {
+      pass('validate', 'Table status column does not use Tag');
+    }
+  } else {
+    pass('validate', 'No Table status column detected; status presentation checks skipped');
+  }
+
   const declaredQueryFieldCount = countDeclaredQueryFields(source);
   if (declaredQueryFieldCount !== null && declaredQueryFieldCount <= 6) {
-    const hasExpandCollapseEntry = /(query-toggle|展\s*开|收\s*起|DownOutlined|UpOutlined)/i.test(source);
+    const hasExpandCollapseEntry = /(query-toggle|data-boss-query-toggle|DownOutlined|UpOutlined)/i.test(source)
+      || /(?:boss-query|query-form|query-panel)[\s\S]{0,700}(?:展\s*开|收\s*起)/i.test(source);
     const hasFieldCountGuard = /queryFields\.length\s*>\s*6|queryFields\.length\s*>=\s*7|declaredQueryFieldCount\s*>\s*6|shouldShowQueryToggle/i.test(source);
     if (hasExpandCollapseEntry && !hasFieldCountGuard) {
       fail('validate', 'Query forms with 6 or fewer fields must not render or reserve expand/collapse controls');
@@ -441,7 +913,8 @@ function checkSource(html) {
       }
     }
   } else if (declaredQueryFieldCount !== null) {
-    if (/(query-toggle|展\s*开|收\s*起|DownOutlined|UpOutlined)/i.test(source)) {
+    if (/(query-toggle|data-boss-query-toggle|DownOutlined|UpOutlined)/i.test(source)
+      || /(?:boss-query|query-form|query-panel)[\s\S]{0,700}(?:展\s*开|收\s*起)/i.test(source)) {
       pass('validate', 'Query forms with more than 6 fields include expand/collapse controls');
     } else {
       fail('validate', 'Query forms with more than 6 fields must include expand/collapse controls');
@@ -459,7 +932,8 @@ function checkSource(html) {
       fail('validate', 'Query summary must be inside the table/result module, before Table and Pagination');
     }
 
-    const lightweightSummary = /(data-boss-query-summary|query-summary|查询统计)[\s\S]{0,800}(｜|query-summary-divider|结算总笔数|总笔数|总金额)/i.test(source);
+    const lightweightSummary = usesTemplate('template-04-')
+      && /(data-boss-query-summary|query-summary|查询统计)[\s\S]{0,800}(｜|query-summary-divider|结算总笔数|总笔数|总金额)/i.test(source);
     const hasResultTitle = /(toolbar-title|result-title|list-title)[^>]*>[^<]*(查询列表|查询结果|列表数据)|>\s*(查询列表|查询结果|列表数据)\s*</i.test(source);
     if (lightweightSummary && hasResultTitle) {
       fail('validate', 'Lightweight query summary must not be rendered together with the result-section title');
@@ -498,32 +972,30 @@ function runChrome(previewFile) {
     '--window-size=1440,900',
   ];
 
-  const screenshotRun = spawnSync(chrome, [...commonArgs, `--screenshot=${screenshotPath}`, url], {
+  // One Chrome process can produce both artifacts after the same page boot.
+  const chromeArgs = [...commonArgs];
+  if (saveScreenshot) chromeArgs.push(`--screenshot=${screenshotPath}`);
+  if (!screenshotOnly) chromeArgs.push('--dump-dom');
+  const chromeRun = spawnSync(chrome, [...chromeArgs, url], {
     encoding: 'utf8',
     timeout: 20000,
   });
 
-  if (screenshotRun.error || screenshotRun.status !== 0 || !existsSync(screenshotPath)) {
-    fail('screenshot', `Chrome screenshot failed: ${screenshotRun.error?.message || screenshotRun.stderr || 'unknown error'}`.trim());
+  if (chromeRun.error || chromeRun.status !== 0) {
+    fail('screenshot', `Chrome ${screenshotOnly ? 'screenshot' : 'render'} failed: ${chromeRun.error?.message || chromeRun.stderr || `status=${chromeRun.status}, signal=${chromeRun.signal || 'none'}`}`.trim());
     rmSync(dir, { recursive: true, force: true });
     return null;
   }
 
-  const dumpRun = spawnSync(chrome, [...commonArgs, '--dump-dom', url], {
-    encoding: 'utf8',
-    timeout: 20000,
-  });
-
-  if (dumpRun.error || dumpRun.status !== 0) {
-    fail('screenshot', `Chrome DOM dump failed: ${dumpRun.error?.message || dumpRun.stderr || 'unknown error'}`.trim());
-  } else {
-    pass('screenshot', 'Chrome rendered DOM successfully');
+  if (saveScreenshot && !existsSync(screenshotPath)) {
+    fail('screenshot', 'Chrome completed without producing a screenshot file');
   }
+  if (!screenshotOnly) pass('screenshot', 'Chrome rendered DOM successfully');
 
   return {
     screenshotPath,
     cleanup: () => rmSync(dir, { recursive: true, force: true }),
-    renderedDom: dumpRun.stdout || '',
+    renderedDom: screenshotOnly ? '' : chromeRun.stdout || '',
   };
 }
 
@@ -716,6 +1188,45 @@ function checkRenderedDom(renderedDom) {
   }
 
   const renderedMarkup = dom.replace(/<script\b[\s\S]*?<\/script>/gi, '').replace(/<style\b[\s\S]*?<\/style>/gi, '');
+
+  const stack = [];
+  const queryModules = [];
+  const resultModules = [];
+  const voidTags = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr']);
+  const tagPattern = /<\/?([a-z][a-z0-9-]*)\b([^>]*)>/gi;
+  let tagMatch;
+  let nodeId = 0;
+  while ((tagMatch = tagPattern.exec(renderedMarkup))) {
+    const fullTag = tagMatch[0];
+    const tag = tagMatch[1].toLowerCase();
+    const isClosing = fullTag.startsWith('</');
+    if (isClosing) {
+      while (stack.length) {
+        const node = stack.pop();
+        if (node.tag === tag) break;
+      }
+      continue;
+    }
+
+    const classMatch = tagMatch[2].match(/\bclass=["']([^"']*)["']/i);
+    const classes = classMatch ? classMatch[1].split(/\s+/).filter(Boolean) : [];
+    const parent = stack[stack.length - 1];
+    const node = { id: ++nodeId, tag, classes, parentId: parent?.id ?? null, parentClasses: parent?.classes ?? [] };
+    if (classes.includes('boss-query-module')) queryModules.push(node);
+    if (classes.includes('boss-result-module')) resultModules.push(node);
+    if (!voidTags.has(tag) && !fullTag.endsWith('/>')) stack.push(node);
+  }
+
+  if (queryModules.length || resultModules.length) {
+    const siblingPair = queryModules.some(query => resultModules.some(result => query.parentId === result.parentId
+      && query.parentClasses.includes('boss-content-stack') && result.parentClasses.includes('boss-content-stack')));
+    if (siblingPair) {
+      pass('screenshot', 'Query and result white modules render as direct siblings under boss-content-stack');
+    } else {
+      fail('screenshot', 'Query and result modules must render as direct sibling white modules under boss-content-stack');
+    }
+  }
+
   const tabStaticIconCount = (renderedMarkup.match(/data-boss-tab-static-icon/g) || []).length;
   if (tabStaticIconCount === 1) {
     pass('screenshot', 'Only the active tab renders the static ReloadOutlined icon');
@@ -730,22 +1241,27 @@ if (!existsSync(previewPath)) {
 }
 
 const html = readFileSync(previewPath, 'utf8');
-checkSource(appendLocalPreviewScripts(html, previewPath));
+checkSource(appendLocalPreviewAssets(html, previewPath));
 
-const rendered = runChrome(previewPath);
-if (rendered) {
-  analyzeScreenshot(rendered.screenshotPath);
-  checkRenderedDom(rendered.renderedDom);
-  rendered.cleanup();
+if (fastMode) {
+  result.screenshot.push({ ok: true, skipped: true, message: 'Fast mode: Chrome screenshot and DOM evaluation deferred to final delivery' });
+} else {
+  const rendered = runChrome(previewPath);
+  if (rendered) {
+    if (!domOnly) analyzeScreenshot(rendered.screenshotPath);
+    if (!screenshotOnly) checkRenderedDom(rendered.renderedDom);
+    rendered.cleanup();
+  }
 }
 
 const statuses = {
   validate: groupStatus('validate'),
-  screenshot: groupStatus('screenshot'),
+  screenshot: fastMode ? 'skipped' : groupStatus('screenshot'),
   charts: groupStatus('charts'),
   '中文文案': groupStatus('chineseCopy'),
 };
-const overall = Object.values(statuses).every((status) => status === 'pass') ? 'pass' : 'failed';
+const blockingStatuses = fastMode ? [statuses.validate, statuses.charts, statuses['中文文案']] : Object.values(statuses);
+const overall = blockingStatuses.every((status) => status === 'pass') ? 'pass' : 'failed';
 
 console.log(`validate: ${statuses.validate}`);
 console.log(`screenshot: ${statuses.screenshot}`);

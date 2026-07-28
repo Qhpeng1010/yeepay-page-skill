@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "module": "easy-account",
+  "implementationMode": "markdown-direct",
+  "adapter": {
+    "resources": {
+      "requirement": [
+        "modules/shared/product.md",
+        "modules/easy-account/business-rules.md"
+      ],
+      "design": [
+        "modules/easy-account/design.md",
+        "modules/easy-account/components.md",
+        "modules/shared/page-templates.md"
+      ],
+      "template": [
+        "modules/easy-account/templates.md"
+      ],
+      "generate": [
+        "modules/easy-account/frontend.md",
+        "modules/shared/quality.md",
+        "modules/shared/templates/html-preview.md"
+      ],
+      "review": [
+        "modules/easy-account/business-rules.md",
+        "modules/easy-account/design.md",
+        "modules/easy-account/components.md",
+        "modules/shared/quality.md"
+      ]
+    },
+    "template": {
+      "directory": "modules/easy-account/templates",
+      "stages": ["template", "generate", "review"],
+      "framework": ["template-01-framework.md"]
+    },
+    "commands": {}
+  },
+  "intents": [
+    {
+      "id": "query-list",
+      "pageType": "query-list",
+      "signals": ["查询列表", "查询", "列表", "记录"],
+      "template": "template-02-query-list.md"
+    },
+    {
+      "id": "dashboard",
+      "pageType": "dashboard",
+      "signals": ["dashboard", "仪表盘", "数据首页", "业务概览"],
+      "template": "template-03-dashboard.md"
+    },
+    {
+      "id": "form",
+      "pageType": "form",
+      "signals": ["表单", "新增", "新建", "编辑"],
+      "template": "template-04-form.md"
+    },
+    {
+      "id": "detail",
+      "pageType": "detail",
+      "signals": ["详情页", "详情", "记录查看"],
+      "template": "template-05-detail.md"
+    },
+    {
+      "id": "result",
+      "pageType": "result",
+      "signals": ["结果页", "成功页", "失败页", "处理结果"],
+      "template": "template-06-result.md"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+/* Page-specific CSS may only extend business content modules. */
+.boss-shell-demo-module { border-top-left-radius: 0; }
+.boss-shell-demo-title { margin-bottom: 8px; font-size: 16px; font-weight: 500; color: var(--boss-text); }
+.boss-shell-demo-copy { color: var(--boss-secondary); }
+.boss-shell-demo-fill { flex: 1; min-height: 420px; display: flex; align-items: center; justify-content: center; }

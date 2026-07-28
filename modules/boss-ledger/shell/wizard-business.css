@@ -1,0 +1,12 @@
+.boss-wizard-page { min-height: 520px; background: #fff; border-radius: 8px; padding: 24px 32px; }
+.wizard-content-frame { min-height: 440px; display: flex; flex-direction: column; justify-content: center; }
+.japan-steps { width: 100%; margin: 8px auto 32px; }
+.wizard-body-grid { display: grid; grid-template-columns: minmax(0, 65%) minmax(0, 35%); gap: 16px; align-items: center; }
+.wizard-form-pane { width: 100%; }
+.wizard-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.wizard-field-grid .ant-form-item { margin-bottom: 0; }
+.wizard-guide-pane { min-height: 260px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 0; width: 100%; box-sizing: border-box; text-align: center; }
+.wizard-guide-image { display: block; width: 45%; min-width: 180px; max-width: 300px; height: auto; object-fit: contain; }
+.wizard-guide-title { margin-top: 12px; font-size: 16px; font-weight: 500; color: rgba(0,0,0,.85); }
+.wizard-guide-text { max-width: 300px; margin-top: 8px; font-size: 14px; color: rgba(0,0,0,.45); line-height: 1.7; word-break: break-word; }
+.wizard-action-bar { position: fixed; left: 208px; right: 0; bottom: 0; z-index: 8; height: 48px; display: flex; justify-content: center; gap: 8px; padding: 8px 32px; background: #fff; }
