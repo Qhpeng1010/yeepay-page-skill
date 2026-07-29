@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+// rule-assertion: visual.component-integrity
+// rule-assertion: visual.layout-density
+// rule-assertion: browser.render
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, resolve } from 'node:path';
@@ -25,6 +28,9 @@ const selectedTemplates = selectedTemplateMatch
   ? selectedTemplateMatch[1].split(',').map((template) => template.trim()).filter(Boolean)
   : [];
 const usesTemplate = (prefix) => selectedTemplates.some((template) => template.startsWith(prefix));
+const pageSpecPath = resolve(dirname(previewPath), 'page-spec.json');
+let pageSpec = null;
+try { pageSpec = existsSync(pageSpecPath) ? JSON.parse(readFileSync(pageSpecPath, 'utf8')) : null; } catch { pageSpec = null; }
 
 const result = {
   validate: [],
@@ -480,7 +486,9 @@ function checkSource(html) {
     pass('validate', 'Detail Descriptions do not use bordered/table-shaped styling');
   }
 
-  const hasStepsUsage = /(?:\bSteps\b|<Steps\b|React\.createElement\(\s*Steps\b|h\(\s*Steps\b)/i.test(source);
+  const hasStepsUsage = pageSpec
+    ? pageSpec.metadata?.family === 'form' && pageSpec.content?.capabilities?.includes('form.steps')
+    : /(?:\bSteps\b|<Steps\b|React\.createElement\(\s*Steps\b|h\(\s*Steps\b)/i.test(source);
   if (/wizard-field-grid/i.test(source)) {
     const wizardSpacing = /\.wizard-field-grid\s*\{[^}]*gap\s*:\s*16px\b/i.test(source);
     const hasInputNumber = /InputNumber|ant-input-number/i.test(source);
@@ -493,6 +501,9 @@ function checkSource(html) {
   }
   const stepsItemBlocks = extractStepsItemBlocks(source);
   const declaredWizardStepsHaveDescriptions = /(?:const|let|var)\s+wizardSteps\s*=\s*\[[\s\S]*\btitle\s*:[\s\S]*\bdescription\s*:/i.test(source);
+  const pageSpecWizardStepsHaveDescriptions = Array.isArray(pageSpec?.form?.steps)
+    && pageSpec.form.steps.length > 0
+    && pageSpec.form.steps.every((step) => typeof step.title === 'string' && step.title.trim() && typeof step.description === 'string' && step.description.trim());
   if (hasStepsUsage && stepsItemBlocks.length > 0) {
     const invalidBlocks = stepsItemBlocks.filter((block) => {
       const titleCount = (block.match(/\btitle\s*:/g) || []).length;
@@ -504,7 +515,7 @@ function checkSource(html) {
     } else {
       fail('validate', 'Every Boss Ledger Wizard Steps item must include description; title-only Steps are not allowed');
     }
-  } else if (hasStepsUsage && declaredWizardStepsHaveDescriptions) {
+  } else if (hasStepsUsage && (declaredWizardStepsHaveDescriptions || pageSpecWizardStepsHaveDescriptions)) {
     pass('validate', 'Every Boss Ledger Wizard Steps item includes a description');
   } else if (hasStepsUsage) {
     fail('validate', 'Boss Ledger Steps usage must expose an items array whose every item includes description');
@@ -763,6 +774,7 @@ function checkSource(html) {
 
   if (usesTemplate('template-08-')) {
     const pageHasVerticalForm = /React\.createElement\(\s*Form\s*,\s*\{[^}]*layout\s*:\s*['"]vertical['"]/i.test(source)
+      || /\bh\(\s*Form\s*,\s*\{[^}]*layout\s*:\s*['"]vertical['"]/i.test(source)
       || /<Form\b[^>]*\blayout\s*=\s*['"]vertical['"]/i.test(source);
     if (pageHasVerticalForm) {
       pass('validate', 'New/edit page form uses vertical label-above-control alignment');

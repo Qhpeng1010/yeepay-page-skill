@@ -11,4 +11,4 @@
 
 `domain.json` 定义页面意图。运行 `scripts/resolve-resources.mjs` 后，只读取当前阶段返回的 Markdown 路径。
 
-本模块采用 `markdown-direct` 实现方式：从 Markdown 规范直接生成评审预览，不读取、不复用 Boss Ledger 壳层。
+本模块采用 `page-spec-shadow`。API 文档和接入指南可生成开放平台自己的 Page Spec 候选并经 Documentation Shell 和浏览器场景验证；官网、SDK 和错误码页面按 policy 保持 legacy 或 pending。不得读取、不复用 Boss Ledger 或 Easy Account 壳层。

@@ -28,6 +28,23 @@ for (const module of registry.modules || []) {
   if (contract.module !== module.id) errors.push(`${module.id}: contract module must match registry id`);
   if (!contract.adapter?.resources) errors.push(`${module.id}: missing adapter.resources`);
   if (!contract.intents?.length) errors.push(`${module.id}: no intents`);
+  const execution = contract.adapter?.execution;
+  if (execution) {
+    [execution.policy, execution.schema, execution.releaseManifest, execution.coreContext, ...Object.values(execution.familyContexts || {})]
+      .filter(Boolean)
+      .forEach((resource) => {
+        if (!fs.existsSync(path.join(root, resource))) errors.push(`${module.id}: missing execution resource ${resource}`);
+      });
+    const policy = fs.existsSync(path.join(root, execution.policy || ''))
+      ? JSON.parse(fs.readFileSync(path.join(root, execution.policy), 'utf8'))
+      : null;
+    if (policy && policy.system !== module.id) errors.push(`${module.id}: execution policy system must match module id`);
+    for (const intent of contract.intents || []) {
+      if (intent.executionFamily && !policy?.families?.some((family) => family.id === intent.executionFamily)) {
+        errors.push(`${module.id}/${intent.id}: missing execution family ${intent.executionFamily}`);
+      }
+    }
+  }
   for (const [stage, resources] of Object.entries(contract.adapter?.resources || {})) {
     if (!Array.isArray(resources)) {
       errors.push(`${module.id}/${stage}: resources must be an array`);

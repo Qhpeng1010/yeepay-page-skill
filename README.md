@@ -1,0 +1,164 @@
+# Yeepay Page Skill
+
+这是一个用于生成、评审和验证易宝业务页面的规则工程。它的目标不是让 AI 随意拼页面，而是让页面先选择合适的产品域和模板，再按受控规则生成，并通过可复查的验证后交付。
+
+当前包含四个业务域：
+
+- 老板管账：运营、商户、审核、财务、风控和系统管理后台。
+- 易账通：账户相关后台页面。
+- 易宝开放平台：开发者中心、API、SDK 和接入文档。
+- 易来钱收银台：移动端缴费与收银页面。
+
+## 先从哪里看
+
+如果你是设计师或产品同学，建议按下面顺序阅读：
+
+1. [老板管账导演规则](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/modules/boss-ledger/director-rules/README.md:1)：了解页面应遵守的总体设计与决策原则。
+2. [导演规则使用说明](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/modules/boss-ledger/director-rules/使用说明.md:1)：了解如何手工修改规则、如何提出新页面需求。
+3. [能力迁移矩阵](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/modules/boss-ledger/migration/capability-matrix.md:1)：确认哪些模板已默认支持，哪些仍在验证中。
+4. [交付流程](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/workflows/delivery.md:1)：了解一个页面从需求到交付的完整过程。
+
+## 目录说明
+
+```text
+Yeepay-skill/
+├── SKILL.md                  整个工程的生成与交付总规则
+├── README.md                 本说明
+├── PRODUCT.md                某个产品场景的简要定义示例
+├── references/               产品域路由表
+├── modules/                  各业务域的规则、模板、资产和执行能力
+│   ├── boss-ledger/          老板管账后台
+│   ├── easy-account/         易账通后台
+│   ├── open-platform/        易宝开放平台
+│   ├── Yilaiqian Checkout Counter/  易来钱收银台
+│   └── shared/               多业务域通用规则和文档模板
+├── workflows/                页面交付步骤说明
+├── scripts/                  路由、构建、校验和发布检查工具
+├── changes/                  每次页面需求的独立交付目录
+└── agents/                   默认执行代理配置
+```
+
+## 老板管账目录
+
+老板管账是当前规则最完整、最适合优先使用的后台域。
+
+```text
+modules/boss-ledger/
+├── director-rules/           设计师维护的中文导演规则
+│   ├── 01-visual-constitution.md
+│   ├── 02-template-application-rules.md
+│   ├── 03-interaction-acceptance-rules.md
+│   └── 使用说明.md
+├── execution/                系统如何把规则转为合规页面
+│   ├── generation-policy.json  当前允许生成的能力和模板状态
+│   ├── page-spec.schema.json   页面规格的数据结构约束
+│   ├── context-packs/          AI 生成规格时读取的精简上下文
+│   ├── renderer/               固定页面渲染器
+│   └── release-manifest.json   当前规则与渲染器的发布指纹
+├── migration/                能力迁移状态和黄金样例说明
+├── shell/                    固定后台壳层：导航、Tabs、Footer、运行时
+├── templates/                页面模板定义
+├── business-rules.md         业务字段、状态、权限和结果规则
+├── design.md                 老版本详细设计规范，仍作为输入材料
+└── domain.json               页面意图、模板和执行方式的机器路由配置
+```
+
+### 导演规则与页面需求的区别
+
+导演规则管理“同类页面长期都应该遵守什么”。例如：查询列表只能有一个查询模块和一个结果模块、复杂表单不能配右侧插图、危险操作必须二次确认。
+
+单页需求管理“这一个页面要展示什么”。例如：商户查询要有商户名称、商户编号和部门条件；列表要展示哪些列；错误状态写什么文案。
+
+因此：
+
+- 通用视觉、模板和交互原则，修改 `director-rules/`。
+- 单页字段、数据、文案和默认值，修改对应 Change 中的 `page-spec.json`。
+- 新能力是否可生成，由 `execution/generation-policy.json` 控制；不能仅靠写一条 Markdown 规则开放能力。
+
+## 页面是如何生成的
+
+老板管账目前有两条路径：
+
+1. 新 Page Spec 路径：AI 只填写 `page-spec.json`，固定渲染器生成预览页面，适用于已经开放的页面能力。
+2. Legacy 路径：保留原有预览生成方式，用于仍在双轨验证、暂未开放或需要回退的能力。
+
+新路径的流程如下：
+
+```text
+业务需求
+  -> 路由到业务域和页面模板
+  -> 读取导演规则与当前可用能力
+  -> 填写 page-spec.json
+  -> 固定渲染器生成页面
+  -> 检查规则、模板、生成文件、Shell 和浏览器表现
+  -> 通过后交付
+```
+
+页面不会因为模板文件存在就一定可以生成。以 [能力迁移矩阵](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/modules/boss-ledger/migration/capability-matrix.md:1) 和 `generation-policy.json` 的状态为准。
+
+## 如何提出一个新页面
+
+用清楚的业务语言描述即可，无需指定代码或组件。推荐包含：
+
+```text
+所属系统：老板管账 / 商户管理
+使用者：运营人员
+主要任务：查询、核对和处理商户记录
+查询条件：商户名称、商户编号、部门名称
+列表字段：商户编号、商户名称、直属代理、状态、注册时间
+允许操作：查看详情、停用
+风险要求：停用前须说明对象、影响和操作后状态
+```
+
+系统会选择页面家族。如果你明确希望使用某种页面形式，例如 Drawer、全页表单或步骤流程，也应同时说明字段数量、是否有分组、上传、复核或前后依赖。
+
+## 如何手工修改规则
+
+完整步骤见 [导演规则使用说明](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/modules/boss-ledger/director-rules/使用说明.md:1)。最重要的原则是：
+
+1. 一次性页面需求不要写进通用规则。
+2. 新的硬性规则必须增加 Rule ID 和验收场景。
+3. 规则变更后必须同步更新验证覆盖和发布指纹。
+4. 不直接修补生成页面中的 `preview-app.js`、`business.css` 或 `preview.html` 来解决通用规则问题。
+
+规则变更后的最小检查由 AI 或研发同学执行：
+
+```bash
+node scripts/check-boss-ledger-generation-policy.mjs
+node scripts/refresh-boss-ledger-release-manifest.mjs
+node scripts/verify-boss-ledger-release-manifest.mjs
+node scripts/validate-boss-ledger-page-spec-system.mjs
+```
+
+## Change 交付目录
+
+每一个页面需求都有自己的 `changes/YYYYMMDD-功能名称/` 目录。常见内容包括：
+
+```text
+changes/YYYYMMDD-功能名称/
+├── proposal.md               需求理解和范围
+├── page-design.md            页面设计与模板选择
+├── tasks.md                  实施任务
+├── implementation.md         实现说明
+├── review.md                 验收结论
+├── page-spec.json            新机制下唯一可编辑的页面规格
+├── page-spec-checklist.md    已选规则和能力的检查清单
+├── preview.html              可直接打开的页面预览
+└── preview.screenshot.png    浏览器验证截图
+```
+
+并非每个 Change 都同时具备所有文件：旧路径的 Change 会有 `preview-app.js` 和 `business.css`；新 Page Spec 路径中这些文件由系统生成，不应手工修改。
+
+## 常见问题
+
+**为什么页面不能生成？**
+
+通常是当前模板或能力仍处于 `shadow`、`legacy`、`pending` 或 `workflow-only` 状态。系统应报告能力缺口，不应勉强拼出一个看似可用的页面。
+
+**为什么我改了导演规则，页面没有变化？**
+
+导演规则描述“应当如何”；若规则需要新的组件能力、页面结构或自动化检查，还必须同步扩展策略、规格校验、固定渲染器和回归样例。
+
+**页面预览可以直接打开吗？**
+
+可以。每个 Change 的 `preview.html` 是独立评审预览，通常可直接在浏览器打开；它不是正式生产前端工程。

@@ -12,4 +12,4 @@ Yilaiqian Checkout Counter（易来钱收银台）是面向移动端用户的 H5
 
 当前模块使用三类 Markdown 规范：`business-rules.md` 定义业务状态与校验，`DESIGN(2).md` 定义视觉与布局，`components.md` 定义 Vue 3 + Vant 4 组件实现。进入本业务域后通过资源解析器按阶段加载，不直接扫描整个模块。
 
-本模块采用 `markdown-direct` 实现方式：从 Markdown 规范直接生成移动端 H5 收银台页面，不复用 Boss Ledger 后台壳层。交互预览必须使用真实 Vant 组件，不得手写仿 Vant 控件。
+本模块采用 `page-spec-shadow`：单笔 Checkout 生成本域 Page Spec 候选，由固定 Vue 3 + Vant 4 渲染器和浏览器场景验收；独立结果和异常页按 policy 保持 workflow-only、legacy 或 pending。交互预览必须使用真实 Vant 组件，不得手写仿 Vant 控件，也不复用任何桌面系统壳层。

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yeepay.local/schemas/boss-ledger-page-spec-v1.json",
+  "title": "Boss Ledger Page Spec",
+  "type": "object",
+  "required": ["schemaVersion", "metadata", "ui", "content"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "metadata": {
+      "type": "object",
+      "required": ["changeId", "pageName", "family", "templateId", "executionMode", "request", "selectionReason", "assumptions", "ruleRefs"],
+      "properties": {
+        "changeId": { "type": "string", "pattern": "^[0-9]{8}-[a-z0-9-]+$" },
+        "pageName": { "type": "string", "minLength": 1 },
+        "family": { "enum": ["list", "form", "detail", "result"] },
+        "templateId": { "type": "string", "pattern": "^template-(0[2-9]|1[0-3])-" },
+        "executionMode": { "enum": ["legacy", "shadow", "page-spec-default", "page-spec-only"] },
+        "validatedCombinations": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "request": { "type": "string" },
+        "ruleRefs": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^BL-(VIS|TPL|INT)-[0-9]{3}$" } },
+        "assumptions": { "type": "array", "items": { "type": "string" } },
+        "selectionReason": { "type": "string" }
+      }
+    },
+    "ui": {
+      "type": "object",
+      "required": ["system", "runtime", "rendererVersion"],
+      "properties": {
+        "system": { "const": "boss-ledger" },
+        "runtime": { "const": "react-antd-page-spec" },
+        "rendererVersion": { "const": 1 }
+      }
+    },
+    "shell": { "type": "object" },
+    "content": {
+      "type": "object",
+      "required": ["capabilities"],
+      "properties": {
+        "capabilities": { "type": "array", "uniqueItems": true, "items": { "type": "string" } }
+      }
+    },
+    "list": { "type": "object" },
+    "form": { "type": "object" },
+    "detail": { "type": "object" },
+    "result": { "type": "object" },
+    "states": { "type": "object" }
+  }
+}

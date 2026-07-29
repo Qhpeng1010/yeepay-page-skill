@@ -37,6 +37,78 @@ const requiredFiles = [
   'scripts/validate-progressive-structure.mjs',
   'references/registry.yaml',
   'workflows/delivery.md',
+  'modules/boss-ledger/director-rules/README.md',
+  'modules/boss-ledger/director-rules/01-visual-constitution.md',
+  'modules/boss-ledger/director-rules/02-template-application-rules.md',
+  'modules/boss-ledger/director-rules/03-interaction-acceptance-rules.md',
+  'modules/boss-ledger/execution/generation-policy.json',
+  'modules/boss-ledger/execution/page-spec.schema.json',
+  'modules/boss-ledger/execution/rule-assertions.json',
+  'modules/boss-ledger/execution/release-manifest.json',
+  'modules/boss-ledger/execution/renderer/page-spec-preview.template.html',
+  'modules/boss-ledger/execution/renderer/page-spec-business.css',
+  'modules/boss-ledger/execution/renderer/page-spec-runtime.js',
+  'scripts/check-boss-ledger-page-spec.mjs',
+  'scripts/build-boss-ledger-page-spec.mjs',
+  'scripts/scaffold-boss-ledger-page-spec.mjs',
+  'scripts/verify-boss-ledger-page-spec.mjs',
+  'scripts/verify-boss-ledger-release-manifest.mjs',
+  'scripts/check-boss-ledger-generation-policy.mjs',
+  'scripts/check-boss-ledger-rule-coverage.mjs',
+  'scripts/set-boss-ledger-family-mode.mjs',
+  'scripts/test-boss-ledger-page-spec-contract.mjs',
+  'scripts/compare-boss-ledger-shadow.mjs',
+  'scripts/validate-boss-ledger-page-spec-system.mjs',
+  'scripts/run-boss-ledger-page-spec-fixture.mjs',
+  'modules/easy-account/director-rules/README.md',
+  'modules/easy-account/director-rules/01-visual-constitution.md',
+  'modules/easy-account/director-rules/02-template-application-rules.md',
+  'modules/easy-account/director-rules/03-interaction-acceptance-rules.md',
+  'modules/easy-account/execution/generation-policy.json',
+  'modules/easy-account/execution/page-spec.schema.json',
+  'modules/easy-account/execution/renderer/page-spec-preview.template.html',
+  'modules/easy-account/execution/renderer/page-spec-business.css',
+  'modules/easy-account/execution/renderer/page-spec-runtime.js',
+  'scripts/check-easy-account-page-spec.mjs',
+  'scripts/build-easy-account-page-spec.mjs',
+  'scripts/scaffold-easy-account-page-spec.mjs',
+  'scripts/verify-easy-account-page-spec.mjs',
+  'scripts/test-easy-account-page-spec-contract.mjs',
+  'scripts/validate-easy-account-page-spec-system.mjs',
+  'modules/open-platform/director-rules/README.md',
+  'modules/open-platform/director-rules/01-visual-constitution.md',
+  'modules/open-platform/director-rules/02-template-application-rules.md',
+  'modules/open-platform/director-rules/03-interaction-acceptance-rules.md',
+  'modules/open-platform/execution/generation-policy.json',
+  'modules/open-platform/execution/page-spec.schema.json',
+  'modules/open-platform/execution/renderer/page-spec-preview.template.html',
+  'modules/open-platform/execution/renderer/page-spec-business.css',
+  'modules/open-platform/execution/renderer/page-spec-runtime.js',
+  'scripts/check-open-platform-page-spec.mjs',
+  'scripts/build-open-platform-page-spec.mjs',
+  'scripts/scaffold-open-platform-page-spec.mjs',
+  'scripts/verify-open-platform-page-spec.mjs',
+  'scripts/test-open-platform-page-spec-contract.mjs',
+  'scripts/validate-open-platform-page-spec-system.mjs',
+  'modules/Yilaiqian Checkout Counter/director-rules/README.md',
+  'modules/Yilaiqian Checkout Counter/director-rules/01-visual-constitution.md',
+  'modules/Yilaiqian Checkout Counter/director-rules/02-template-application-rules.md',
+  'modules/Yilaiqian Checkout Counter/director-rules/03-interaction-acceptance-rules.md',
+  'modules/Yilaiqian Checkout Counter/execution/generation-policy.json',
+  'modules/Yilaiqian Checkout Counter/execution/page-spec.schema.json',
+  'modules/Yilaiqian Checkout Counter/execution/renderer/page-spec-preview.template.html',
+  'modules/Yilaiqian Checkout Counter/execution/renderer/page-spec-business.css',
+  'modules/Yilaiqian Checkout Counter/execution/renderer/page-spec-runtime.js',
+  'modules/Yilaiqian Checkout Counter/execution/vendor/vue.global.prod.js',
+  'modules/Yilaiqian Checkout Counter/execution/vendor/vant.min.js',
+  'modules/Yilaiqian Checkout Counter/execution/vendor/vant.css',
+  'modules/Yilaiqian Checkout Counter/execution/vendor/vant-touch-emulator.js',
+  'scripts/check-yilaiqian-page-spec.mjs',
+  'scripts/build-yilaiqian-page-spec.mjs',
+  'scripts/scaffold-yilaiqian-page-spec.mjs',
+  'scripts/verify-yilaiqian-page-spec.mjs',
+  'scripts/test-yilaiqian-page-spec-contract.mjs',
+  'scripts/validate-yilaiqian-page-spec-system.mjs',
 ];
 const registry = JSON.parse(readFileSync(resolve(root, 'references/registry.yaml'), 'utf8'));
 const adapterErrors = [];
@@ -48,6 +120,18 @@ for (const module of registry.modules || []) {
   const contract = JSON.parse(readFileSync(resolve(root, module.contract), 'utf8'));
   if (contract.module !== module.id) adapterErrors.push(`${module.id}: contract module must match registry id`);
   if (!contract.adapter?.resources) adapterErrors.push(`${module.id}: missing adapter.resources`);
+  const execution = contract.adapter?.execution;
+  if (execution) {
+    [execution.policy, execution.schema, execution.releaseManifest, execution.coreContext, ...Object.values(execution.familyContexts || {})]
+      .filter(Boolean)
+      .forEach((file) => {
+        if (!existsSync(resolve(root, file))) adapterErrors.push(`${module.id}: missing execution resource ${file}`);
+      });
+    [execution.scaffoldCommand, execution.buildCommand, execution.verifyCommand].filter(Boolean).forEach((command) => {
+      const match = String(command).match(/node\s+(scripts\/[^\s]+)/);
+      if (!match || !existsSync(resolve(root, match[1]))) adapterErrors.push(`${module.id}: missing execution command ${command}`);
+    });
+  }
   Object.entries(contract.adapter?.resources || {}).forEach(([stage, resources]) => {
     if (!Array.isArray(resources)) {
       adapterErrors.push(`${module.id}/${stage}: resources must be an array`);

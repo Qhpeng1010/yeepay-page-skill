@@ -14,6 +14,6 @@ Easy Account（易账通）是独立的账户与账务管理业务域。它使�
 
 ## Execution Boundary
 
-当前使用 `markdown-direct` 生成独立评审预览。不调用 `scaffold-boss-ledger-preview.mjs`、不加载 `modules/boss-ledger/shell/`，也不引用 Boss Ledger 的 Logo、vendor 或 validator。
+当前使用 `page-spec-shadow`。普通查询列表可生成独立的 Easy Account Page Spec 候选，并通过本域固定壳层、渲染器、派生产物完整性和浏览器场景验收；其余页面族仍保留在 shadow、workflow-only 或 legacy 边界。
 
-当 Easy Account 的正式框架资产就绪后，只在 `domain.json` 的 adapter 中增加本域的 preflight、scaffold 和 verify 命令。
+不调用 `scaffold-boss-ledger-preview.mjs`、不加载 `modules/boss-ledger/shell/`，也不引用 Boss Ledger 的 Logo、vendor、规则或验证器。每个 Page Spec Change 只编辑 `page-spec.json`，其余预览文件由 `build-easy-account-page-spec.mjs` 生成。

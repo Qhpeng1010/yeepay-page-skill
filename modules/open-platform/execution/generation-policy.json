@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "policyVersion": "2026.07.29.1",
+  "system": "open-platform",
+  "allowedModes": ["legacy", "shadow", "page-spec-default", "page-spec-only"],
+  "families": [
+    { "id": "api-document", "intents": ["api-document"], "availability": "available", "mode": "shadow", "ruleRefs": ["OP-TPL-001", "OP-TPL-002", "OP-INT-002", "OP-INT-003"], "capabilities": ["docs.navigation", "docs.anchors", "docs.code", "docs.copyCode", "docs.parameterTable", "docs.errorGuide", "docs.previousNext"] },
+    { "id": "integration-guide", "intents": ["integration-guide"], "availability": "available", "mode": "shadow", "ruleRefs": ["OP-TPL-001", "OP-TPL-002", "OP-INT-002"], "capabilities": ["docs.navigation", "docs.anchors", "docs.flow", "docs.code", "docs.copyCode", "docs.previousNext"] },
+    { "id": "marketing", "intents": ["product-home"], "availability": "pending", "mode": "legacy", "ruleRefs": ["OP-TPL-001", "OP-TPL-004"], "capabilities": [] },
+    { "id": "sdk-document", "intents": ["sdk-document"], "availability": "pending", "mode": "legacy", "ruleRefs": ["OP-TPL-001", "OP-TPL-002"], "capabilities": [] },
+    { "id": "error-code", "intents": ["error-code"], "availability": "pending", "mode": "legacy", "ruleRefs": ["OP-TPL-001", "OP-TPL-002"], "capabilities": [] }
+  ],
+  "validatedCombinations": [
+    { "id": "api-detail.core", "family": "api-document", "capabilities": ["docs.navigation", "docs.anchors", "docs.code", "docs.copyCode", "docs.parameterTable", "docs.errorGuide", "docs.previousNext"], "ruleRefs": ["OP-TPL-002", "OP-INT-002", "OP-INT-003"] },
+    { "id": "integration-guide.core", "family": "integration-guide", "capabilities": ["docs.navigation", "docs.anchors", "docs.flow", "docs.code", "docs.copyCode", "docs.previousNext"], "ruleRefs": ["OP-TPL-002", "OP-INT-002", "OP-INT-003"] }
+  ]
+}

@@ -108,6 +108,11 @@ function resolveStage(route, selection, stage) {
     return [name, resolved.trim()];
   }));
 
+  const execution = resolveExecution(rootPath(route), adapter.execution, selected);
+  if (execution && ['generate', 'review'].includes(stage)) {
+    resources.push(...existingMarkdown(execution.resources));
+  }
+
   return {
     status: 'resolved',
     module: route.module,
@@ -117,8 +122,64 @@ function resolveStage(route, selection, stage) {
     implementationMode: contract.implementationMode,
     assumption: route.assumption,
     matches: selection.matches,
-    resources,
-    commands
+    resources: unique(resources),
+    commands: execution && stage === 'generate'
+      ? execution.mode === 'page-spec-default'
+        ? {
+            ...commands,
+            legacyScaffold: commands.scaffold,
+            scaffold: execution.scaffoldCommand,
+            build: execution.buildCommand,
+            verify: execution.verifyCommand
+          }
+        : execution.mode === 'page-spec-only'
+          ? {
+              preflight: commands.preflight,
+              scaffold: execution.scaffoldCommand,
+              build: execution.buildCommand,
+              verify: execution.verifyCommand
+            }
+        : execution.mode === 'shadow'
+          ? {
+              ...commands,
+              pageSpecScaffold: execution.scaffoldCommand,
+              pageSpecBuild: execution.buildCommand,
+              pageSpecVerify: execution.verifyCommand
+            }
+          : commands
+      : commands,
+    execution
+  };
+}
+
+function rootPath(route) {
+  return route;
+}
+
+function resolveExecution(_route, executionConfig, selected) {
+  if (!executionConfig) return null;
+  const policyPath = path.join(ROOT, executionConfig.policy);
+  const policy = JSON.parse(fs.readFileSync(policyPath, 'utf8'));
+  const familyId = selected.executionFamily || selected.id;
+  const family = (policy.families || []).find((entry) => entry.id === familyId);
+  if (!family) throw new Error(`${familyId}: execution family is missing from ${executionConfig.policy}`);
+  const replace = (command) => String(command || '')
+    .replaceAll('{family}', familyId)
+    .replaceAll('{template}', selected.template || '');
+  return {
+    system: policy.system,
+    policyVersion: policy.policyVersion,
+    family: familyId,
+    availability: family.availability,
+    mode: family.intentModes?.[selected.id] || family.mode,
+    capabilities: family.capabilities || [],
+    ruleRefs: family.ruleRefs || [],
+    schema: executionConfig.schema,
+    releaseManifest: executionConfig.releaseManifest,
+    resources: [executionConfig.coreContext, executionConfig.familyContexts?.[familyId]].filter(Boolean),
+    scaffoldCommand: replace(executionConfig.scaffoldCommand),
+    buildCommand: replace(executionConfig.buildCommand),
+    verifyCommand: replace(executionConfig.verifyCommand)
   };
 }
 

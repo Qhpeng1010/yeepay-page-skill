@@ -1,8 +1,20 @@
 {
   "version": 1,
   "module": "open-platform",
-  "implementationMode": "markdown-direct",
+  "implementationMode": "page-spec-shadow",
   "adapter": {
+    "execution": {
+      "policy": "modules/open-platform/execution/generation-policy.json",
+      "schema": "modules/open-platform/execution/page-spec.schema.json",
+      "coreContext": "modules/open-platform/execution/context-packs/core.md",
+      "familyContexts": {
+        "api-document": "modules/open-platform/execution/context-packs/api-document.md",
+        "integration-guide": "modules/open-platform/execution/context-packs/integration-guide.md"
+      },
+      "scaffoldCommand": "node scripts/scaffold-open-platform-page-spec.mjs changes/{change-id}",
+      "buildCommand": "node scripts/build-open-platform-page-spec.mjs changes/{change-id}/page-spec.json",
+      "verifyCommand": "node scripts/verify-open-platform-page-spec.mjs changes/{change-id}/page-spec.json"
+    },
     "resources": {
       "requirement": ["modules/shared/product.md"],
       "design": ["modules/shared/design-system.md", "modules/open-platform/theme.md", "modules/shared/page-templates.md", "modules/shared/components.md"],
@@ -13,10 +25,10 @@
     "commands": {}
   },
   "intents": [
-    {"id":"product-home","pageType":"product-home","signals":["产品首页","开放平台首页","产品介绍","产品中心"]},
-    {"id":"api-document","pageType":"api-document","signals":["api 文档","接口文档","接口详情","请求参数","请求示例"]},
-    {"id":"sdk-document","pageType":"sdk-document","signals":["sdk 文档","sdk","下载 sdk"]},
-    {"id":"error-code","pageType":"error-code","signals":["错误码","异常码","报错说明"]},
-    {"id":"integration-guide","pageType":"integration-guide","signals":["接入指南","接入流程","快速开始","对接指南"]}
+    {"id":"product-home","pageType":"product-home","executionFamily":"marketing","signals":["产品首页","开放平台首页","产品介绍","产品中心"]},
+    {"id":"api-document","pageType":"api-document","executionFamily":"api-document","signals":["api 文档","接口文档","接口详情","请求参数","请求示例"]},
+    {"id":"sdk-document","pageType":"sdk-document","executionFamily":"sdk-document","signals":["sdk 文档","sdk","下载 sdk"]},
+    {"id":"error-code","pageType":"error-code","executionFamily":"error-code","signals":["错误码","异常码","报错说明"]},
+    {"id":"integration-guide","pageType":"integration-guide","executionFamily":"integration-guide","signals":["接入指南","接入流程","快速开始","对接指南"]}
   ]
 }

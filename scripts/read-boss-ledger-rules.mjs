@@ -36,7 +36,7 @@ if (missing.length) {
 }
 
 const selectedTemplates = templateArgs.map(template => basename(template));
-const invalidTemplate = selectedTemplates.find(template => !/^template-(0[2-9]|1[0-2])-/.test(template) || template === 'template-01-framework-shell.md');
+const invalidTemplate = selectedTemplates.find(template => !/^template-(0[2-9]|1[0-3])-/.test(template) || template === 'template-01-framework-shell.md');
 if (invalidTemplate) {
   console.error(`Invalid business template: ${invalidTemplate}`);
   process.exit(1);
