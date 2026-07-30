@@ -20,7 +20,7 @@
 
 ## Generate
 
-先读完 `generate.resources` 返回的 Markdown，再仅执行当前业务域 adapter 返回的命令。若返回 `execution`，必须按 `availability` 和 `mode` 执行：`legacy` 走旧路径；`shadow` 同时生成候选 Page Spec 并比较语义；`page-spec-default` 以 Page Spec 为默认且保留显式回退；`page-spec-only` 禁止旧路径。Page Spec 模式只编辑 `page-spec.json`，其他页面文件由固定渲染器生成。
+先读完 `generate.resources` 返回的 Markdown，再仅执行当前业务域 adapter 返回的命令。若返回 `execution`，必须按 `availability` 和 `mode` 执行：`legacy` 才可调用旧路径；`shadow`、`page-spec-default` 和 `page-spec-only` 都只以 Page Spec 作为页面作者输入。`shadow` 的历史语义比对仅由回归样例和工程脚本执行，不向页面作者暴露旧预览脚手架；`page-spec-only` 禁止任何旧路径。Page Spec 模式只编辑 `page-spec.json`，其他页面文件由固定渲染器生成。
 
 带 Shell 的业务域只使用本域 Shell；`markdown-direct` 业务域从本域 Markdown 规范生成独立预览，不加载其他业务域的 Shell、资产或运行时。
 
@@ -28,4 +28,4 @@
 
 ## Review
 
-只读 `review` 返回的 Markdown。Boss Ledger Page Spec 默认只运行 `scripts/verify-boss-ledger-page-spec.mjs --fast`，随后交付预览供用户人工验收；在 `review.md` 记录用户确认的场景。浏览器自动交互验收仅在用户明确请求时运行 `scripts/verify-boss-ledger-page-spec.mjs --browser`。Boss Ledger legacy 仍运行 `scripts/refresh-and-verify-boss-ledger-change.mjs`。只有规则、策略、渲染器、Shell、公共验证脚本或能力样例变更时，才追加 `scripts/validate-boss-ledger-page-spec-system.mjs`。Shadow 模式还必须产生通过的语义差异报告。
+只读 `review` 返回的 Markdown。Boss Ledger Page Spec 默认只运行 `scripts/verify-boss-ledger-page-spec.mjs --fast`，随后交付预览供用户人工验收；在 `review.md` 记录用户确认的场景。浏览器自动交互验收仅在用户明确请求时运行 `scripts/verify-boss-ledger-page-spec.mjs --browser`。Boss Ledger legacy 仍运行 `scripts/refresh-and-verify-boss-ledger-change.mjs`。只有规则、策略、渲染器、Shell、公共验证脚本或能力样例变更时，才追加 `scripts/validate-boss-ledger-page-spec-system.mjs`。`shadow` 页面必须引用当前已验证组合；历史语义对比仅作为工程回归证据，不阻塞页面作者使用 Page Spec。

@@ -13,10 +13,8 @@
 
 如果你是设计师或产品同学，建议按下面顺序阅读：
 
-1. [老板管账导演规则](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/modules/boss-ledger/director-rules/README.md:1)：了解页面整体气质、模板选择和交互验收规则。
-2. [导演规则使用说明](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/modules/boss-ledger/director-rules/使用说明.md:1)：了解设计师应维护什么、哪些文件不应修改。
-3. [能力迁移矩阵](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/modules/boss-ledger/migration/capability-matrix.md:1)：确认当前能生成哪些页面方案和组合。
-4. [交付流程](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/workflows/delivery.md:1)：了解一个页面从需求到人工验收的执行过程。
+1. [老板管账导演规则](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/modules/boss-ledger/director-rules/README.md:1)：设计师唯一需要维护的规则入口，包含视觉、模板应用、交互与验收三本规则的边界。
+2. [交付流程](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/workflows/delivery.md:1)：了解一个页面从需求到人工验收的执行过程。
 
 ## 目录说明
 
@@ -49,8 +47,7 @@ modules/boss-ledger/
 ├── director-rules/           设计师维护的唯一设计决策来源
 │   ├── 01-visual-constitution.md
 │   ├── 02-template-application-rules.md
-│   ├── 03-interaction-acceptance-rules.md
-│   └── 使用说明.md
+│   └── 03-interaction-acceptance-rules.md
 ├── execution/                规则编译产物、策略、规格与固定渲染器
 │   ├── generation-policy.json  当前允许生成的能力和规则模板状态
 │   ├── page-spec.schema.json   页面规格的数据结构约束
@@ -59,7 +56,7 @@ modules/boss-ledger/
 │   ├── theme/                  由视觉宪法生成的渲染主题
 │   ├── renderer/               固定页面渲染器
 │   └── release-manifest.json   当前规则与渲染器的发布指纹
-├── migration/                能力迁移状态和黄金样例说明
+├── migration/                迁移归档与黄金样例说明，不参与运行
 ├── shell/                    固定后台壳层：导航、Tabs、Footer、运行时
 ├── templates/                历史设计稿抽取归档，不参与运行
 ├── business-rules.md         业务字段、状态、权限和结果规则
@@ -91,10 +88,10 @@ modules/boss-ledger/
 
 ## 页面是如何生成的
 
-老板管账目前有两条路径：
+老板管账按当前能力策略运行：
 
-1. 新 Page Spec 路径：AI 只填写 `page-spec.json`，固定渲染器生成预览页面，适用于已经开放的页面能力。
-2. Legacy 路径：保留原有预览生成方式，用于仍在双轨验证、暂未开放或需要回退的能力。
+1. Page Spec 路径：对 `shadow`、`page-spec-default` 和 `page-spec-only` 能力，AI 只填写 `page-spec.json`，固定渲染器生成预览页面。
+2. Legacy 路径：只服务策略明确标记为 `legacy` 的能力；它是工程兼容实现，不是设计、模板或普通页面生成输入。
 
 新路径的流程如下：
 
@@ -109,7 +106,7 @@ modules/boss-ledger/
   -> 通过后交付
 ```
 
-页面不会因为规则模板存在就一定可以生成。以 [能力迁移矩阵](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/modules/boss-ledger/migration/capability-matrix.md:1) 和 `generation-policy.json` 的状态为准。旧 `templates/` 文件不再参与任何运行路径。
+页面不会因为规则模板存在就一定可以生成。以 `generation-policy.json` 的状态为准。旧 `templates/` 文件和迁移矩阵都不参与任何运行路径。
 
 ## 如何提出一个新页面
 
@@ -129,7 +126,7 @@ modules/boss-ledger/
 
 ## 如何手工修改规则
 
-完整步骤见 [导演规则使用说明](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/modules/boss-ledger/director-rules/使用说明.md:1)。最重要的原则是：
+最重要的原则是：
 
 1. 一次性页面需求不要写进通用规则。
 2. 新的硬性规则必须增加 Rule ID 和验收场景。

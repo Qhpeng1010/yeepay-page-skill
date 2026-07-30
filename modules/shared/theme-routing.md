@@ -2,71 +2,17 @@
 
 ## Purpose
 
-本文件定义页面生成前的 theme 路由规则。每次生成页面、预览或评审前，必须先选择且只选择一个 theme。
+本文件只定义跨系统的主题隔离原则，不定义任何业务系统的视觉、页面结构或组件细则。
+
+业务系统由 `references/registry.yaml` 与 `domain.json` 路由；视觉和交互只以该系统自己的导演规则或已发布设计源为准。
 
 ## Hard Rules
 
-- 每次页面生成只能选择一个 theme。
-- 选中 theme 后，本次页面的视觉、布局、组件细节、文案风格和校验规则均以该 theme 为准。
-- 不允许在同一个页面中混用两个 theme 的主色、导航结构、页面密度、组件外观或专属规则。
-- 如果公共规范与选中 theme 冲突，以选中 theme 为准；如果选中 theme 内部有更具体规则，以更具体规则为准。
-
-## Boss Ledger Routing
-
-以下场景必须选择 `modules/boss-ledger/director-rules/`：
-
-- Boss Ledger
-- boss
-- 运营后台
-- 商户后台
-- 审核后台
-- 商户资料
-- 结算记录
-- 查询列表
-- 审核列表
-- 配置列表
-- 配置管理
-- 数据首页
-- Dashboard
-- 表单
-- 详情
-- 步骤页
-- Wizard
-- Result
-- Empty State
-- 风控审核
-- 财务、对账、核销、订单、交易、退款等后台操作页面
-
-Boss Ledger 页面只允许读取 `modules/boss-ledger/director-rules/01-visual-constitution.md`、`02-template-application-rules.md` 和 `03-interaction-acceptance-rules.md` 作为设计规则，不得读取或混用 `modules/open-platform/theme.md`。
-
-视觉宪法是 Boss Ledger 的最高优先级视觉规范；逻辑模板目录和运行时主题均由导演规则自动编译，不得复制、重写或用旧 Change 包替代。
-
-## YOP Routing
-
-以下场景选择 `modules/open-platform/theme.md`：
-
-- YOP
-- 开放平台
-- 开发者中心
-- API 文档
-- 产品文档中心
-- 接口详情
-- 错误码
-- 接入流程
-- SDK
-- 示例代码
-
-YOP 页面不得读取或混用 Boss Ledger 的后台页面规则。
-
-## Default
-
-如果用户没有说明平台，默认选择 Boss Ledger，并在 `proposal.md` 的“合理假设”中说明。
+- 每次页面生成只使用已路由业务系统的一个设计源。
+- 不得从共享文档、历史 Change、其他系统的主题或组件中补充当前系统的视觉细节。
+- 共享规范与系统设计源发生冲突时，以系统设计源为准。
+- 共享规范不能定义颜色、间距、导航、组件样式、模板选择或验收细则。
 
 ## Required Output
 
-每次生成页面时，必须在 `proposal.md` 和 `page-design.md` 中记录：
-
-- Selected theme
-- Theme source
-- Routing reason
-- Explicit statement that no other theme source was mixed
+交付记录应说明：已路由系统、所用系统设计源，以及未混用其他系统规则。

@@ -127,29 +127,19 @@ function resolveStage(route, selection, stage) {
     matches: selection.matches,
     resources: unique(resources),
     commands: execution && stage === 'generate'
-      ? execution.mode === 'page-spec-default'
+      ? execution.mode === 'legacy'
         ? {
-            ...commands,
-            legacyScaffold: commands.scaffold,
+            preflight: commands.preflight,
+            scaffold: execution.legacyScaffoldCommand,
+            verify: execution.legacyVerifyCommand
+          }
+        : {
+            prepare: commands.prepare,
+            preflight: commands.preflight,
             scaffold: execution.scaffoldCommand,
             build: execution.buildCommand,
             verify: execution.verifyCommand
           }
-        : execution.mode === 'page-spec-only'
-          ? {
-              preflight: commands.preflight,
-              scaffold: execution.scaffoldCommand,
-              build: execution.buildCommand,
-              verify: execution.verifyCommand
-            }
-        : execution.mode === 'shadow'
-          ? {
-              ...commands,
-              pageSpecScaffold: execution.scaffoldCommand,
-              pageSpecBuild: execution.buildCommand,
-              pageSpecVerify: execution.verifyCommand
-            }
-          : commands
       : commands,
     execution
   };
@@ -173,6 +163,7 @@ function resolveExecution(_route, executionConfig, selected, templateId) {
   const familyId = selected.executionFamily || selected.id;
   const family = (policy.families || []).find((entry) => entry.id === familyId);
   if (!family) throw new Error(`${familyId}: execution family is missing from ${executionConfig.policy}`);
+  const mode = family.intentModes?.[selected.id] || family.mode;
   const replace = (command) => String(command || '')
     .replaceAll('{family}', familyId)
     .replaceAll('{template}', templateId || '');
@@ -181,7 +172,7 @@ function resolveExecution(_route, executionConfig, selected, templateId) {
     policyVersion: policy.policyVersion,
     family: familyId,
     availability: family.availability,
-    mode: family.intentModes?.[selected.id] || family.mode,
+    mode,
     capabilities: family.capabilities || [],
     ruleRefs: family.ruleRefs || [],
     schema: executionConfig.schema,
@@ -189,7 +180,9 @@ function resolveExecution(_route, executionConfig, selected, templateId) {
     resources: [executionConfig.coreContext, executionConfig.contextIndex, executionConfig.familyContexts?.[familyId]].filter(Boolean),
     scaffoldCommand: replace(executionConfig.scaffoldCommand),
     buildCommand: replace(executionConfig.buildCommand),
-    verifyCommand: replace(executionConfig.verifyCommand)
+    verifyCommand: replace(executionConfig.verifyCommand),
+    legacyScaffoldCommand: mode === 'legacy' ? replace(executionConfig.legacyScaffoldCommand) : undefined,
+    legacyVerifyCommand: mode === 'legacy' ? replace(executionConfig.legacyVerifyCommand) : undefined
   };
 }
 

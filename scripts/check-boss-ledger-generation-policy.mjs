@@ -12,6 +12,11 @@ const domain = JSON.parse(readFileSync(domainPath, 'utf8'));
 const registry = JSON.parse(readFileSync(registryPath, 'utf8'));
 const failures = [];
 const legacyDesignPath = ['modules', 'boss-ledger', 'design.md'].join('/');
+const directorRulePaths = [
+  'modules/boss-ledger/director-rules/01-visual-constitution.md',
+  'modules/boss-ledger/director-rules/02-template-application-rules.md',
+  'modules/boss-ledger/director-rules/03-interaction-acceptance-rules.md'
+];
 
 const allowedModes = new Set(['legacy', 'shadow', 'page-spec-default', 'page-spec-only']);
 const allowedAvailability = new Set(['available', 'workflow-only', 'pending']);
@@ -111,6 +116,35 @@ for (const [stage, resources] of Object.entries(domain.adapter?.resources || {})
     if (resource.startsWith('modules/boss-ledger/templates/') || resource === legacyDesignPath) {
       failures.push(`${stage}: legacy Boss Ledger design inputs must not be active resources (${resource})`);
     }
+  }
+}
+const expectedResources = {
+  requirement: ['modules/shared/product.md', 'modules/boss-ledger/business-rules.md'],
+  design: [directorRulePaths[0]],
+  template: [directorRulePaths[1], directorRulePaths[2], execution?.contextIndex],
+  generate: [],
+  review: ['modules/boss-ledger/business-rules.md']
+};
+for (const [stage, expected] of Object.entries(expectedResources)) {
+  const actual = domain.adapter?.resources?.[stage] || [];
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    failures.push(`${stage}: Boss Ledger active resources must match the director-rule execution boundary`);
+  }
+}
+if (!execution?.legacyScaffoldCommand?.includes('scripts/scaffold-boss-ledger-preview.mjs')) {
+  failures.push('legacy preview scaffold must be isolated as an execution-only fallback command');
+}
+if (!execution?.legacyVerifyCommand?.includes('scripts/refresh-and-verify-boss-ledger-change.mjs')) {
+  failures.push('legacy preview verification must be isolated as an execution-only fallback command');
+}
+if (domain.adapter?.commands?.generate?.scaffold) {
+  failures.push('Boss Ledger public generation commands must not expose the legacy preview scaffold');
+}
+const readRulesSource = readFileSync(resolve(root, 'scripts/read-boss-ledger-rules.mjs'), 'utf8');
+const legacyVerifierSource = readFileSync(resolve(root, 'scripts/verify-boss-ledger-change.mjs'), 'utf8');
+for (const [label, source] of [['rules-read', readRulesSource], ['legacy-verifier', legacyVerifierSource]]) {
+  if (source.includes('modules/shared/frontend.md') || source.includes('modules/shared/quality.md')) {
+    failures.push(`${label}: Boss Ledger rule evidence must not depend on shared presentation or quality rules`);
   }
 }
 

@@ -35,9 +35,7 @@ const files = [
   'modules/boss-ledger/execution/context-packs/core.md',
   'modules/boss-ledger/execution/context-packs/index.md',
   `modules/boss-ledger/execution/context-packs/${familyPack}`,
-  'modules/boss-ledger/business-rules.md',
-  'modules/shared/frontend.md',
-  'modules/shared/quality.md'
+  'modules/boss-ledger/business-rules.md'
 ];
 const missing = files.filter(file => !existsSync(resolve(root, file)));
 if (missing.length) {

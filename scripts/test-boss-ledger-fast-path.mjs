@@ -23,6 +23,26 @@ try {
   if (routed.intent !== 'query-list' || !routed.commands?.prepare?.includes('prepare-boss-ledger-page-spec.mjs')) {
     throw new Error('A query-list request with a detail Drawer did not resolve to the fast preparation path.');
   }
+  if (routed.resources.some((resource) => resource.startsWith('modules/shared/') && resource !== 'modules/shared/product.md')) {
+    throw new Error('Boss Ledger generation must not load shared design, template, frontend, or quality rules.');
+  }
+  if (!routed.commands?.scaffold?.includes('scaffold-boss-ledger-page-spec.mjs') || JSON.stringify(routed).includes('scaffold-boss-ledger-preview.mjs')) {
+    throw new Error('A Page Spec request exposed the legacy preview scaffold.');
+  }
+  const formRouted = resolveResources('创建老板管账的登记渠道联系人基础表单页', 'generate');
+  if (formRouted.execution?.mode !== 'shadow' || !formRouted.commands?.scaffold?.includes('scaffold-boss-ledger-page-spec.mjs')) {
+    throw new Error('A shadow Page Spec form did not resolve to the fixed Page Spec path.');
+  }
+  if (formRouted.resources.some((resource) => resource.startsWith('modules/shared/') && resource !== 'modules/shared/product.md') || JSON.stringify(formRouted).includes('scaffold-boss-ledger-preview.mjs')) {
+    throw new Error('A shadow Page Spec form loaded legacy shared presentation rules.');
+  }
+  const legacyRouted = resolveResources('创建老板管账经营概览仪表盘', 'generate');
+  if (legacyRouted.execution?.mode !== 'legacy'
+    || legacyRouted.commands?.prepare
+    || !legacyRouted.commands?.scaffold?.includes('scaffold-boss-ledger-preview.mjs')
+    || !legacyRouted.commands?.verify?.includes('refresh-and-verify-boss-ledger-change.mjs')) {
+    throw new Error('A legacy page did not resolve to its isolated compatibility path.');
+  }
   // mkdtemp creates the private test directory; remove it so the production command owns creation.
   rmSync(changeDir, { recursive: true, force: true });
   run([changeArg, ruleTemplate]);

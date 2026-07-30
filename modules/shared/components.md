@@ -10,7 +10,7 @@
 
 本文件只负责组件选择、组件使用边界、交互反馈和状态展示规则。
 
-本文件不负责具体颜色、间距、圆角、阴影等视觉表现。具体视觉表现以 `modules/shared/design-system.md` 和当前模块中的 `design.md` 为准。
+本文件不负责具体颜色、间距、圆角、阴影等视觉表现。具体视觉表现以已路由系统的设计规则为准。
 
 ---
 
@@ -118,9 +118,7 @@
 规则：
 
 - 每个步骤项必须配置 `title`。
-- Boss Ledger Wizard / Steps 页面中，每个步骤项还必须配置简短 `description`。
-- 副描述用于说明该步骤的产出、录入范围或校验重点，不重复标题。
-- 不允许在 Boss Ledger Wizard 页面输出只有标题、没有副描述的 Steps。
+- 如系统规则要求副描述，应说明该步骤的产出、录入范围或校验重点，不重复标题。
 
 ---
 
@@ -178,7 +176,6 @@
 - 表单重置需谨慎，避免误清空重要数据。
 - Modal 编辑 / 新增表单使用横向布局，label 文本右对齐，并按当前表单最长 label 设置统一固定 label 宽度。
 - 新增 / 编辑页面（包括新增标签页面）使用纵向布局，label 位于控件上方并左 / 上对齐；不得在一个新增页面中混用横向 label 列和纵向 label。
-- Boss Ledger Full-page Form 的取消 / 提交操作必须放入 `.boss-full-page-action-bar`：workspace 级固定栏、高 `48px`、右对齐、位于 Footer 上方；不得作为最后一个表单模块中的普通按钮组。
 
 ---
 
@@ -215,18 +212,12 @@
 
 操作列规则：
 
-- Boss Ledger 操作列容器必须添加 `data-boss-operation-column`，用于主题样式作用域和自动校验。
-- 操作列可点击文字必须显式使用主题主色 `#F36046`；Ant Design `ConfigProvider` 同时配置 `colorPrimary`、`colorLink`、`colorLinkHover`，不能只配置 `colorPrimary`。
-- 必须提供 `[data-boss-operation-column]` 作用域样式兜底，覆盖 link 按钮、普通可点击文字和“更多”触发器的 normal / focus / active 文字色。禁止依赖 Ant Design 默认 `#1677FF`，禁止用全局 `.ant-btn-link` 覆盖影响其他业务区域。
 
 按钮与状态列规则：
 
 - 查询、重置、新增、编辑、查看、导出、提交、取消等业务动作按钮默认不配置 `icon`；图标只用于列设置、关闭、侧栏收起 / 展开、全屏等工具类 icon-only 控件。
 - 查询列表列设置为 icon-only 工具控件时，使用 `#FAFAFA` 背景；Button、`.anticon` 与内部 SVG 均使用二级文字色 `rgba(0, 0, 0, .45)`，hover / focus / active 不切换为主色，不显示边框或阴影。
 - 任何查询列表 Table 都必须默认提供列设置，不得省略；使用 `SettingOutlined` + `Dropdown` / `Popover` + `Checkbox` 实现真实列显隐。
-- 查询字段超过 6 个时，展开 / 收起 Button 统一使用 `boss-query-expand-button`，文字与 `DownOutlined` / `UpOutlined` 都使用一级文字色 `rgba(0, 0, 0, .85)`，不得使用二级文字色或品牌色。
-- Query / Result 白色模块自身提供唯一的 `16px` 内容内边距；直属统计、Toolbar、Table、Pagination 外层不得再次增加左右 padding。统计卡片内部的 `16px` padding 不属于重复外层 padding，可保留。
-- **硬性规则：当直属统计使用灰色 `#F6F6F6` 卡片时，统计区域必须额外声明 `padding-top: 16px` 作为结果内容区上内边距；不得用增加左右 padding 或独立灰色外壳替代。**
 - Table Toolbar 不展示 `请选择订单`、`请选择数据`、`请选择记录` 等常驻提示；批量操作缺少勾选项时，仅在触发操作后使用 message/notification 反馈。
 - 表格状态列使用 Ant Design `Badge` 的状态点加中文文本，不使用 `Tag` 表示状态。
 
@@ -338,7 +329,7 @@
 
 ## Usage
 
-适用于轻量确认提示，但 Boss Ledger 提交确认和二次确认不得使用 Popconfirm。
+适用于轻量确认提示；高风险操作使用当前系统指定的确认方式。
 
 常见操作：
 
@@ -417,7 +408,7 @@
 
 用于无数据状态。
 
-- **硬性规则：整页或空业务 Tab 的 `Empty` 必须置于整体白色业务模块（Boss Ledger Shell 使用 `.boss-shell-empty`）中，并在扣除 Tabs、Footer 后的可用内容区内垂直、水平居中；禁止将裸 `Empty` 直接放在灰色内容背景上。**
+- 整页空状态应位于清晰的内容容器中，避免直接落在页面背景上；具体位置与样式以当前系统规则为准。
 
 ## Loading
 

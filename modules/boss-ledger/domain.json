@@ -25,20 +25,21 @@
       },
       "scaffoldCommand": "node scripts/scaffold-boss-ledger-page-spec.mjs changes/{change-id}",
       "buildCommand": "node scripts/build-boss-ledger-page-spec.mjs changes/{change-id}/page-spec.json",
-      "verifyCommand": "node scripts/verify-boss-ledger-page-spec.mjs changes/{change-id}/page-spec.json"
+      "verifyCommand": "node scripts/verify-boss-ledger-page-spec.mjs changes/{change-id}/page-spec.json",
+      "legacyScaffoldCommand": "node scripts/scaffold-boss-ledger-preview.mjs changes/{change-id}",
+      "legacyVerifyCommand": "node scripts/refresh-and-verify-boss-ledger-change.mjs changes/{change-id}/preview.html {template}"
     },
     "resources": {
       "requirement": ["modules/shared/product.md", "modules/boss-ledger/business-rules.md"],
       "design": ["modules/boss-ledger/director-rules/01-visual-constitution.md"],
       "template": ["modules/boss-ledger/director-rules/02-template-application-rules.md", "modules/boss-ledger/director-rules/03-interaction-acceptance-rules.md", "modules/boss-ledger/execution/context-packs/index.md"],
-      "generate": ["modules/shared/frontend.md", "modules/shared/quality.md"],
-      "review": ["modules/boss-ledger/business-rules.md", "modules/shared/quality.md"]
+      "generate": [],
+      "review": ["modules/boss-ledger/business-rules.md"]
     },
     "commands": {
       "generate": {
         "prepare": "node scripts/prepare-boss-ledger-page-spec.mjs changes/{change-id} {template}",
-        "preflight": "node scripts/read-boss-ledger-rules.mjs changes/{change-id} {template}",
-        "scaffold": "node scripts/scaffold-boss-ledger-preview.mjs changes/{change-id}"
+        "preflight": "node scripts/read-boss-ledger-rules.mjs changes/{change-id} {template}"
       }
     }
   },

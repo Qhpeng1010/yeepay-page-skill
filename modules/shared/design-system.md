@@ -11,8 +11,7 @@ Do not bind a generated page to a platform only from this file. Always combine t
 ## Theme Boundary
 
 - Use this file for shared page structure, interaction, accessibility, and component composition rules.
-- Use `modules/boss-ledger/director-rules/` for Boss Ledger operational admin pages.
-- Use `modules/open-platform/theme.md` for YOP / YeePay Open Platform, developer center, API documentation, and product documentation pages.
+- Use the routed module's published director rules or design source for all system-specific decisions.
 - Do not mix different platforms' primary colors, page density, navigation patterns, or exclusive component rules.
 
 ## Design Tone
@@ -26,7 +25,7 @@ Avoid decorative layouts, oversized hero sections, visual effects that reduce re
 - Use a clear page title and concise subtitle only when needed.
 - Put high-frequency controls near the top.
 - Use full-width content areas with responsive constraints.
-- Prefer the page template selected from `modules/shared/page-templates.md`.
+- Prefer the page solution selected by the routed module's own template rules.
 - Use drawers or modals for focused create, edit, detail, and review tasks.
 - Keep cards for grouped metrics, repeated objects, or modal content.
 - Do not nest cards.

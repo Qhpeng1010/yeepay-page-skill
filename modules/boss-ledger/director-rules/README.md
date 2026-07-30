@@ -12,13 +12,25 @@ OpenDesign Admin PC Ant 的 `DESIGN.md`、原有老板管账设计规范、旧�
 
 历史 Figma 链接和节点仅保存在 `../provenance/figma-index.md`，不属于运行时资源图。在页面生成、修改、评审和验收的任何阶段，都不得读取或访问 Figma；工程内已发布的 Markdown 规则和固定运行时才是唯一可用输入。
 
-面向设计师的修改方式与日常使用方法见 [使用说明.md](./使用说明.md)。
+## 设计师维护范围
+
+设计师和产品只维护下面三类长期设计决策：
+
+| 需要改变的内容 | 唯一维护位置 |
+| --- | --- |
+| 品牌、视觉 Token、密度、组件气质与响应式原则 | `01-visual-constitution.md` |
+| 页面家族、选择条件、组合与禁用组合 | `02-template-application-rules.md` |
+| 流程、状态、权限、危险确认与验收案例 | `03-interaction-acceptance-rules.md` |
+
+单页字段、样例数据、文案和默认值只写入当前 Change 的 `page-spec.json`。新增设计规则必须添加对应 Rule ID 和验收场景。
+
+`execution/` 下的策略、Schema、渲染器、断言和发布清单属于研发维护的执行层：它们实现和限制导演规则，但不是设计师需要维护的第四套规则。规则本身不能自动开放未实现的组件能力；需要新能力时，先在三本规则中说明意图和验收，再由研发扩展执行层。
 
 ## 权威边界
 
 - 本目录的导演规则是设计语义的唯一权威。
 - `01-visual-constitution.md` 的主题 Token 自动编译为 `../execution/theme/`；`02-template-application-rules.md` 的逻辑模板目录自动编译为 `../execution/rule-template-registry.json`；`../execution/context-packs/` 是由规则和策略自动生成的运行时阅读包。设计师不直接修改这些生成物，它们不得包含坐标、样式或页面代码。
-- `../execution/generation-policy.json` 是“当前允许生成哪些能力及组合”的唯一权威；Page Spec 的 `metadata.executionMode` 与 `validatedCombinations` 必须与它匹配。
+- `../execution/generation-policy.json` 是“当前允许生成哪些能力及组合”的唯一权威；Page Spec 的 `metadata.executionMode` 与 `validatedCombinations` 必须与它匹配。它是工程能力清单，不是页面风格或模板规则来源。
 - `../execution/page-spec.schema.json` 与 Page Spec 校验器是“页面规格是否合法”的唯一权威。
 - `../execution/rule-assertions.json` 是发布关键规则与自动断言之间的唯一映射；映射不完整时，系统拒绝发布。
 - `../execution/release-manifest.json` 记录本次交付绑定的规则、策略、渲染器和 Shell 版本。

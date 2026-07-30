@@ -40,8 +40,6 @@ if (!existsSync(rulesManifestPath)) {
     'modules/boss-ledger/execution/context-packs/core.md',
     'modules/boss-ledger/execution/context-packs/index.md',
     'modules/boss-ledger/business-rules.md',
-    'modules/shared/frontend.md',
-    'modules/shared/quality.md',
   ];
   const manifestRows = [...manifest.matchAll(/^- ((?:specs|modules)\/[^\s]+) \([^\n]*sha256:([a-f0-9]+)\)$/gm)];
   const manifestHashes = new Map(manifestRows.map((match) => [match[1], match[2]]));
