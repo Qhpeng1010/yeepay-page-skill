@@ -272,7 +272,7 @@ export const scenarios = [
     title: '列表内较长新增 Drawer',
     spec: base({
       changeId: '20260730-capability-17-merchant-service-config-drawer-create', pageName: '商户服务配置查询', family: 'list', templateId: 'list.regular', executionMode: 'page-spec-default',
-      request: '运营人员查询商户服务配置，并在保留列表上下文的前提下新建 8 字段服务配置。', selectionReason: '任务从列表内发起，关闭后应回到原查询结果；8 个相互独立字段需要更多纵向空间，使用列表内新增 Drawer。', refs: [...ruleRefs.list, 'BL-TPL-005', 'BL-TPL-012', 'BL-INT-004'],
+      request: '运营人员查询商户服务配置，并在保留列表上下文的前提下新建 9 字段服务配置。', selectionReason: '任务从列表内发起，关闭后应回到原查询结果；9 个相互独立字段需要更多纵向空间，使用列表内新增 Drawer。', refs: [...ruleRefs.list, 'BL-TPL-005', 'BL-TPL-012', 'BL-INT-004'],
       capabilities: ['query.basic', 'table.flat', 'table.pagination', 'table.status', 'list.drawerCreate'],
       body: { list: { query: { fields: [
         { key: 'merchantName', label: '商户名称', control: 'input' },
@@ -287,6 +287,7 @@ export const scenarios = [
             { key: 'billingMode', label: '计费方式', control: 'select', required: true, options: [{ label: '按笔计费', value: 'per-transaction' }, { label: '按月计费', value: 'monthly' }] },
             { key: 'rate', label: '费率', control: 'number', required: true, min: 0, max: 100, precision: 2 },
             { key: 'effectiveAt', label: '启用日期', control: 'date', required: true },
+            { key: 'accountManager', label: '客户经理', control: 'input' },
             { key: 'remark', label: '备注', control: 'textarea', rows: 3 }
           ]
         }

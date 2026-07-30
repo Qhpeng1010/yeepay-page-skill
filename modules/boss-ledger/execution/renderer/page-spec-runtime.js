@@ -112,6 +112,19 @@
     return rules;
   }
 
+  function resolveFormLayout(formSpec, fields) {
+    const presentation = formSpec?.presentation || 'page';
+    const fieldCount = Array.isArray(fields) ? fields.length : 0;
+    const compactThreshold = presentation === 'drawer' ? 8 : 6;
+    const useSideLabel = fieldCount <= compactThreshold;
+    return {
+      layout: useSideLabel ? 'horizontal' : 'vertical',
+      labelCol: useSideLabel ? { flex: '104px' } : undefined,
+      className: useSideLabel ? 'boss-horizontal-form' : 'boss-vertical-form',
+      fieldsClassName: useSideLabel ? 'boss-form-stack' : ''
+    };
+  }
+
   function formItem(field, options) {
     return h('div', { key: field.key, className: field.span === 2 ? 'boss-form-span-2' : '' },
       h(Form.Item, {
@@ -161,6 +174,7 @@
 
   function WorkflowDrawer({ open, workflow, initialValues, onClose, onSave }) {
     const [drawerForm] = Form.useForm();
+    const drawerLayout = resolveFormLayout({ presentation: 'drawer' }, workflow?.fields || []);
     React.useEffect(() => {
       if (open) drawerForm.setFieldsValue(initialValues || {});
     }, [drawerForm, initialValues, open]);
@@ -179,7 +193,7 @@
       footer: h('div', { className: 'boss-drawer-footer-actions' },
         h(Button, { onClick: onClose }, workflow?.cancelLabel || '取 消'),
         h(Button, { type: 'primary', onClick: submit }, workflow?.primaryLabel || '保 存'))
-    }, h(Form, { form: drawerForm, layout: 'vertical' }, h('div', { className: 'boss-drawer-form-fields' }, ...(workflow?.fields || []).map((field) => formItem(field)))));
+    }, h(Form, { form: drawerForm, layout: drawerLayout.layout, labelCol: drawerLayout.labelCol, className: drawerLayout.className, 'data-boss-form-layout': drawerLayout.layout }, h('div', { className: `boss-drawer-form-fields boss-form-grid ${drawerLayout.fieldsClassName}` }, ...(workflow?.fields || []).map((field) => formItem(field)))));
   }
 
   function dataColumns(columns) {
@@ -395,6 +409,7 @@
     allFields.forEach((field) => { if (Object.hasOwn(field, 'default')) initialValues[field.key] = field.default; });
     const currentStep = wizardSteps[step];
     const currentFields = currentStep.fields || [];
+    const formLayout = resolveFormLayout(formSpec, currentFields);
 
     const next = async () => {
       await form.validateFields(currentFields.map((field) => field.key));
@@ -452,12 +467,12 @@
       h('div', { className: 'wizard-content-frame' },
         h(Steps, { current: step, items: wizardSteps.map((item) => ({ title: item.title, description: item.description })), className: 'boss-wizard-steps' }),
         h('div', { className: 'wizard-body-grid' },
-          h('section', { className: 'wizard-form-pane' }, h(Form, { form, layout: 'vertical', initialValues },
+          h('section', { className: 'wizard-form-pane' }, h(Form, { form, layout: formLayout.layout, labelCol: formLayout.labelCol, className: formLayout.className, 'data-boss-form-layout': formLayout.layout, initialValues },
             currentStep.review && currentStep.previewTable
               ? h(Table, { className: 'boss-wizard-preview-table', rowKey: currentStep.previewTable.rowKey, columns: dataColumns(currentStep.previewTable.columns), dataSource: currentStep.previewTable.rows || [], pagination: false, size: 'small' })
               : currentStep.review
                 ? h(Descriptions, { column: 2, size: 'small', items: Object.entries(form.getFieldsValue(true)).map(([key, value]) => ({ key, label: allFields.find((field) => field.key === key)?.label || key, children: Array.isArray(value) ? `${value.length} 个文件` : String(value ?? '-') })) })
-              : h('div', { className: 'wizard-field-grid' }, ...currentFields.map((field) => formItem(field))),
+              : h('div', { className: `wizard-field-grid ${formLayout.fieldsClassName}` }, ...currentFields.map((field) => formItem(field))),
             submitError ? h(Alert, { className: 'boss-form-submit-error', type: 'error', showIcon: true, message: submitError.message, description: submitError.recovery }) : null)),
           h('aside', { className: 'wizard-guide-pane' },
             React.createElement('img', { className: 'wizard-guide-image', src: './assets/wizard-guide.png', alt: formSpec.wizardGuide.alt || '流程引导' }),
@@ -480,6 +495,7 @@
     const sections = formSpec.groups || [{ key: 'main', title: formSpec.sectionTitle, fields: formSpec.fields }];
     const initialValues = {};
     const allFields = formSpec.fields || (formSpec.groups ? formSpec.groups.flatMap((group) => group.fields || []) : []);
+    const formLayout = resolveFormLayout(formSpec, allFields);
     allFields.forEach((field) => { if (Object.hasOwn(field, 'default')) initialValues[field.key] = field.default; });
     const submit = async () => {
       const values = await form.validateFields();
@@ -504,13 +520,13 @@
     const floatingActions = [h(Button, { key: 'secondary', onClick: closeOrReset }, formSpec.submit.cancelLabel || '取 消'), h(Button, { key: 'submit', type: 'primary', loading: submitting, onClick: submit }, formSpec.submit.primaryLabel)];
     const formBody = completed
       ? h(Result, { status: 'success', title: formSpec.submit.success.title || '提交成功', subTitle: formSpec.submit.success.message, extra: h(Button, { type: 'primary', onClick: closeOrReset }, formSpec.submit.success.actionLabel || '返回填写') })
-      : h(Form, { form, layout: presentation === 'modal' ? 'horizontal' : 'vertical', labelCol: presentation === 'modal' ? { flex: '104px' } : undefined, initialValues, className: presentation === 'modal' ? 'boss-modal-form' : undefined },
-        ...(sections || []).map((section) => h('div', { key: section.key, className: 'boss-form-section' }, section.title ? h('div', { className: 'boss-section-title' }, section.title) : null, h('div', { className: 'boss-form-grid' }, ...(section.fields || []).map((field) => formItem(field))))),
+      : h(Form, { form, layout: formLayout.layout, labelCol: formLayout.labelCol, initialValues, className: formLayout.className, 'data-boss-form-layout': formLayout.layout },
+        ...(sections || []).map((section) => h('div', { key: section.key, className: 'boss-form-section' }, section.title ? h('div', { className: 'boss-section-title' }, section.title) : null, h('div', { className: `boss-form-grid ${formLayout.fieldsClassName}` }, ...(section.fields || []).map((field) => formItem(field))))),
         submitError ? h(Alert, { className: 'boss-form-submit-error', type: 'error', showIcon: true, message: submitError.message, description: submitError.recovery }) : null,
         presentation === 'page' ? pageActions : null);
     if (presentation === 'modal') return h('div', { className: 'boss-content-stack' }, h(Modal, { open: true, title: spec.metadata.pageName, width: formSpec.width || 500, closable: true, onCancel: closeOrReset, footer: completed ? null : floatingActions }, formBody));
     if (presentation === 'drawer') return h('div', { className: 'boss-content-stack' }, h(Drawer, { open: true, title: spec.metadata.pageName, width: formSpec.width || 640, closeIcon: false, onClose: closeOrReset, extra: React.createElement(Button, { type: 'text', icon: h(CloseOutlined), 'aria-label': '关闭表单', onClick: closeOrReset }), footer: completed ? null : h('div', { className: 'boss-drawer-footer-actions' }, ...floatingActions) }, formBody));
-    return h('div', { className: 'boss-content-stack' }, h('section', { className: 'boss-form-module boss-full-page-form' }, h('h2', { className: 'boss-form-title' }, spec.metadata.pageName), formSpec.sideGuide ? h('div', { className: 'boss-guided-form-layout' }, h('div', { className: 'boss-guided-form-main' }, formBody), h('aside', { className: 'boss-form-side-guide' }, h('div', { className: 'boss-form-side-guide-title' }, formSpec.sideGuide.title), h('div', { className: 'boss-form-side-guide-text' }, formSpec.sideGuide.text))) : formBody));
+    return h('div', { className: 'boss-content-stack' }, h('section', { className: 'boss-form-module boss-full-page-form' }, formSpec.sideGuide ? h('div', { className: 'boss-guided-form-layout' }, h('div', { className: 'boss-guided-form-main' }, formBody), h('aside', { className: 'boss-form-side-guide' }, h('div', { className: 'boss-form-side-guide-title' }, formSpec.sideGuide.title), h('div', { className: 'boss-form-side-guide-text' }, formSpec.sideGuide.text))) : formBody));
   }
 
   function detailItems(fields) {
@@ -539,7 +555,7 @@
       detail.anchors ? h('div', { className: 'boss-detail-with-anchors' }, h('nav', { className: 'boss-detail-anchors', 'aria-label': '详情目录' }, ...detail.groups.map((group) => h('a', { key: group.key, href: `#detail-${group.key}` }, group.title))), h('div', { className: 'boss-detail-anchor-content' }, groupedContent)) : groupedContent);
     if (detail.presentation === 'modal') return h('div', { className: 'boss-content-stack' }, h(Modal, { open, title: spec.metadata.pageName, onCancel: () => setOpen(false), footer: h(Button, { onClick: () => setOpen(false) }, detail.closeLabel || '关 闭'), width: detail.width || 640 }, body));
     if (detail.presentation === 'drawer') return h('div', { className: 'boss-content-stack' }, h(Drawer, { open, title: spec.metadata.pageName, width: detail.width || 808, closeIcon: false, onClose: () => setOpen(false), extra: React.createElement(Button, { type: 'text', icon: h(CloseOutlined), 'aria-label': '关闭详情', onClick: () => setOpen(false) }), footer: h('div', { className: 'boss-drawer-footer-actions' }, h(Button, { onClick: () => setOpen(false) }, detail.closeLabel || '我知道了')) }, body));
-    return h('div', { className: 'boss-content-stack' }, h('section', { className: 'boss-detail-module' }, h('h2', { className: 'boss-detail-title' }, spec.metadata.pageName), body));
+    return h('div', { className: 'boss-content-stack' }, h('section', { className: 'boss-detail-module' }, body));
   }
 
   function ResultPage({ spec }) {

@@ -293,6 +293,9 @@ function validateForm(errors, spec, capabilities) {
   if (form.groups) issue(errors, capabilities.includes('form.groups'), 'form.groups requires form.groups.');
   if (form.steps) issue(errors, capabilities.includes('form.steps'), 'form.steps requires form.steps.');
   issue(errors, ['page', 'drawer', 'modal'].includes(form.presentation || 'page'), 'form.presentation must be page, drawer or modal.');
+  if ((form.presentation || 'page') === 'modal') {
+    issue(errors, fields.length <= 6, 'Modal forms support at most 6 fields; use a Drawer form.');
+  }
   const intent = templateIntent(spec.metadata?.templateId);
   if (intent === 'modal-form') {
     issue(errors, form.presentation === 'modal' && Array.isArray(form.fields), 'form.modal-simple requires simple fields in a Modal presentation.');

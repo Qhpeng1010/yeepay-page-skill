@@ -15,6 +15,7 @@
 
 1. [老板管账导演规则](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/modules/boss-ledger/director-rules/README.md:1)：设计师唯一需要维护的规则入口，包含视觉、模板应用、交互与验收三本规则的边界。
 2. [交付流程](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/workflows/delivery.md:1)：了解一个页面从需求到人工验收的执行过程。
+3. [变更记录](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/CHANGELOG.md:1)：查看规则、生成和验证链路的可追溯改动。
 
 ## 目录说明
 

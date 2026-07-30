@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // rule-assertion: contract.regression
-import { readdirSync } from 'node:fs';
+// rule-assertion: visual.standalone-page-title
+import { readFileSync, readdirSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 import { readJson, validatePageSpec } from './lib/boss-ledger-page-spec.mjs';
 import { scenarios } from '../modules/boss-ledger/execution/scenarios/capability-scenarios.mjs';
@@ -33,7 +34,9 @@ const settlementForm = scenarioSpec('03-merchant-settlement-config');
 const splitRuleQuery = scenarioSpec('06-split-rule-query');
 const drawerCreateList = scenarioSpec('17-merchant-service-config-drawer-create');
 const dashboard = scenarioSpec('19-operation-dashboard');
+const contactModal = scenarioSpec('01-contact-create');
 const simplePageForm = readJson(resolve(fixtureRoot, 'valid/simple-page-form.json'));
+const runtimeSource = readFileSync(resolve(root, 'modules/boss-ledger/execution/renderer/page-spec-runtime.js'), 'utf8');
 const directCases = [
   [
     'missing-assumptions',
@@ -95,6 +98,21 @@ const directCases = [
     'form.page-simple requires simple fields in a page presentation.'
   ],
   [
+    'modal-form-over-six-fields',
+    {
+      ...contactModal,
+      form: {
+        ...contactModal.form,
+        fields: [...contactModal.form.fields,
+          { key: 'department', label: '所属部门', control: 'input' },
+          { key: 'agentName', label: '代理名称', control: 'input' },
+          { key: 'role', label: '业务角色', control: 'input' }
+        ]
+      }
+    },
+    'Modal forms support at most 6 fields; use a Drawer form.'
+  ],
+  [
     'non-wizard-guide',
     { ...settlementForm, form: { ...settlementForm.form, wizardGuide: { title: '不应出现', text: '分组表单不能使用 Wizard 引导区。' } } },
     'form.wizardGuide is reserved for form.staged-flow step forms.'
@@ -120,6 +138,18 @@ const directCases = [
     'dashboard Page Spec cannot declare list.'
   ]
 ];
+
+if (runtimeSource.includes("h('h2', { className: 'boss-form-title' }, spec.metadata.pageName)")) {
+  failures.push('standalone-form-page-title: independent form pages must not render a duplicate page heading.');
+} else {
+  passed += 1;
+}
+
+if (runtimeSource.includes("h('h2', { className: 'boss-detail-title' }, spec.metadata.pageName)")) {
+  failures.push('standalone-detail-page-title: independent detail pages must not render a duplicate page heading.');
+} else {
+  passed += 1;
+}
 
 for (const [name, spec, expectedError] of directCases) {
   const errors = validatePageSpec(spec, { root });

@@ -40,20 +40,24 @@
 .boss-column-drag-handle { width: 20px; color: var(--boss-secondary); cursor: grab; font-family: monospace; }
 .boss-batch-toolbar { min-height: 48px; display: flex; align-items: center; gap: 8px; padding: 8px 0; color: var(--boss-secondary); }
 .boss-child-table { margin: 0 16px 12px 48px; }
-.boss-form-title, .boss-detail-title { margin: 0 0 16px; font-size: 16px; font-weight: 600; color: var(--boss-text); }
 .boss-form-section + .boss-form-section, .boss-detail-section + .boss-detail-section { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--boss-divider); }
 .boss-section-title { margin-bottom: 16px; font-size: 15px; font-weight: 600; color: var(--boss-text); }
 .boss-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; }
 .boss-form-grid .boss-form-span-2 { grid-column: span 2; }
 .boss-full-page-form .boss-form-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 16px; }
 .boss-full-page-form .boss-form-grid .boss-form-span-2 { grid-column: span 2; }
+.boss-form-grid.boss-form-stack,
+.boss-full-page-form .boss-form-grid.boss-form-stack,
+.boss-drawer-form-fields.boss-form-grid.boss-form-stack,
+.wizard-field-grid.boss-form-stack { grid-template-columns: minmax(0, 640px); column-gap: 0; }
+.boss-form-grid.boss-form-stack .boss-form-span-2 { grid-column: span 1; }
 .boss-form-submit-error { margin-top: 16px; }
 .boss-form-actions { margin-top: 24px; display: flex; justify-content: flex-end; gap: 8px; }
 .boss-form-actions.is-sticky { position: sticky; bottom: 0; margin: 24px -16px -16px; padding: 12px 16px; background: var(--boss-container); border-top: 1px solid var(--boss-divider); z-index: 2; }
 .boss-drawer-form-fields .ant-form-item { margin-bottom: 16px; }
-.boss-modal-form .ant-form-item { margin-bottom: 16px; }
-.boss-modal-form .ant-form-item-label { flex: 0 0 104px; max-width: 104px; text-align: right; }
-.boss-modal-form .ant-form-item-label > label { width: 100%; justify-content: flex-end; }
+.boss-horizontal-form { --boss-form-label-width: 104px; }
+.boss-horizontal-form .ant-form-item-label { flex: 0 0 var(--boss-form-label-width); max-width: var(--boss-form-label-width); text-align: right; }
+.boss-horizontal-form .ant-form-item-label > label { width: 100%; justify-content: flex-end; }
 .boss-guided-form-layout { display: grid; grid-template-columns: minmax(0, 65%) minmax(0, 35%); gap: 24px; align-items: start; }
 .boss-guided-form-main { min-width: 0; }
 .boss-form-side-guide { min-width: 0; padding: 16px 0 16px 24px; border-left: 1px solid var(--boss-divider); color: var(--boss-secondary); line-height: 1.7; }
@@ -79,6 +83,7 @@
 .wizard-body-grid { display: grid; grid-template-columns: minmax(0, 65%) minmax(0, 35%); gap: 16px; align-items: center; }
 .wizard-form-pane { min-width: 0; width: 100%; }
 .wizard-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.wizard-field-grid.boss-form-stack { row-gap: 16px; }
 .wizard-field-grid .ant-form-item { margin-bottom: 0; }
 .wizard-field-grid .ant-input,
 .wizard-field-grid .ant-input-number,
@@ -124,4 +129,8 @@
   .boss-child-table { margin-left: 0; }
   .boss-dashboard-scope-grid .ant-form-item { margin-bottom: 16px; }
   .boss-dashboard-scope-actions { justify-content: flex-end; }
+  .boss-horizontal-form .ant-form-item-row { flex-direction: column; }
+  .boss-horizontal-form .ant-form-item-label { flex: 0 0 auto; max-width: none; padding: 0; text-align: left; }
+  .boss-horizontal-form .ant-form-item-label > label { justify-content: flex-start; }
+  .boss-horizontal-form .ant-form-item-control { width: 100%; }
 }

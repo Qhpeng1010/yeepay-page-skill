@@ -697,44 +697,35 @@ function checkSource(html) {
     fail('validate', 'Ant Design Modal body must use padding: 24px 24px 0');
   }
 
-  const modalFormBlocks = [
-    ...source.matchAll(/<Form\b(?=[^>]*className\s*=\s*["'][^"']*modal-form[^"']*["'])[\s\S]*?<\/Form>/g),
-    ...source.matchAll(/h\(\s*Form\s*,\s*\{(?=[\s\S]{0,1200}?className\s*:\s*presentation\s*===\s*['"]modal['"]\s*\?\s*['"][^'"]*modal-form)[\s\S]{0,1600}?\}\s*,/g)
-  ].map((match) => match[0]);
-  const modalLabelIssues = [];
-  modalFormBlocks.forEach((block, index) => {
-    const labels = [...block.matchAll(/<Form\.Item\b[^>]*\blabel\s*=\s*["']([^"']+)["']/g)].map((match) => match[1].trim());
-    if (labels.length <= 1) return;
-    const labelLengths = new Set(labels.map((label) => Array.from(label.replace(/\s+/g, '')).length));
-    const fixedWidth = /labelCol\s*=\s*{{\s*flex\s*:\s*["']\d+px["']\s*}}/i.test(block);
-    const adaptiveWidth = /labelCol\s*=\s*{{\s*flex\s*:\s*["']none["']\s*}}/i.test(block);
-    if (labelLengths.size > 1 && !fixedWidth) {
-      modalLabelIssues.push(`form ${index + 1} has mixed label lengths but no fixed label width`);
-    }
-    if (labelLengths.size === 1 && !(fixedWidth || adaptiveWidth)) {
-      modalLabelIssues.push(`form ${index + 1} must declare fixed or content-adaptive label width`);
-    }
-  });
-  if (modalLabelIssues.length > 0) {
-    fail('validate', `Modal form label width strategy invalid: ${modalLabelIssues.join('; ')}`);
+  const hasRuleDrivenFormLayout = /function resolveFormLayout\(formSpec, fields\)[\s\S]{0,500}const compactThreshold = presentation === 'drawer' \? 8 : 6;[\s\S]{0,300}const useSideLabel = fieldCount <= compactThreshold;[\s\S]{0,400}layout: useSideLabel \? 'horizontal' : 'vertical',[\s\S]{0,300}labelCol: useSideLabel \? \{ flex: '104px' \} : undefined,[\s\S]{0,300}fieldsClassName: useSideLabel \? 'boss-form-stack' : ''/i.test(source);
+  const hasSingleColumnStack = /\.boss-form-grid\.boss-form-stack[\s\S]{0,300}grid-template-columns\s*:\s*minmax\(0,\s*640px\)/i.test(source);
+  const hasResponsiveHorizontalFormFallback = /@media\s*\(max-width:\s*768px\)[\s\S]{0,5000}\.boss-horizontal-form\s+\.ant-form-item-row\s*\{[^}]*flex-direction\s*:\s*column/i.test(source)
+    && /\.boss-horizontal-form\s+\.ant-form-item-label\s*\{[^}]*text-align\s*:\s*left/i.test(source);
+  if (hasRuleDrivenFormLayout && hasSingleColumnStack && hasResponsiveHorizontalFormFallback) {
+    pass('validate', 'Form layout follows the 6/8 field thresholds and reflows to label-above single-column on narrow screens');
   } else {
-    pass('validate', 'Modal form label widths follow mixed-fixed/equal-adaptive strategy');
+    fail('validate', 'Forms must use side-label single-column layout at or below the 6/8 thresholds, then label-above field grids above them');
   }
 
-  if (usesTemplate('form.modal-simple')) {
-    const modalHasHorizontalForm = /React\.createElement\(\s*Modal\b[\s\S]{0,8000}React\.createElement\(\s*Form\s*,\s*\{[^}]*layout\s*:\s*['"]horizontal['"]/i.test(source)
-      || /<Modal\b[\s\S]{0,8000}<Form\b[^>]*\blayout\s*=\s*['"]horizontal['"]/i.test(source)
-      || /h\(\s*Form\s*,\s*\{[\s\S]{0,1200}?layout\s*:\s*presentation\s*===\s*['"]modal['"]\s*\?\s*['"]horizontal['"]/i.test(source);
-    const modalHasFixedLabelColumn = /React\.createElement\(\s*Modal\b[\s\S]{0,8000}labelCol\s*:\s*\{[^}]*flex\s*:\s*['"][^'"]*\d+px['"]/i.test(source)
-      || /<Modal\b[\s\S]{0,8000}\blabelCol\s*=\s*{{\s*flex\s*:\s*['"][^'"]*\d+px['"]/i.test(source)
-      || /h\(\s*Form\s*,\s*\{[\s\S]{0,1200}?labelCol\s*:\s*presentation\s*===\s*['"]modal['"]\s*\?\s*\{\s*flex\s*:\s*['"][^'"]*\d+px['"]/i.test(source);
-    if (modalHasHorizontalForm && modalHasFixedLabelColumn) {
-      pass('validate', 'Modal form uses right-aligned horizontal labels with one fixed label column');
+  if (usesTemplate('form.modal-simple') || usesTemplate('form.page-simple') || usesTemplate('form.guided-simple')) {
+    if (hasRuleDrivenFormLayout) {
+      pass('validate', 'Modal and independent forms use the rule-driven 6-field layout threshold');
     } else {
-      fail('validate', 'Modal forms must use horizontal layout with right-aligned labels and one fixed label width based on the longest label');
+      fail('validate', 'Modal and independent forms must use the rule-driven 6-field layout threshold');
     }
   } else {
-    pass('validate', 'Modal-form template not selected; Modal form alignment check skipped');
+    pass('validate', 'Simple-form template not selected; simple form alignment check skipped');
+  }
+
+  if (usesTemplate('form.staged-flow')) {
+    const wizardUsesCurrentStep = /const currentFields = currentStep\.fields \|\| \[\];\s*const formLayout = resolveFormLayout\(formSpec, currentFields\);/i.test(source);
+    if (hasRuleDrivenFormLayout && wizardUsesCurrentStep) {
+      pass('validate', 'Staged form evaluates the 6-field threshold from the current step only');
+    } else {
+      fail('validate', 'Staged forms must evaluate the 6-field threshold from the current step only');
+    }
+  } else {
+    pass('validate', 'Staged-form template not selected; current-step layout check skipped');
   }
 
   const hasDrawer = /\bDrawer\b/.test(source);
@@ -767,30 +758,25 @@ function checkSource(html) {
     pass('validate', 'No Drawer usage detected; Drawer header/footer checks skipped');
   }
 
-  const hasEmbeddedDrawerForm = Boolean(pageSpec?.list?.table?.primaryAction?.form)
-    || Boolean(pageSpec?.list?.table?.rowActions?.some((action) => action.type === 'edit' && action.form));
+  const embeddedDrawerForms = [
+    pageSpec?.list?.table?.primaryAction?.form,
+    ...(pageSpec?.list?.table?.rowActions || []).filter((action) => action.type === 'edit').map((action) => action.form)
+  ].filter(Boolean);
+  const hasEmbeddedDrawerForm = embeddedDrawerForms.length > 0;
   if (hasEmbeddedDrawerForm) {
-    const drawerHasVerticalForm = /React\.createElement\(\s*Drawer\b[\s\S]{0,8000}React\.createElement\(\s*Form\s*,\s*\{[^}]*layout\s*:\s*['"]vertical['"]/i.test(source)
-      || /<Drawer\b[\s\S]{0,8000}<Form\b[^>]*\blayout\s*=\s*['"]vertical['"]/i.test(source)
-      || /h\(\s*Form\s*,\s*\{[^}]*layout\s*:\s*['"]vertical['"]/i.test(source);
-    if (drawerHasVerticalForm) {
-      pass('validate', 'List-contained Drawer form uses vertical label-above-control alignment');
+    const drawerExceedsEightFields = embeddedDrawerForms.some((form) => (form.fields || []).length > 8);
+    if (hasRuleDrivenFormLayout && drawerExceedsEightFields) {
+      pass('validate', 'List-contained Drawer form with more than 8 fields uses label-above field-grid alignment');
+    } else if (hasRuleDrivenFormLayout) {
+      pass('validate', 'List-contained Drawer form with 8 or fewer fields uses side-label single-column alignment');
     } else {
-      fail('validate', 'List-contained Drawer forms must use vertical layout with labels above controls and left/top alignment');
+      fail('validate', 'List-contained Drawer forms must use the 8-field layout threshold');
     }
   } else {
     pass('validate', 'No list-contained Drawer form is declared; Drawer form alignment check skipped');
   }
 
-  if (usesTemplate('form.grouped-page') || usesTemplate('form.page-simple')) {
-    const pageHasVerticalForm = /React\.createElement\(\s*Form\s*,\s*\{[^}]*layout\s*:\s*['"]vertical['"]/i.test(source)
-      || /\bh\(\s*Form\s*,\s*\{[^}]*layout\s*:\s*['"]vertical['"]/i.test(source)
-      || /<Form\b[^>]*\blayout\s*=\s*['"]vertical['"]/i.test(source);
-    if (pageHasVerticalForm) {
-      pass('validate', 'New/edit page form uses vertical label-above-control alignment');
-    } else {
-      fail('validate', 'New/edit pages, including new tag pages, must use vertical forms with labels above controls');
-    }
+  if (usesTemplate('form.grouped-page') || usesTemplate('form.page-simple') || usesTemplate('form.guided-simple')) {
     const fullPageActionBarCss = /\.boss-full-page-action-bar[^\{]*\{[^}]*position\s*:\s*fixed/i.test(source)
       && /\.boss-full-page-action-bar[^\{]*\{[^}]*height\s*:\s*48px/i.test(source)
       && /\.boss-full-page-action-bar[^\{]*\{[^}]*bottom\s*:\s*32px/i.test(source)

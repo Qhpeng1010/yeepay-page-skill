@@ -14,7 +14,7 @@
 
 ## 表单选择
 
-**BL-TPL-005** 先按任务入口和来源上下文选择表单承载：从列表、详情或当前任务内发起，且关闭后应回到不变上下文时，使用嵌入式 Modal 或 Drawer；从菜单、深链接、待办或独立任务进入，或没有值得保留的来源上下文时，使用独立表单页。字段数量只用于嵌入式表单的密度判断：6 个及以下相互独立字段通常使用 Modal，7 至 10 个字段或需要更多纵向空间时通常使用 Drawer，不能替代入口与上下文判断。
+**BL-TPL-005** 先按任务入口和来源上下文选择表单承载：从列表、详情或当前任务内发起，且关闭后应回到不变上下文时，使用嵌入式 Modal 或 Drawer；从菜单、深链接、待办或独立任务进入，或没有值得保留的来源上下文时，使用独立表单页。Modal 最多承载 6 个相互独立字段，超过 6 个字段必须使用 Drawer；Drawer 与独立页内的标签方向和字段排列严格按 `BL-VIS-012` 的数量阈值执行，不能用字段数量替代入口与上下文判断。
 
 **BL-TPL-006** 字段数量只是默认判断，不可用来压缩承载不下的工作流。复杂联动、远程校验、上传、长校验过程或不可逆提交，可将表单提升为 Drawer、全页或步骤流程。
 
@@ -64,11 +64,11 @@
 | `list.inline-summary` | `list` | 行内汇总查询列表 | 查询结果只需 1 至 2 个轻量指标，并且这些指标应服务于结果工具栏扫描。 | `BL-TPL-001`、`BL-TPL-010`、`BL-TPL-011`、`BL-INT-001`、`BL-INT-003`、`BL-INT-008` |
 | `list.card-summary` | `list` | 统计卡片查询列表 | 查询结果需要 3 至 5 个重要指标，且统计不承担独立业务操作。 | `BL-TPL-001`、`BL-TPL-010`、`BL-TPL-011`、`BL-VIS-009`、`BL-INT-001`、`BL-INT-003`、`BL-INT-008` |
 | `form.modal-simple` | `form` | 简短弹窗表单 | 6 个及以下相互独立字段，从来源页面发起且关闭后应保留来源上下文。 | `BL-TPL-003`、`BL-TPL-005`、`BL-VIS-012`、`BL-INT-005`、`BL-INT-006` |
-| `form.page-simple` | `form` | 独立简单表单页 | 从菜单、深链接、待办或独立任务进入；字段少且相互独立，不需要业务分组、右侧说明或步骤流转。 | `BL-TPL-003`、`BL-TPL-005`、`BL-TPL-006`、`BL-TPL-019`、`BL-VIS-012`、`BL-INT-005`、`BL-INT-006` |
-| `form.grouped-page` | `form` | 分组全页表单 | 字段超过 10 个，或存在多个可在同一阶段完成、但必须分别核对的业务分组。 | `BL-TPL-003`、`BL-TPL-005`、`BL-TPL-006`、`BL-TPL-007`、`BL-TPL-008`、`BL-VIS-012`、`BL-INT-005`、`BL-INT-006` |
-| `form.guided-simple` | `form` | 带说明的简单表单 | 字段较少的单阶段任务，且右侧说明能直接帮助资金、开户或服务信息核对。 | `BL-TPL-005`、`BL-TPL-006`、`BL-TPL-008`、`BL-VIS-015`、`BL-INT-005`、`BL-INT-006` |
-| `form.staged-flow` | `form` | 分阶段与上传复核流程 | 后续工作依赖前一步完成，或需要上传、解析、复核、提交和结果反馈的明确阶段。 | `BL-TPL-003`、`BL-TPL-006`、`BL-TPL-007`、`BL-TPL-008`、`BL-INT-005`、`BL-INT-006`、`BL-INT-007` |
-| `detail.record` | `detail` | 受控记录详情 | 只读查看一个业务对象；根据上下文连续性和信息规模选择 Modal、Drawer 或独立详情页。 | `BL-TPL-003`、`BL-TPL-009`、`BL-TPL-013`、`BL-VIS-014`、`BL-INT-004` |
+| `form.page-simple` | `form` | 独立简单表单页 | 从菜单、深链接、待办或独立任务进入；字段少且相互独立，不需要业务分组、右侧说明或步骤流转。 | `BL-TPL-003`、`BL-TPL-005`、`BL-TPL-006`、`BL-TPL-019`、`BL-VIS-012`、`BL-VIS-019`、`BL-INT-005`、`BL-INT-006` |
+| `form.grouped-page` | `form` | 分组全页表单 | 字段超过 10 个，或存在多个可在同一阶段完成、但必须分别核对的业务分组。 | `BL-TPL-003`、`BL-TPL-005`、`BL-TPL-006`、`BL-TPL-007`、`BL-TPL-008`、`BL-VIS-012`、`BL-VIS-019`、`BL-INT-005`、`BL-INT-006` |
+| `form.guided-simple` | `form` | 带说明的简单表单 | 字段较少的单阶段任务，且右侧说明能直接帮助资金、开户或服务信息核对。 | `BL-TPL-005`、`BL-TPL-006`、`BL-TPL-008`、`BL-VIS-012`、`BL-VIS-015`、`BL-INT-005`、`BL-INT-006` |
+| `form.staged-flow` | `form` | 分阶段与上传复核流程 | 后续工作依赖前一步完成，或需要上传、解析、复核、提交和结果反馈的明确阶段。 | `BL-TPL-003`、`BL-TPL-006`、`BL-TPL-007`、`BL-TPL-008`、`BL-VIS-012`、`BL-INT-005`、`BL-INT-006`、`BL-INT-007` |
+| `detail.record` | `detail` | 受控记录详情 | 只读查看一个业务对象；根据上下文连续性和信息规模选择 Modal、Drawer 或独立详情页。 | `BL-TPL-003`、`BL-TPL-009`、`BL-TPL-013`、`BL-VIS-014`、`BL-VIS-019`、`BL-INT-004` |
 | `result.workflow` | `result` | 流程结果反馈 | 已知来源操作完成、失败、警告或处理中需要反馈和恢复动作；不能作为独立业务入口。 | `BL-TPL-003`、`BL-TPL-017`、`BL-INT-006`、`BL-INT-008` |
 | `dashboard.overview` | `dashboard` | 经营概览首页 | 主要任务是监控业务健康度、分布或趋势；使用统一数据范围、3 至 5 个核心指标、分布、趋势和排行，且不包含逐条查询或处理。 | `BL-TPL-002`、`BL-TPL-020`、`BL-INT-001`、`BL-INT-015` |
 | `state.embedded` | `empty-state` | 页面内状态 | 空数据、错误、无权限或缺少前置条件属于来源页面的状态，不单独替代原页面家族。 | `BL-TPL-004`、`BL-INT-008` |
@@ -79,4 +79,4 @@
 
 | 规则包 | 规则引用 |
 | --- | --- |
-| `core` | `BL-VIS-001`、`BL-VIS-002`、`BL-VIS-004`、`BL-VIS-006`、`BL-VIS-007`、`BL-VIS-008`、`BL-VIS-009`、`BL-VIS-010`、`BL-VIS-015`、`BL-VIS-016`、`BL-VIS-017`、`BL-VIS-018`、`BL-INT-011`、`BL-INT-012`、`BL-INT-013`、`BL-INT-014` |
+| `core` | `BL-VIS-001`、`BL-VIS-002`、`BL-VIS-004`、`BL-VIS-006`、`BL-VIS-007`、`BL-VIS-008`、`BL-VIS-009`、`BL-VIS-010`、`BL-VIS-015`、`BL-VIS-016`、`BL-VIS-017`、`BL-VIS-018`、`BL-VIS-019`、`BL-INT-011`、`BL-INT-012`、`BL-INT-013`、`BL-INT-014` |

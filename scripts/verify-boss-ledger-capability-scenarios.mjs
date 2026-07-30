@@ -38,6 +38,8 @@ async function clickButton(page, pattern) {
 
 async function verifyContactModal(page) {
   await page.locator('.ant-modal').waitFor();
+  assert(await page.locator('.ant-modal [data-boss-form-layout="horizontal"]').count() === 1, 'Modal form with 6 or fewer fields must use side labels.');
+  assert(await page.locator('.ant-modal .boss-form-stack').count() === 1, 'Modal form with 6 or fewer fields must stack fields in one column.');
   await clickButton(page, /保\s*存/);
   await page.getByText('请填写联系人姓名', { exact: true }).waitFor();
   await page.locator('#contactName').fill('张敏');
@@ -51,6 +53,8 @@ async function verifySimplePageForm(page) {
   await page.getByText('登记渠道联系人', { exact: true }).first().waitFor();
   assert(await page.locator('.ant-modal').count() === 0, 'Independent simple form must not open in a Modal.');
   assert(await page.locator('.boss-full-page-action-bar').count() === 1, 'Independent simple form requires the workspace fixed action bar.');
+  assert(await page.locator('[data-boss-form-layout="horizontal"]').count() === 1, 'Independent form with 6 or fewer fields must use side labels.');
+  assert(await page.locator('.boss-form-stack').count() === 1, 'Independent form with 6 or fewer fields must stack fields in one column.');
   await clickButton(page, /保\s*存/);
   await page.getByText('请填写联系人姓名', { exact: true }).waitFor();
   await page.locator('#contactName').fill('张敏');
@@ -62,9 +66,12 @@ async function verifySimplePageForm(page) {
 
 async function verifyGuidedForm(page) {
   await page.getByText('结算账户变更', { exact: true }).waitFor();
+  assert(await page.locator('[data-boss-form-layout="horizontal"]').count() === 1, 'Guided form with 6 or fewer fields must use side labels.');
+  assert(await page.locator('.boss-form-stack').count() === 1, 'Guided form with 6 or fewer fields must stack fields in one column.');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(100);
   assert(!(await page.locator('.boss-form-side-guide').isVisible()), 'The guided form side explanation must be hidden on narrow screens.');
+  assert(await page.locator('.ant-form-item-row').first().evaluate((element) => getComputedStyle(element).flexDirection) === 'column', 'Narrow screens must move side labels above their controls.');
 }
 
 async function verifyGroupedForm(page) {
@@ -72,9 +79,12 @@ async function verifyGroupedForm(page) {
   await page.getByText('收款账户', { exact: true }).waitFor();
   await page.locator('.boss-section-title', { hasText: '结算周期' }).waitFor();
   assert(await page.locator('.boss-full-page-action-bar').count() === 1, 'Grouped form requires the workspace fixed action bar.');
+  assert(await page.locator('[data-boss-form-layout="vertical"]').count() === 1, 'Independent form scope with more than 6 fields must put labels above controls.');
+  assert(await page.locator('.boss-form-grid:not(.boss-form-stack)').count() === 3, 'Grouped form with more than 6 fields must use field grids.');
 }
 
 async function verifyAccountWizard(page) {
+  assert(await page.locator('[data-boss-form-layout="horizontal"]').count() === 1, 'A step with 6 or fewer fields must use side labels.');
   await clickButton(page, /^下一步$/);
   await selectOption(page, 'accountType', '对公账户');
   await page.locator('#legalCard').fill('6222021234567890123');
@@ -155,6 +165,8 @@ async function verifyCreateAndDrawerDetail(page) {
   await clickButton(page, '新增规则');
   const createDrawer = page.locator('.ant-drawer').filter({ hasText: '新增结算规则' });
   await createDrawer.getByText('新增结算规则', { exact: true }).waitFor();
+  assert(await createDrawer.locator('[data-boss-form-layout="horizontal"]').count() === 1, 'Drawer form with 8 or fewer fields must use side labels.');
+  assert(await createDrawer.locator('.boss-form-stack').count() === 1, 'Drawer form with 8 or fewer fields must stack fields in one column.');
   await createDrawer.locator('#ruleName').fill('新增结算规则');
   await createDrawer.locator('#merchantName').fill('北京新锐商贸有限公司');
   const status = createDrawer.locator('#status');
@@ -204,7 +216,9 @@ async function verifyDrawerCreate(page) {
   await clickButton(page, '新增配置');
   const drawer = page.locator('.ant-drawer').filter({ hasText: '新增商户服务配置' });
   await drawer.getByText('新增商户服务配置', { exact: true }).waitFor();
-  assert(await drawer.locator('.ant-form-item').count() === 8, 'Long list-contained creation must render all eight fields in one Drawer.');
+  assert(await drawer.locator('.ant-form-item').count() === 9, 'Long list-contained creation must render all nine fields in one Drawer.');
+  assert(await drawer.locator('[data-boss-form-layout="vertical"]').count() === 1, 'Drawer form with more than 8 fields must put labels above controls.');
+  assert(await drawer.locator('.boss-drawer-form-fields.boss-form-grid:not(.boss-form-stack)').count() === 1, 'Drawer form with more than 8 fields must use a field grid.');
   await drawer.getByRole('button', { name: '关闭表单', exact: true }).click();
   await page.getByText('商户服务配置列表', { exact: true }).waitFor();
 }

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "system": "boss-ledger",
   "source": "modules/boss-ledger/director-rules/02-template-application-rules.md",
-  "templateVersion": "rules-f795b7420f74",
+  "templateVersion": "rules-6fc62155e7d1",
   "core": {
     "title": "固定运行边界",
     "ruleIds": [
@@ -18,6 +18,7 @@
       "BL-VIS-016",
       "BL-VIS-017",
       "BL-VIS-018",
+      "BL-VIS-019",
       "BL-INT-011",
       "BL-INT-012",
       "BL-INT-013",
@@ -98,6 +99,7 @@
         "BL-TPL-006",
         "BL-TPL-019",
         "BL-VIS-012",
+        "BL-VIS-019",
         "BL-INT-005",
         "BL-INT-006"
       ]
@@ -114,6 +116,7 @@
         "BL-TPL-007",
         "BL-TPL-008",
         "BL-VIS-012",
+        "BL-VIS-019",
         "BL-INT-005",
         "BL-INT-006"
       ]
@@ -127,6 +130,7 @@
         "BL-TPL-005",
         "BL-TPL-006",
         "BL-TPL-008",
+        "BL-VIS-012",
         "BL-VIS-015",
         "BL-INT-005",
         "BL-INT-006"
@@ -142,6 +146,7 @@
         "BL-TPL-006",
         "BL-TPL-007",
         "BL-TPL-008",
+        "BL-VIS-012",
         "BL-INT-005",
         "BL-INT-006",
         "BL-INT-007"
@@ -157,6 +162,7 @@
         "BL-TPL-009",
         "BL-TPL-013",
         "BL-VIS-014",
+        "BL-VIS-019",
         "BL-INT-004"
       ]
     },

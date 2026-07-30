@@ -3,7 +3,7 @@
   "system": "boss-ledger",
   "scope": "release-critical",
   "requiredRuleIds": [
-    "BL-VIS-002", "BL-VIS-006", "BL-VIS-010", "BL-VIS-012", "BL-VIS-013", "BL-VIS-015", "BL-VIS-018",
+    "BL-VIS-002", "BL-VIS-006", "BL-VIS-010", "BL-VIS-012", "BL-VIS-013", "BL-VIS-015", "BL-VIS-018", "BL-VIS-019",
     "BL-TPL-001", "BL-TPL-003", "BL-TPL-005", "BL-TPL-007", "BL-TPL-008", "BL-TPL-010", "BL-TPL-013", "BL-TPL-016", "BL-TPL-017", "BL-TPL-018", "BL-TPL-019", "BL-TPL-020",
     "BL-INT-003", "BL-INT-004", "BL-INT-005", "BL-INT-006", "BL-INT-007", "BL-INT-008", "BL-INT-010", "BL-INT-011", "BL-INT-012", "BL-INT-013", "BL-INT-014", "BL-INT-015"
   ],
@@ -15,6 +15,7 @@
     { "ruleId": "BL-VIS-013", "assertions": [{ "id": "visual.layout-density", "source": "scripts/validate-boss-ledger-preview.mjs" }] },
     { "ruleId": "BL-VIS-015", "assertions": [{ "id": "browser.render", "source": "scripts/validate-boss-ledger-preview.mjs" }] },
     { "ruleId": "BL-VIS-018", "assertions": [{ "id": "visual.theme-compilation", "source": "scripts/build-boss-ledger-context-packs.mjs" }] },
+    { "ruleId": "BL-VIS-019", "assertions": [{ "id": "visual.standalone-page-title", "source": "scripts/test-boss-ledger-page-spec-contract.mjs" }] },
     { "ruleId": "BL-TPL-001", "assertions": [{ "id": "contract.family-structure", "source": "scripts/lib/boss-ledger-page-spec.mjs" }] },
     { "ruleId": "BL-TPL-003", "assertions": [{ "id": "contract.family-structure", "source": "scripts/lib/boss-ledger-page-spec.mjs" }] },
     { "ruleId": "BL-TPL-005", "assertions": [{ "id": "contract.form-workflow", "source": "scripts/lib/boss-ledger-page-spec.mjs" }] },
