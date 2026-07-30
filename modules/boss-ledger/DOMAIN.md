@@ -12,6 +12,8 @@ Boss Ledger 是易宝运营、商户、审核、财务、风控、客服和系�
 
 `domain.json` 是页面意图的机器路由合约。不要直接扫描所有 `modules/`；运行 `scripts/resolve-resources.mjs` 后，只读取当前阶段返回的 Markdown 路径。
 
+对单一且已开放的页面，首次使用 `--stage generate` 路由，只读取 `core.md`、`index.md` 和恰好一个页面族规则包。已路由后不得再分类、扫描历史 Change、读取其他模块或旧模板、使用通用 UI 技能重选页面类型，或逐段阅读固定渲染器；路由不明确或能力缺失时才退出快路径。
+
 Boss Ledger 始终使用 `modules/boss-ledger/shell/` 的固定壳层。它是执行资产，不是需要逐文件读入上下文的设计规范。
 
 ## Director And Execution Boundary
@@ -23,3 +25,5 @@ Boss Ledger 始终使用 `modules/boss-ledger/shell/` 的固定壳层。它是�
 - `execution/release-manifest.json` 绑定规则、策略、契约、渲染器与 Shell 版本。
 
 当前 `list` 与 `dashboard` 默认使用 Page Spec；`form` 和 `detail` 处于 shadow；独立 `result` 与 `empty-state` 尚未作为独立入口开放。列表内新增或编辑属于 `list` 的受控组合，不作为脱离来源上下文的独立抽屉表单入口。
+
+页面选择对业务用户使用中文方案名称，例如“分阶段配置流程”；`form.staged-flow` 等实现模板 ID 只出现在 `page-design.md`、Page Spec 和执行证据中。

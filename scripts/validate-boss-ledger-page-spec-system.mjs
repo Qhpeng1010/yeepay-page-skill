@@ -11,6 +11,7 @@ const steps = [
   ['release-manifest', 'scripts/verify-boss-ledger-release-manifest.mjs', []],
   ['contract-regression', 'scripts/test-boss-ledger-page-spec-contract.mjs', []],
   ['fast-path-regression', 'scripts/test-boss-ledger-fast-path.mjs', []],
+  ['wizard-recipe-regression', 'scripts/test-boss-ledger-wizard-recipe.mjs', []],
   ['capability-scenario-materialization', 'scripts/materialize-boss-ledger-capability-scenarios.mjs', []],
   ['capability-scenarios-form', 'scripts/verify-boss-ledger-capability-scenarios.mjs', ['--scenarios=01-contact-create,16-contact-create-page,02-settlement-account-change,03-merchant-settlement-config']],
   ['capability-scenarios-workflow', 'scripts/verify-boss-ledger-capability-scenarios.mjs', ['--scenarios=04-settlement-account-wizard,05-settlement-import,06-split-rule-query']],
