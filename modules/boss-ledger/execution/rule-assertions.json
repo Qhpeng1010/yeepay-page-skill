@@ -3,9 +3,9 @@
   "system": "boss-ledger",
   "scope": "release-critical",
   "requiredRuleIds": [
-    "BL-VIS-002", "BL-VIS-006", "BL-VIS-010", "BL-VIS-012", "BL-VIS-013", "BL-VIS-015", "BL-VIS-018", "BL-VIS-019",
-    "BL-TPL-001", "BL-TPL-003", "BL-TPL-005", "BL-TPL-007", "BL-TPL-008", "BL-TPL-010", "BL-TPL-013", "BL-TPL-016", "BL-TPL-017", "BL-TPL-018", "BL-TPL-019", "BL-TPL-020",
-    "BL-INT-003", "BL-INT-004", "BL-INT-005", "BL-INT-006", "BL-INT-007", "BL-INT-008", "BL-INT-010", "BL-INT-011", "BL-INT-012", "BL-INT-013", "BL-INT-014", "BL-INT-015"
+    "BL-VIS-002", "BL-VIS-006", "BL-VIS-010", "BL-VIS-012", "BL-VIS-013", "BL-VIS-015", "BL-VIS-018", "BL-VIS-019", "BL-VIS-020", "BL-VIS-021",
+    "BL-TPL-001", "BL-TPL-003", "BL-TPL-005", "BL-TPL-007", "BL-TPL-008", "BL-TPL-010", "BL-TPL-013", "BL-TPL-016", "BL-TPL-017", "BL-TPL-018", "BL-TPL-019", "BL-TPL-020", "BL-TPL-021",
+    "BL-INT-003", "BL-INT-004", "BL-INT-005", "BL-INT-006", "BL-INT-007", "BL-INT-008", "BL-INT-010", "BL-INT-011", "BL-INT-012", "BL-INT-013", "BL-INT-014", "BL-INT-015", "BL-INT-016", "BL-INT-017"
   ],
   "coverage": [
     { "ruleId": "BL-VIS-002", "assertions": [{ "id": "canonical.shell", "source": "scripts/verify-boss-ledger-page-runtime.mjs" }] },
@@ -16,6 +16,8 @@
     { "ruleId": "BL-VIS-015", "assertions": [{ "id": "browser.render", "source": "scripts/validate-boss-ledger-preview.mjs" }] },
     { "ruleId": "BL-VIS-018", "assertions": [{ "id": "visual.theme-compilation", "source": "scripts/build-boss-ledger-context-packs.mjs" }] },
     { "ruleId": "BL-VIS-019", "assertions": [{ "id": "visual.standalone-page-title", "source": "scripts/test-boss-ledger-page-spec-contract.mjs" }] },
+    { "ruleId": "BL-VIS-020", "assertions": [{ "id": "visual.guided-simple-layout", "source": "scripts/test-boss-ledger-page-spec-contract.mjs" }] },
+    { "ruleId": "BL-VIS-021", "assertions": [{ "id": "visual.result-composition", "source": "scripts/test-boss-ledger-page-spec-contract.mjs" }] },
     { "ruleId": "BL-TPL-001", "assertions": [{ "id": "contract.family-structure", "source": "scripts/lib/boss-ledger-page-spec.mjs" }] },
     { "ruleId": "BL-TPL-003", "assertions": [{ "id": "contract.family-structure", "source": "scripts/lib/boss-ledger-page-spec.mjs" }] },
     { "ruleId": "BL-TPL-005", "assertions": [{ "id": "contract.form-workflow", "source": "scripts/lib/boss-ledger-page-spec.mjs" }] },
@@ -28,6 +30,7 @@
     { "ruleId": "BL-TPL-018", "assertions": [{ "id": "contract.metadata-selection", "source": "scripts/lib/boss-ledger-page-spec.mjs" }, { "id": "delivery.page-design", "source": "scripts/build-boss-ledger-page-spec.mjs" }] },
     { "ruleId": "BL-TPL-019", "assertions": [{ "id": "contract.simple-page-form", "source": "scripts/lib/boss-ledger-page-spec.mjs" }] },
     { "ruleId": "BL-TPL-020", "assertions": [{ "id": "contract.dashboard-structure", "source": "scripts/lib/boss-ledger-page-spec.mjs" }, { "id": "behavior.dashboard-scenario", "source": "scripts/verify-boss-ledger-capability-scenarios.mjs" }] },
+    { "ruleId": "BL-TPL-021", "assertions": [{ "id": "contract.result-composition", "source": "scripts/lib/boss-ledger-page-spec.mjs" }, { "id": "visual.result-composition", "source": "scripts/test-boss-ledger-page-spec-contract.mjs" }] },
     { "ruleId": "BL-INT-003", "assertions": [{ "id": "browser.render", "source": "scripts/validate-boss-ledger-preview.mjs" }, { "id": "behavior.list-workflow", "source": "scripts/verify-boss-ledger-page-spec.mjs" }] },
     { "ruleId": "BL-INT-004", "assertions": [{ "id": "behavior.list-workflow", "source": "scripts/verify-boss-ledger-page-spec.mjs" }] },
     { "ruleId": "BL-INT-005", "assertions": [{ "id": "contract.form-workflow", "source": "scripts/lib/boss-ledger-page-spec.mjs" }, { "id": "behavior.form-workflow", "source": "scripts/verify-boss-ledger-page-spec.mjs" }] },
@@ -39,6 +42,8 @@
     { "ruleId": "BL-INT-012", "assertions": [{ "id": "delivery.derived-artifacts", "source": "scripts/verify-boss-ledger-page-spec.mjs" }, { "id": "delivery.release-manifest", "source": "scripts/verify-boss-ledger-release-manifest.mjs" }] },
     { "ruleId": "BL-INT-013", "assertions": [{ "id": "delivery.derived-artifacts", "source": "scripts/verify-boss-ledger-page-spec.mjs" }] },
     { "ruleId": "BL-INT-014", "assertions": [{ "id": "delivery.derived-artifacts", "source": "scripts/verify-boss-ledger-page-spec.mjs" }] },
-    { "ruleId": "BL-INT-015", "assertions": [{ "id": "contract.dashboard-structure", "source": "scripts/lib/boss-ledger-page-spec.mjs" }, { "id": "behavior.dashboard-scenario", "source": "scripts/verify-boss-ledger-capability-scenarios.mjs" }] }
+    { "ruleId": "BL-INT-015", "assertions": [{ "id": "contract.dashboard-structure", "source": "scripts/lib/boss-ledger-page-spec.mjs" }, { "id": "behavior.dashboard-scenario", "source": "scripts/verify-boss-ledger-capability-scenarios.mjs" }] },
+    { "ruleId": "BL-INT-016", "assertions": [{ "id": "interaction.simple-page-actions", "source": "scripts/test-boss-ledger-page-spec-contract.mjs" }] },
+    { "ruleId": "BL-INT-017", "assertions": [{ "id": "contract.result-composition", "source": "scripts/lib/boss-ledger-page-spec.mjs" }, { "id": "visual.result-composition", "source": "scripts/test-boss-ledger-page-spec-contract.mjs" }] }
   ]
 }

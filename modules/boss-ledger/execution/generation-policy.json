@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "policyVersion": "2026.07.30.3",
+  "policyVersion": "2026.07.30.9",
   "system": "boss-ledger",
   "allowedModes": ["shadow", "page-spec-default", "page-spec-only"],
   "families": [
@@ -45,7 +45,7 @@
       "intentModes": {
         "simple-page-form": "shadow"
       },
-      "ruleRefs": ["BL-TPL-005", "BL-TPL-006", "BL-TPL-007", "BL-INT-005", "BL-INT-006", "BL-INT-007"],
+      "ruleRefs": ["BL-TPL-005", "BL-TPL-006", "BL-TPL-007", "BL-TPL-021", "BL-VIS-021", "BL-INT-005", "BL-INT-006", "BL-INT-007", "BL-INT-017"],
       "capabilities": [
         "form.simple",
         "form.groups",
@@ -55,7 +55,9 @@
         "form.sideGuide",
         "form.upload",
         "form.reviewTable",
-        "form.returnSource"
+        "form.returnSource",
+        "form.resultSummary",
+        "form.resultFeedback"
       ]
     },
     {
@@ -79,8 +81,8 @@
       "intents": ["result"],
       "availability": "workflow-only",
       "mode": "page-spec-only",
-      "ruleRefs": ["BL-TPL-003", "BL-TPL-017", "BL-INT-006"],
-      "capabilities": ["result.basic", "result.summary"]
+      "ruleRefs": ["BL-TPL-003", "BL-TPL-017", "BL-TPL-021", "BL-VIS-021", "BL-INT-006", "BL-INT-017"],
+      "capabilities": ["result.basic", "result.summary", "result.feedback"]
     },
     {
       "id": "dashboard",
@@ -167,16 +169,16 @@
       "family": "form",
       "templateIds": ["form.page-simple"],
       "evidence": "browser-business",
-      "capabilities": ["form.simple", "form.stickyActions"],
-      "ruleRefs": ["BL-TPL-005", "BL-TPL-019", "BL-INT-005", "BL-INT-006"]
+      "capabilities": ["form.simple"],
+      "ruleRefs": ["BL-TPL-005", "BL-TPL-019", "BL-INT-005", "BL-INT-006", "BL-INT-016"]
     },
     {
       "id": "form.guided-simple",
       "family": "form",
       "templateIds": ["form.guided-simple"],
       "evidence": "browser-business",
-      "capabilities": ["form.simple", "form.sideGuide", "form.stickyActions"],
-      "ruleRefs": ["BL-TPL-006", "BL-TPL-008"]
+      "capabilities": ["form.simple", "form.sideGuide"],
+      "ruleRefs": ["BL-TPL-006", "BL-TPL-008", "BL-VIS-020", "BL-INT-016"]
     },
     {
       "id": "form.steps",
@@ -199,8 +201,8 @@
       "family": "form",
       "templateIds": ["form.staged-flow"],
       "evidence": "browser-business",
-      "capabilities": ["form.steps", "form.review", "form.stickyActions", "form.upload", "form.reviewTable"],
-      "ruleRefs": ["BL-TPL-006", "BL-TPL-007", "BL-INT-005", "BL-INT-006"]
+      "capabilities": ["form.steps", "form.review", "form.stickyActions", "form.upload", "form.reviewTable", "form.resultSummary", "form.resultFeedback"],
+      "ruleRefs": ["BL-TPL-006", "BL-TPL-007", "BL-TPL-021", "BL-VIS-021", "BL-INT-005", "BL-INT-006", "BL-INT-017"]
     },
     {
       "id": "detail.grouped",

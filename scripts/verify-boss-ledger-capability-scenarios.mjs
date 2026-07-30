@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 // rule-assertion: behavior.capability-scenarios
 // rule-assertion: behavior.dashboard-scenario
+// rule-assertion: interaction.simple-page-actions
+// rule-assertion: visual.guided-simple-layout
+// rule-assertion: visual.result-composition
+// rule-assertion: behavior.result-composition
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -52,7 +56,10 @@ async function verifyContactModal(page) {
 async function verifySimplePageForm(page) {
   await page.getByText('登记渠道联系人', { exact: true }).first().waitFor();
   assert(await page.locator('.ant-modal').count() === 0, 'Independent simple form must not open in a Modal.');
-  assert(await page.locator('.boss-full-page-action-bar').count() === 1, 'Independent simple form requires the workspace fixed action bar.');
+  const actions = page.locator('.boss-inline-form-actions');
+  assert(await actions.count() === 1, 'Independent simple form must render one inline action area.');
+  assert(await page.locator('.boss-full-page-action-bar').count() === 0, 'Independent simple form must not render the workspace fixed action bar.');
+  assert((await actions.getByRole('button').allTextContents()).map((text) => text.replace(/\s/g, '')).join('|') === '保存|取消', 'Independent simple form actions must place primary before secondary.');
   assert(await page.locator('[data-boss-form-layout="horizontal"]').count() === 1, 'Independent form with 6 or fewer fields must use side labels.');
   assert(await page.locator('.boss-form-stack').count() === 1, 'Independent form with 6 or fewer fields must stack fields in one column.');
   await clickButton(page, /保\s*存/);
@@ -68,10 +75,22 @@ async function verifyGuidedForm(page) {
   await page.getByText('结算账户变更', { exact: true }).waitFor();
   assert(await page.locator('[data-boss-form-layout="horizontal"]').count() === 1, 'Guided form with 6 or fewer fields must use side labels.');
   assert(await page.locator('.boss-form-stack').count() === 1, 'Guided form with 6 or fewer fields must stack fields in one column.');
+  assert(await page.locator('.boss-form-side-guide-image[src="./assets/guided-form-default.png"]').count() === 1, 'Guided form must render the default business illustration.');
+  assert(await page.locator('.boss-inline-form-actions').count() === 1, 'Guided form must render inline actions after the fields.');
+  assert(await page.locator('.boss-full-page-action-bar').count() === 0, 'Guided form must not use the workspace fixed action bar.');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(100);
   assert(!(await page.locator('.boss-form-side-guide').isVisible()), 'The guided form side explanation must be hidden on narrow screens.');
   assert(await page.locator('.ant-form-item-row').first().evaluate((element) => getComputedStyle(element).flexDirection) === 'column', 'Narrow screens must move side labels above their controls.');
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await selectOption(page, 'accountType', '对公账户');
+  await page.locator('#legalCard').fill('6222021234567890123');
+  await page.locator('#accountName').fill('杭州星云商贸有限公司');
+  await page.locator('#bankAccount').fill('6222021234567890123');
+  await clickButton(page, /提\s*交/);
+  await page.getByText('提交成功', { exact: true }).waitFor();
+  assert(await page.locator('.boss-result-page').count() === 1, 'Guided form completion must render the centered result page.');
+  assert(await page.locator('.boss-form-side-guide').count() === 0, 'Guided form completion must not retain the right-side guide illustration.');
 }
 
 async function verifyGroupedForm(page) {
@@ -116,6 +135,8 @@ async function verifyUploadWizard(page) {
   await page.getByText('导入完成', { exact: true }).waitFor();
   await page.getByText('成功导入 2 条记录。', { exact: true }).first().waitFor();
   await page.locator('.ant-modal-confirm').waitFor({ state: 'hidden' });
+  assert(await page.locator('.boss-result-summary-panel').count() === 1, 'Composite workflow result must render one summary panel before actions.');
+  assert(await page.locator('.boss-result-feedback').count() === 1, 'Composite workflow result must render optional feedback after actions.');
 }
 
 async function verifySimpleList(page) {

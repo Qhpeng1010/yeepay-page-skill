@@ -6,6 +6,7 @@
 // rule-assertion: contract.simple-page-form
 // rule-assertion: contract.detail-structure
 // rule-assertion: contract.result-boundary
+// rule-assertion: contract.result-composition
 // rule-assertion: contract.dashboard-structure
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
@@ -282,6 +283,36 @@ function allFormFields(form) {
   return [];
 }
 
+function validateResultSummary(errors, summary, capabilities, capability, location) {
+  if (summary === undefined) return;
+  issue(errors, summary && typeof summary === 'object' && !Array.isArray(summary), `${location} must be an object.`);
+  const items = summary?.items;
+  issue(errors, Array.isArray(items) && items.length >= 2 && items.length <= 6, `${location}.items must contain 2 to 6 items.`);
+  if (items) {
+    issue(errors, unique(items.map((item) => item?.key)), `${location}.items keys must be unique.`);
+    items.forEach((item, index) => {
+      issue(errors, nonEmptyString(item?.key) && nonEmptyString(item?.label), `${location}.items[${index}] requires key and label.`);
+      issue(errors, item && Object.hasOwn(item, 'value'), `${location}.items[${index}].value is required.`);
+      if (item?.unit !== undefined) issue(errors, nonEmptyString(item.unit), `${location}.items[${index}].unit must be a non-empty string.`);
+    });
+  }
+  issue(errors, capabilities.includes(capability), `${location} requires ${capability}.`);
+}
+
+function validateResultFeedback(errors, feedback, capabilities, capability, location) {
+  if (feedback === undefined) return;
+  issue(errors, feedback && typeof feedback === 'object' && !Array.isArray(feedback), `${location} must be an object.`);
+  issue(errors, nonEmptyString(feedback?.question), `${location}.question is required.`);
+  if (feedback?.options !== undefined) {
+    issue(errors, Array.isArray(feedback.options) && feedback.options.length >= 3 && feedback.options.length <= 5, `${location}.options must contain 3 to 5 items.`);
+    if (Array.isArray(feedback.options)) {
+      issue(errors, unique(feedback.options.map((option) => option?.key || option?.value || option?.label)), `${location}.options must have unique keys.`);
+      feedback.options.forEach((option, index) => issue(errors, nonEmptyString(option?.label), `${location}.options[${index}].label is required.`));
+    }
+  }
+  issue(errors, capabilities.includes(capability), `${location} requires ${capability}.`);
+}
+
 function validateForm(errors, spec, capabilities) {
   const form = spec.form;
   issue(errors, form && typeof form === 'object', 'form is required for family=form.');
@@ -302,7 +333,7 @@ function validateForm(errors, spec, capabilities) {
   }
   if (intent === 'simple-page-form') {
     issue(errors, form.presentation === 'page' && Array.isArray(form.fields), 'form.page-simple requires simple fields in a page presentation.');
-    issue(errors, capabilities.includes('form.stickyActions') && form.stickyActions === true, 'form.page-simple requires form.stickyActions.');
+    issue(errors, !capabilities.includes('form.stickyActions') && form.stickyActions !== true, 'form.page-simple uses inline actions and cannot declare form.stickyActions.');
   }
   if (intent === 'full-page-form') {
     issue(errors, form.presentation === 'page' && Array.isArray(form.groups), 'form.grouped-page requires grouped fields in a page presentation.');
@@ -310,6 +341,7 @@ function validateForm(errors, spec, capabilities) {
   if (intent === 'guided-form') {
     issue(errors, form.presentation === 'page' && Array.isArray(form.fields), 'form.guided-simple requires simple fields in a page presentation.');
     issue(errors, capabilities.includes('form.sideGuide'), 'form.guided-simple requires form.sideGuide.');
+    issue(errors, !capabilities.includes('form.stickyActions') && form.stickyActions !== true, 'form.guided-simple uses inline actions and cannot declare form.stickyActions.');
     issue(errors, form.sideGuide && nonEmptyString(form.sideGuide.title) && nonEmptyString(form.sideGuide.text), 'form.guided-simple requires sideGuide title and text.');
   } else if (form.sideGuide !== undefined) {
     errors.push('form.sideGuide is reserved for form.guided-simple.');
@@ -346,10 +378,17 @@ function validateForm(errors, spec, capabilities) {
   issue(errors, unique(fields.map((field) => field.key)), 'Form field keys must be unique.');
   issue(errors, form.submit && nonEmptyString(form.submit.primaryLabel), 'form.submit.primaryLabel is required.');
   issue(errors, form.submit && form.submit.success && nonEmptyString(form.submit.success.message), 'form.submit.success.message is required.');
-  if (form.submit?.success?.actionType) {
-    issue(errors, ['reset', 'return-source'].includes(form.submit.success.actionType), 'form.submit.success.actionType is unsupported.');
-    if (form.submit.success.actionType === 'return-source') issue(errors, capabilities.includes('form.returnSource'), 'return-source success actions require form.returnSource.');
+  const success = form.submit?.success;
+  if (success?.actionType) {
+    issue(errors, ['reset', 'return-source'].includes(success.actionType), 'form.submit.success.actionType is unsupported.');
+    if (success.actionType === 'return-source') issue(errors, capabilities.includes('form.returnSource'), 'return-source success actions require form.returnSource.');
   }
+  if (success?.secondaryAction !== undefined) {
+    issue(errors, success.secondaryAction && typeof success.secondaryAction === 'object', 'form.submit.success.secondaryAction must be an object.');
+    issue(errors, nonEmptyString(success.secondaryAction?.label), 'form.submit.success.secondaryAction.label is required.');
+  }
+  validateResultSummary(errors, success?.summary, capabilities, 'form.resultSummary', 'form.submit.success.summary');
+  validateResultFeedback(errors, success?.feedback, capabilities, 'form.resultFeedback', 'form.submit.success.feedback');
   const failure = form.submit?.failure;
   if (failure) {
     issue(errors, failure && typeof failure === 'object', 'form.submit.failure must be an object.');
@@ -412,7 +451,13 @@ function validateResult(errors, spec, capabilities, options) {
   issue(errors, capabilities.includes('result.basic'), 'Result Page Spec requires result.basic.');
   issue(errors, ['success', 'error', 'warning', 'info'].includes(result.status), 'result.status is invalid.');
   issue(errors, nonEmptyString(result.title) && nonEmptyString(result.description), 'result.title and result.description are required.');
-  issue(errors, Array.isArray(result.actions) && result.actions.length > 0, 'result.actions are required.');
+  issue(errors, Array.isArray(result.actions) && result.actions.length >= 1 && result.actions.length <= 2, 'result.actions must contain 1 to 2 actions.');
+  if (Array.isArray(result.actions)) {
+    issue(errors, unique(result.actions.map((action) => action?.key)), 'result.actions keys must be unique.');
+    result.actions.forEach((action, index) => issue(errors, nonEmptyString(action?.key) && nonEmptyString(action?.label), `result.actions[${index}] requires key and label.`));
+  }
+  validateResultSummary(errors, result.summary, capabilities, 'result.summary', 'result.summary');
+  validateResultFeedback(errors, result.feedback, capabilities, 'result.feedback', 'result.feedback');
 }
 
 function validateDashboard(errors, spec, capabilities) {

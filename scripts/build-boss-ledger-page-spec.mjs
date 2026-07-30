@@ -94,6 +94,12 @@ try {
       resolve(changeDir, 'assets/wizard-guide.png')
     ]);
   }
+  if (spec.metadata.templateId === 'form.guided-simple') {
+    fixedCopies.push([
+      resolve(root, 'modules/boss-ledger/haipeng_A_happy_b111oss_with_a_big_beard_in_a_white_suit_front_vie_06d8a20a-8e56-4833-8592-73eeb5b35bb8 1.png'),
+      resolve(changeDir, 'assets/guided-form-default.png')
+    ]);
+  }
   fixedCopies.forEach(([source, target]) => cpSync(source, target));
 
   const vendorSource = resolve(shellRoot, 'vendor');

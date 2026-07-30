@@ -119,10 +119,74 @@
     const useSideLabel = fieldCount <= compactThreshold;
     return {
       layout: useSideLabel ? 'horizontal' : 'vertical',
-      labelCol: useSideLabel ? { flex: '104px' } : undefined,
+      labelCol: useSideLabel ? { flex: '136px' } : undefined,
       className: useSideLabel ? 'boss-horizontal-form' : 'boss-vertical-form',
       fieldsClassName: useSideLabel ? 'boss-form-stack' : ''
     };
+  }
+
+  function resultSummaryPanel(summary) {
+    const items = summary?.items || [];
+    if (!items.length) return null;
+    return h('div', { className: 'boss-result-summary-panel' }, ...items.map((item) => h('div', { key: item.key, className: 'boss-result-summary-item' },
+      h('span', { className: 'boss-result-summary-label' }, item.label),
+      h('span', { className: 'boss-result-summary-value' }, `${item.value}${item.unit || ''}`))));
+  }
+
+  function ResultFeedback({ feedback }) {
+    const [selected, setSelected] = React.useState(null);
+    const defaults = [
+      { key: 'very-dissatisfied', label: '非常不满意', icon: 'FrownOutlined' },
+      { key: 'dissatisfied', label: '不满意', icon: 'FrownOutlined' },
+      { key: 'neutral', label: '一般', icon: 'MehOutlined' },
+      { key: 'satisfied', label: '满意', icon: 'SmileOutlined' },
+      { key: 'very-satisfied', label: '非常满意', icon: 'SmileOutlined' }
+    ];
+    const options = feedback?.options?.length ? feedback.options : defaults;
+    return h('div', { className: 'boss-result-feedback' },
+      h('div', { className: 'boss-result-feedback-question' }, feedback.question || '本次操作体验感觉如何？'),
+      h('div', { className: 'boss-result-feedback-options', role: 'group', 'aria-label': feedback.question || '结果体验反馈' }, ...options.map((option, index) => {
+        const Icon = icons[option.icon || defaults[index % defaults.length].icon] || icons.InfoCircleOutlined;
+        return h(Button, {
+          key: option.key || option.value || option.label,
+          type: 'text',
+          className: `boss-result-feedback-option${selected === (option.key || option.value || option.label) ? ' is-selected' : ''}`,
+          'aria-pressed': selected === (option.key || option.value || option.label),
+          onClick: () => { setSelected(option.key || option.value || option.label); message.success('感谢您的反馈'); }
+        }, Icon ? h(Icon) : null, h('span', null, option.label));
+      })));
+  }
+
+  function renderWorkflowResult({ status = 'success', title, description, actions, summary, feedback }) {
+    const resultActions = (actions || []).filter(Boolean);
+    return h(Result, {
+      className: 'boss-workflow-result',
+      status,
+      title,
+      subTitle: description,
+      extra: h('div', { className: 'boss-result-extra' },
+        resultSummaryPanel(summary),
+        resultActions.length ? h(Space, { className: 'boss-result-actions', wrap: true }, ...resultActions.map((action, index) => h(Button, {
+          key: action.key || action.label,
+          type: index === 0 ? 'primary' : 'default',
+          onClick: action.onClick
+        }, action.label))) : null,
+        feedback ? h(ResultFeedback, { feedback }) : null)
+    });
+  }
+
+  function renderFormSuccessResult(success, onPrimary, onSecondary) {
+    return renderWorkflowResult({
+      status: 'success',
+      title: success.title || '提交成功',
+      description: success.message,
+      summary: success.summary,
+      feedback: success.feedback,
+      actions: [
+        { key: 'primary', label: success.actionLabel || '返回填写', onClick: onPrimary },
+        success.secondaryAction ? { key: 'secondary', label: success.secondaryAction.label, onClick: onSecondary } : null
+      ]
+    });
   }
 
   function formItem(field, options) {
@@ -449,18 +513,13 @@
 
     if (completed) {
       const returnSource = formSpec.submit.success.actionType === 'return-source';
-      return h('div', { className: 'boss-content-stack' }, h('section', { className: 'boss-result-page' }, h(Result, {
-        status: 'success',
-        title: formSpec.submit.success.title || '提交成功',
-        subTitle: formSpec.submit.success.message,
-        extra: h(Button, { type: 'primary', onClick: () => {
+      return h('div', { className: 'boss-content-stack' }, h('section', { className: 'boss-result-page' }, renderFormSuccessResult(formSpec.submit.success, () => {
           if (returnSource) {
             message.info('已返回来源列表');
             return;
           }
           setCompleted(false); setSubmitError(null); form.resetFields(); setStep(0);
-        } }, formSpec.submit.success.actionLabel || (returnSource ? '返回列表' : '继续新增'))
-      })));
+        }, () => { setCompleted(false); setSubmitError(null); form.resetFields(); setStep(0); })));
     }
 
     return h('div', { className: 'boss-wizard-page', 'data-boss-wizard-template': 'fixed' },
@@ -516,17 +575,27 @@
 
     const closeOrReset = () => { setCompleted(false); setSubmitError(null); form.resetFields(); };
     const presentation = formSpec.presentation || 'page';
-    const pageActions = h('div', { className: `boss-form-actions ${presentation === 'page' ? 'boss-full-page-action-bar' : formSpec.stickyActions ? 'is-sticky' : ''}`, 'data-boss-full-page-action-bar': presentation === 'page' ? true : undefined }, h(Button, { onClick: () => form.resetFields() }, formSpec.submit.cancelLabel || '取 消'), h(Button, { type: 'primary', loading: submitting, onClick: submit }, formSpec.submit.primaryLabel));
+    const usesInlinePageActions = presentation === 'page' && ['form.page-simple', 'form.guided-simple'].includes(spec.metadata.templateId);
+    const pageActions = h('div', {
+      className: `boss-form-actions ${usesInlinePageActions ? 'boss-inline-form-actions' : presentation === 'page' ? 'boss-full-page-action-bar' : formSpec.stickyActions ? 'is-sticky' : ''}`,
+      'data-boss-form-action-mode': usesInlinePageActions ? 'inline' : presentation === 'page' ? 'fixed' : undefined,
+      'data-boss-full-page-action-bar': presentation === 'page' && !usesInlinePageActions ? true : undefined
+    }, ...(usesInlinePageActions
+      ? [h(Button, { key: 'submit', type: 'primary', loading: submitting, onClick: submit }, formSpec.submit.primaryLabel), h(Button, { key: 'secondary', onClick: () => form.resetFields() }, formSpec.submit.cancelLabel || '取 消')]
+      : [h(Button, { key: 'secondary', onClick: () => form.resetFields() }, formSpec.submit.cancelLabel || '取 消'), h(Button, { key: 'submit', type: 'primary', loading: submitting, onClick: submit }, formSpec.submit.primaryLabel)]));
     const floatingActions = [h(Button, { key: 'secondary', onClick: closeOrReset }, formSpec.submit.cancelLabel || '取 消'), h(Button, { key: 'submit', type: 'primary', loading: submitting, onClick: submit }, formSpec.submit.primaryLabel)];
     const formBody = completed
-      ? h(Result, { status: 'success', title: formSpec.submit.success.title || '提交成功', subTitle: formSpec.submit.success.message, extra: h(Button, { type: 'primary', onClick: closeOrReset }, formSpec.submit.success.actionLabel || '返回填写') })
+      ? renderFormSuccessResult(formSpec.submit.success, closeOrReset, closeOrReset)
       : h(Form, { form, layout: formLayout.layout, labelCol: formLayout.labelCol, initialValues, className: formLayout.className, 'data-boss-form-layout': formLayout.layout },
         ...(sections || []).map((section) => h('div', { key: section.key, className: 'boss-form-section' }, section.title ? h('div', { className: 'boss-section-title' }, section.title) : null, h('div', { className: `boss-form-grid ${formLayout.fieldsClassName}` }, ...(section.fields || []).map((field) => formItem(field))))),
         submitError ? h(Alert, { className: 'boss-form-submit-error', type: 'error', showIcon: true, message: submitError.message, description: submitError.recovery }) : null,
         presentation === 'page' ? pageActions : null);
     if (presentation === 'modal') return h('div', { className: 'boss-content-stack' }, h(Modal, { open: true, title: spec.metadata.pageName, width: formSpec.width || 500, closable: true, onCancel: closeOrReset, footer: completed ? null : floatingActions }, formBody));
     if (presentation === 'drawer') return h('div', { className: 'boss-content-stack' }, h(Drawer, { open: true, title: spec.metadata.pageName, width: formSpec.width || 640, closeIcon: false, onClose: closeOrReset, extra: React.createElement(Button, { type: 'text', icon: h(CloseOutlined), 'aria-label': '关闭表单', onClick: closeOrReset }), footer: completed ? null : h('div', { className: 'boss-drawer-footer-actions' }, ...floatingActions) }, formBody));
-    return h('div', { className: 'boss-content-stack' }, h('section', { className: 'boss-form-module boss-full-page-form' }, formSpec.sideGuide ? h('div', { className: 'boss-guided-form-layout' }, h('div', { className: 'boss-guided-form-main' }, formBody), h('aside', { className: 'boss-form-side-guide' }, h('div', { className: 'boss-form-side-guide-title' }, formSpec.sideGuide.title), h('div', { className: 'boss-form-side-guide-text' }, formSpec.sideGuide.text))) : formBody));
+    if (completed) return h('div', { className: 'boss-content-stack' }, h('section', { className: 'boss-result-page' }, formBody));
+    return h('div', { className: 'boss-content-stack' }, h('section', { className: `boss-form-module boss-full-page-form${usesInlinePageActions ? ' boss-inline-action-page' : ''}` }, formSpec.sideGuide ? h('div', { className: 'boss-guided-form-layout' }, h('div', { className: 'boss-guided-form-main' }, formBody), h('aside', { className: 'boss-form-side-guide' },
+      React.createElement('img', { className: 'boss-form-side-guide-image', src: './assets/guided-form-default.png', alt: '老板管账业务引导插图' }),
+      h('div', { className: 'boss-form-side-guide-title' }, formSpec.sideGuide.title), h('div', { className: 'boss-form-side-guide-text' }, formSpec.sideGuide.text))) : formBody));
   }
 
   function detailItems(fields) {
@@ -560,11 +629,13 @@
 
   function ResultPage({ spec }) {
     const result = spec.result;
-    return h('div', { className: 'boss-content-stack' }, h('section', { className: 'boss-result-page' }, h(Result, {
+    return h('div', { className: 'boss-content-stack' }, h('section', { className: 'boss-result-page' }, renderWorkflowResult({
       status: result.status,
       title: result.title,
-      subTitle: result.description,
-      extra: h(Space, null, ...result.actions.map((action, index) => h(Button, { key: action.key, type: index === 0 ? 'primary' : 'default', onClick: () => message.info(action.feedback || action.label) }, action.label)))
+      description: result.description,
+      summary: result.summary,
+      feedback: result.feedback,
+      actions: result.actions.map((action) => ({ ...action, onClick: () => message.info(action.feedback || action.label) }))
     })));
   }
 

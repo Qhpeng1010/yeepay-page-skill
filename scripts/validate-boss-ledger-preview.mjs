@@ -2,6 +2,8 @@
 // rule-assertion: visual.component-integrity
 // rule-assertion: visual.layout-density
 // rule-assertion: browser.render
+// rule-assertion: visual.guided-simple-layout
+// rule-assertion: interaction.simple-page-actions
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, resolve } from 'node:path';
@@ -697,7 +699,7 @@ function checkSource(html) {
     fail('validate', 'Ant Design Modal body must use padding: 24px 24px 0');
   }
 
-  const hasRuleDrivenFormLayout = /function resolveFormLayout\(formSpec, fields\)[\s\S]{0,500}const compactThreshold = presentation === 'drawer' \? 8 : 6;[\s\S]{0,300}const useSideLabel = fieldCount <= compactThreshold;[\s\S]{0,400}layout: useSideLabel \? 'horizontal' : 'vertical',[\s\S]{0,300}labelCol: useSideLabel \? \{ flex: '104px' \} : undefined,[\s\S]{0,300}fieldsClassName: useSideLabel \? 'boss-form-stack' : ''/i.test(source);
+  const hasRuleDrivenFormLayout = /function resolveFormLayout\(formSpec, fields\)[\s\S]{0,500}const compactThreshold = presentation === 'drawer' \? 8 : 6;[\s\S]{0,300}const useSideLabel = fieldCount <= compactThreshold;[\s\S]{0,400}layout: useSideLabel \? 'horizontal' : 'vertical',[\s\S]{0,300}labelCol: useSideLabel \? \{ flex: '136px' \} : undefined,[\s\S]{0,300}fieldsClassName: useSideLabel \? 'boss-form-stack' : ''/i.test(source);
   const hasSingleColumnStack = /\.boss-form-grid\.boss-form-stack[\s\S]{0,300}grid-template-columns\s*:\s*minmax\(0,\s*640px\)/i.test(source);
   const hasResponsiveHorizontalFormFallback = /@media\s*\(max-width:\s*768px\)[\s\S]{0,5000}\.boss-horizontal-form\s+\.ant-form-item-row\s*\{[^}]*flex-direction\s*:\s*column/i.test(source)
     && /\.boss-horizontal-form\s+\.ant-form-item-label\s*\{[^}]*text-align\s*:\s*left/i.test(source);
@@ -776,7 +778,37 @@ function checkSource(html) {
     pass('validate', 'No list-contained Drawer form is declared; Drawer form alignment check skipped');
   }
 
-  if (usesTemplate('form.grouped-page') || usesTemplate('form.page-simple') || usesTemplate('form.guided-simple')) {
+  const inlineSimpleActionLayout = /usesInlinePageActions\s*=\s*presentation\s*===\s*'page'[\s\S]{0,180}\['form\.page-simple', 'form\.guided-simple'\][\s\S]{0,1100}boss-inline-form-actions/i.test(source)
+    && /\.boss-inline-form-actions[^{]*\{[^}]*width\s*:\s*min\(100%,\s*640px\)[^}]*justify-content\s*:\s*flex-start[^}]*gap\s*:\s*16px/i.test(source)
+    && /\.boss-horizontal-form[^{]*\{[^}]*--boss-form-label-width\s*:\s*136px[^}]*--boss-form-control-offset\s*:\s*var\(--boss-form-label-width\)/i.test(source)
+    && /\.boss-horizontal-form\s+\.boss-inline-form-actions[^{]*\{[^}]*margin-left\s*:\s*var\(--boss-form-control-offset\)/i.test(source)
+    && /data-boss-form-action-mode[^\n]{0,160}inline/i.test(source);
+  if (usesTemplate('form.page-simple') || usesTemplate('form.guided-simple')) {
+    const fixedBarExcludesInlinePages = /data-boss-full-page-action-bar'\s*:\s*presentation\s*===\s*'page'\s*&&\s*!usesInlinePageActions\s*\?\s*true/i.test(source);
+    if (inlineSimpleActionLayout && fixedBarExcludesInlinePages) {
+      pass('validate', 'Independent simple forms use the inline input-aligned primary-then-secondary action area');
+    } else {
+      fail('validate', 'Independent simple forms must place input-aligned primary-then-secondary actions directly after the fields, without a fixed bottom bar');
+    }
+  } else {
+    pass('validate', 'Independent simple form not selected; inline action-area check skipped');
+  }
+
+  if (usesTemplate('form.guided-simple')) {
+    const guidedLayout = /boss-form-side-guide-image[\s\S]{0,260}guided-form-default\.png/i.test(source)
+      && /\.boss-guided-form-layout[^{]*\{[^}]*width\s*:\s*min\(100%,\s*1200px\)/i.test(source)
+      && /\.boss-guided-form-layout[^{]*\{[^}]*padding-inline\s*:\s*16px/i.test(source)
+      && /@media\s*\(max-width:\s*768px\)[\s\S]{0,2500}\.boss-form-side-guide\s*\{[^}]*display\s*:\s*none/i.test(source);
+    if (guidedLayout) {
+      pass('validate', 'Guided simple forms use the default illustration in a centered 1200px desktop layout with 16px insets and hide the guide on narrow screens');
+    } else {
+      fail('validate', 'Guided simple forms must use the default illustration, a centered 1200px desktop layout with 16px insets, and a hidden narrow-screen guide');
+    }
+  } else {
+    pass('validate', 'Guided simple form not selected; default-guide layout check skipped');
+  }
+
+  if (usesTemplate('form.grouped-page')) {
     const fullPageActionBarCss = /\.boss-full-page-action-bar[^\{]*\{[^}]*position\s*:\s*fixed/i.test(source)
       && /\.boss-full-page-action-bar[^\{]*\{[^}]*height\s*:\s*48px/i.test(source)
       && /\.boss-full-page-action-bar[^\{]*\{[^}]*bottom\s*:\s*32px/i.test(source)
@@ -795,7 +827,7 @@ function checkSource(html) {
       fail('validate', 'Full-page form content must reserve bottom space so the final fields are not covered by the fixed action bar');
     }
   } else {
-    pass('validate', 'Full-page form template not selected; new/edit page form alignment check skipped');
+    pass('validate', 'Grouped full-page form not selected; fixed action-bar check skipped');
   }
 
   if (!hasQueryArea) {
