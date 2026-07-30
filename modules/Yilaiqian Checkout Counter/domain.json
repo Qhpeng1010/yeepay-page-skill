@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "module": "yilaiqian-checkout-counter",
+  "implementationMode": "page-spec-shadow",
+  "adapter": {
+    "execution": {
+      "policy": "modules/Yilaiqian Checkout Counter/execution/generation-policy.json",
+      "schema": "modules/Yilaiqian Checkout Counter/execution/page-spec.schema.json",
+      "coreContext": "modules/Yilaiqian Checkout Counter/execution/context-packs/core.md",
+      "familyContexts": { "checkout": "modules/Yilaiqian Checkout Counter/execution/context-packs/checkout.md" },
+      "scaffoldCommand": "node scripts/scaffold-yilaiqian-page-spec.mjs changes/{change-id}",
+      "buildCommand": "node scripts/build-yilaiqian-page-spec.mjs changes/{change-id}/page-spec.json",
+      "verifyCommand": "node scripts/verify-yilaiqian-page-spec.mjs changes/{change-id}/page-spec.json"
+    },
+    "resources": {
+      "requirement": ["modules/shared/product.md", "modules/Yilaiqian Checkout Counter/business-rules.md"],
+      "design": ["modules/shared/design-system.md", "modules/shared/page-templates.md", "modules/shared/components.md", "modules/Yilaiqian Checkout Counter/DESIGN(2).md", "modules/Yilaiqian Checkout Counter/components.md"],
+      "template": ["modules/shared/template-routing.md", "modules/Yilaiqian Checkout Counter/DESIGN(2).md"],
+      "generate": ["modules/shared/theme-routing.md", "modules/shared/design-system.md", "modules/shared/page-templates.md", "modules/shared/components.md", "modules/Yilaiqian Checkout Counter/business-rules.md", "modules/Yilaiqian Checkout Counter/DESIGN(2).md", "modules/Yilaiqian Checkout Counter/components.md", "modules/shared/frontend.md", "modules/shared/quality.md", "modules/shared/templates/html-preview.md"],
+      "review": ["modules/Yilaiqian Checkout Counter/business-rules.md", "modules/Yilaiqian Checkout Counter/DESIGN(2).md", "modules/Yilaiqian Checkout Counter/components.md", "modules/shared/quality.md"]
+    },
+    "commands": {}
+  },
+  "intents": [
+    {
+      "id": "payment-entry",
+      "pageType": "payment-entry",
+      "executionFamily": "checkout",
+      "signals": ["缴费页面", "输入金额", "支付方式", "输入密码", "付款", "收银台"]
+    },
+    {
+      "id": "payment-result",
+      "pageType": "payment-result",
+      "executionFamily": "result",
+      "signals": ["支付结果", "支付成功", "支付失败", "支付处理中", "订单关闭"]
+    },
+    {
+      "id": "scan-exception",
+      "pageType": "scan-exception",
+      "executionFamily": "exception",
+      "signals": ["扫码异常", "扫码结果", "终端不可用", "码牌不可用"]
+    },
+    {
+      "id": "browser-exception",
+      "pageType": "browser-exception",
+      "executionFamily": "exception",
+      "signals": ["浏览器异常", "浏览器不支持", "刷新页面"]
+    }
+  ]
+}

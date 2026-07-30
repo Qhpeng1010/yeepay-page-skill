@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "modules": [
+    {
+      "id": "boss-ledger",
+      "name": "Boss Ledger",
+      "priority": 100,
+      "aliases": [
+        "boss ledger",
+        "boss",
+        "运营后台",
+        "商户后台",
+        "审核后台",
+        "管理后台",
+        "查询列表",
+        "审核列表",
+        "配置列表",
+        "dashboard",
+        "wizard"
+      ],
+      "exclusions": ["yop", "开放平台", "开发者中心", "api 文档", "sdk", "easy account", "easyaccount", "易账通"],
+      "domain": "modules/boss-ledger/DOMAIN.md",
+      "contract": "modules/boss-ledger/domain.json"
+    },
+    {
+      "id": "open-platform",
+      "name": "易宝开放平台",
+      "priority": 90,
+      "aliases": [
+        "yop",
+        "open platform",
+        "开放平台",
+        "开发者中心",
+        "api 文档",
+        "接口文档",
+        "sdk",
+        "错误码",
+        "接入指南"
+      ],
+      "exclusions": ["运营后台", "商户后台", "审核后台"],
+      "domain": "modules/open-platform/DOMAIN.md",
+      "contract": "modules/open-platform/domain.json"
+    },
+    {
+      "id": "yilaiqian-checkout-counter",
+      "name": "Yilaiqian Checkout Counter",
+      "priority": 95,
+      "aliases": [
+        "yilaiqian checkout counter",
+        "yilaiqian",
+        "易来钱",
+        "易来钱收银台",
+        "移动端缴费",
+        "缴费页面",
+        "h5 收银台",
+        "移动收银台",
+        "扫码付款",
+        "向商户付款"
+      ],
+      "exclusions": ["运营后台", "商户后台", "审核后台", "开放平台", "api 文档", "sdk"],
+      "domain": "modules/Yilaiqian Checkout Counter/DOMAIN.md",
+      "contract": "modules/Yilaiqian Checkout Counter/domain.json"
+    },
+    {
+      "id": "easy-account",
+      "name": "Easy Account",
+      "priority": 96,
+      "aliases": [
+        "easy account",
+        "easyaccount",
+        "easy-account",
+        "易账通",
+        "easy account 后台",
+        "易账通后台"
+      ],
+      "exclusions": ["老板管账", "boss ledger", "yop", "开放平台", "收银台", "易来钱"],
+      "domain": "modules/easy-account/DOMAIN.md",
+      "contract": "modules/easy-account/domain.json"
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "module": "easy-account",
+  "implementationMode": "page-spec-shadow",
+  "adapter": {
+    "execution": {
+      "policy": "modules/easy-account/execution/generation-policy.json",
+      "schema": "modules/easy-account/execution/page-spec.schema.json",
+      "coreContext": "modules/easy-account/execution/context-packs/core.md",
+      "familyContexts": {
+        "list": "modules/easy-account/execution/context-packs/list.md",
+        "form": "modules/easy-account/execution/context-packs/form.md",
+        "detail": "modules/easy-account/execution/context-packs/detail.md",
+        "result": "modules/easy-account/execution/context-packs/result.md"
+      },
+      "scaffoldCommand": "node scripts/scaffold-easy-account-page-spec.mjs changes/{change-id}",
+      "buildCommand": "node scripts/build-easy-account-page-spec.mjs changes/{change-id}/page-spec.json",
+      "verifyCommand": "node scripts/verify-easy-account-page-spec.mjs changes/{change-id}/page-spec.json"
+    },
+    "resources": {
+      "requirement": [
+        "modules/shared/product.md",
+        "modules/easy-account/business-rules.md"
+      ],
+      "design": [
+        "modules/easy-account/design.md",
+        "modules/easy-account/components.md",
+        "modules/shared/page-templates.md"
+      ],
+      "template": [
+        "modules/easy-account/templates.md"
+      ],
+      "generate": [
+        "modules/easy-account/frontend.md",
+        "modules/shared/quality.md",
+        "modules/shared/templates/html-preview.md"
+      ],
+      "review": [
+        "modules/easy-account/business-rules.md",
+        "modules/easy-account/design.md",
+        "modules/easy-account/components.md",
+        "modules/shared/quality.md"
+      ]
+    },
+    "template": {
+      "directory": "modules/easy-account/templates",
+      "stages": ["template", "generate", "review"],
+      "framework": ["template-01-framework.md"]
+    },
+    "commands": {}
+  },
+  "intents": [
+    {
+      "id": "query-list",
+      "pageType": "query-list",
+      "executionFamily": "list",
+      "signals": ["查询列表", "查询", "列表", "记录"],
+      "template": "template-02-query-list.md"
+    },
+    {
+      "id": "dashboard",
+      "pageType": "dashboard",
+      "executionFamily": "dashboard",
+      "signals": ["dashboard", "仪表盘", "数据首页", "业务概览"],
+      "template": "template-03-dashboard.md"
+    },
+    {
+      "id": "form",
+      "pageType": "form",
+      "executionFamily": "form",
+      "signals": ["表单", "新增", "新建", "编辑"],
+      "template": "template-04-form.md"
+    },
+    {
+      "id": "detail",
+      "pageType": "detail",
+      "executionFamily": "detail",
+      "signals": ["详情页", "详情", "记录查看"],
+      "template": "template-05-detail.md"
+    },
+    {
+      "id": "result",
+      "pageType": "result",
+      "executionFamily": "result",
+      "signals": ["结果页", "成功页", "失败页", "处理结果"],
+      "template": "template-06-result.md"
+    }
+  ]
+}

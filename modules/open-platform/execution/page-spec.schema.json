@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yeepay.local/schemas/open-platform-page-spec-v1.json",
+  "title": "Open Platform Page Spec",
+  "type": "object",
+  "required": ["schemaVersion", "metadata", "ui", "content"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "metadata": { "type": "object" },
+    "ui": { "type": "object" },
+    "content": { "type": "object" },
+    "document": { "type": "object" },
+    "guide": { "type": "object" },
+    "states": { "type": "object" }
+  }
+}
