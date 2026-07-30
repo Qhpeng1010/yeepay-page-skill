@@ -7,10 +7,9 @@ import { spawnSync } from 'node:child_process';
 import { generatedPreviewApp, readJson, validatePageSpec } from './lib/boss-ledger-page-spec.mjs';
 
 const args = process.argv.slice(2);
-const fastMode = args.includes('--fast');
 const previewArg = args.find((arg) => !arg.startsWith('--'));
 if (!previewArg) {
-  console.error('Usage: node scripts/verify-boss-ledger-page-runtime.mjs [--fast] changes/{change-id}/preview.html');
+  console.error('Usage: node scripts/verify-boss-ledger-page-runtime.mjs changes/{change-id}/preview.html');
   process.exit(2);
 }
 
@@ -138,7 +137,7 @@ if (failures.length) {
 }
 
 console.log('canonical-shell: pass');
-const validation = spawnSync(process.execPath, [resolve(root, 'scripts/validate-boss-ledger-preview.mjs'), ...(fastMode ? ['--fast'] : []), previewPath], {
+const validation = spawnSync(process.execPath, [resolve(root, 'scripts/validate-boss-ledger-preview.mjs'), previewPath], {
   cwd: root,
   encoding: 'utf8',
   stdio: 'pipe'

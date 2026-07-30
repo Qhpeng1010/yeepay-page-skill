@@ -80,8 +80,8 @@ for (const combination of policy.validatedCombinations || []) {
     if (!template) failures.push(`${combination.id}: unknown rule template ${templateId}`);
     else if (template.family !== combination.family) failures.push(`${combination.id}: rule template ${templateId} belongs to ${template.family}, not ${combination.family}`);
   }
-  if (!['browser-business', 'browser-fixture', 'manual-business'].includes(combination.evidence)) {
-    failures.push(`${combination.id}: evidence must be browser-business, browser-fixture or manual-business`);
+  if (combination.evidence !== 'manual-business') {
+    failures.push(`${combination.id}: evidence must be manual-business while Boss Ledger browser automation is disabled`);
   }
   for (const capability of combination.capabilities || []) {
     if (!family.capabilities.includes(capability)) failures.push(`${combination.id}: unsupported capability ${capability}`);

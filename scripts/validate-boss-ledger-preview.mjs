@@ -1,24 +1,17 @@
 #!/usr/bin/env node
 // rule-assertion: visual.component-integrity
 // rule-assertion: visual.layout-density
-// rule-assertion: browser.render
+// rule-assertion: static.preview-source
 // rule-assertion: visual.guided-simple-layout
 // rule-assertion: interaction.simple-page-actions
-import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, resolve } from 'node:path';
-import { spawnSync } from 'node:child_process';
-import { inflateSync } from 'node:zlib';
 
 const args = process.argv.slice(2);
 const previewArg = args.find((arg) => !arg.startsWith('--'));
-const screenshotOnly = args.includes('--screenshot-only');
-const domOnly = args.includes('--dom-only');
-const saveScreenshot = !args.includes('--no-save-screenshot') && !domOnly;
-const fastMode = args.includes('--fast') || args.includes('--no-screenshot');
 
 if (!previewArg) {
-  console.error('Usage: node scripts/validate-boss-ledger-preview.mjs [--fast|--screenshot-only|--dom-only] changes/{change-id}/preview.html');
+  console.error('Usage: node scripts/validate-boss-ledger-preview.mjs changes/{change-id}/preview.html');
   process.exit(2);
 }
 
@@ -34,7 +27,6 @@ try { pageSpec = existsSync(pageSpecPath) ? JSON.parse(readFileSync(pageSpecPath
 
 const result = {
   validate: [],
-  screenshot: [],
   charts: [],
   chineseCopy: [],
 };
@@ -57,11 +49,15 @@ function stripComments(value) {
     .replace(/\/\*[\s\S]*?\*\//g, '');
 }
 
+function hasExactCssClassSelector(selector, className) {
+  return new RegExp(`\\.${className}(?=[\\s,{.:#>+~]|$)`).test(selector);
+}
+
 function hasNonZeroHorizontalPadding(source, classNames) {
   const rulePattern = /([^{}]+)\{([^{}]*)\}/g;
   let match;
   while ((match = rulePattern.exec(source))) {
-    if (!classNames.some((className) => new RegExp(`\\.${className}\\b`).test(match[1]))) continue;
+    if (!classNames.some((className) => hasExactCssClassSelector(match[1], className))) continue;
     const declarations = match[2];
     const explicit = declarations.match(/padding-(?:left|right|inline|inline-start|inline-end)\s*:\s*([^;]+)/gi) || [];
     if (explicit.some((declaration) => !/:\s*0(?:px)?(?:\s*!important)?\s*$/i.test(declaration.trim()))) return true;
@@ -75,24 +71,6 @@ function hasNonZeroHorizontalPadding(source, classNames) {
     if (horizontalValues.some((value) => !/^0(?:px)?$/i.test(value))) return true;
   }
   return false;
-}
-
-function findChrome() {
-  const candidates = [
-    process.env.CHROME_PATH,
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-    '/Applications/Chromium.app/Contents/MacOS/Chromium',
-    '/usr/bin/google-chrome',
-    '/usr/bin/google-chrome-stable',
-    '/usr/bin/chromium',
-    '/usr/bin/chromium-browser',
-  ].filter(Boolean);
-
-  return candidates.find((candidate) => existsSync(candidate));
-}
-
-function fileUrl(filePath) {
-  return `file://${filePath.split('/').map(encodeURIComponent).join('/')}`;
 }
 
 function appendLocalPreviewAssets(html, previewFile) {
@@ -283,7 +261,9 @@ function checkSource(html) {
     pass('validate', 'No `border: 1px` detected on content business modules');
   }
 
-  const hasQueryListModules = /\bboss-query-module\b/i.test(source) && /\bboss-result-module\b/i.test(source);
+  const hasQueryListModules = pageSpec?.metadata?.family === 'list'
+    && /\bboss-query-module\b/i.test(source)
+    && /\bboss-result-module\b/i.test(source);
   if (hasQueryListModules) {
     const whiteSurface = '(?:#fff(?:fff)?|rgb\\(\\s*255\\s*,\\s*255\\s*,\\s*255\\s*\\)|var\\(--boss-container\\))';
     const sharedWhiteRule = new RegExp(`\\.boss-query-module\\s*,\\s*\\.boss-result-module\\s*\\{[^}]*background\\s*:\\s*${whiteSurface}`, 'i').test(source);
@@ -997,289 +977,6 @@ function checkSource(html) {
   }
 }
 
-function runChrome(previewFile) {
-  const chrome = findChrome();
-  if (!chrome) {
-    fail('screenshot', 'Chrome executable not found; set CHROME_PATH or install Chrome/Chromium');
-    return null;
-  }
-
-  const dir = mkdtempSync(resolve(tmpdir(), 'boss-ledger-preview-'));
-  const screenshotPath = saveScreenshot ? resolve(dirname(previewFile), 'preview.screenshot.png') : resolve(dir, 'preview.png');
-  const url = fileUrl(previewFile);
-  const commonArgs = [
-    '--headless=new',
-    '--disable-gpu',
-    '--no-sandbox',
-    '--hide-scrollbars',
-    '--allow-file-access-from-files',
-    '--virtual-time-budget=5000',
-    '--window-size=1440,900',
-  ];
-
-  // One Chrome process can produce both artifacts after the same page boot.
-  const chromeArgs = [...commonArgs];
-  if (saveScreenshot) chromeArgs.push(`--screenshot=${screenshotPath}`);
-  if (!screenshotOnly) chromeArgs.push('--dump-dom');
-  const chromeRun = spawnSync(chrome, [...chromeArgs, url], {
-    encoding: 'utf8',
-    timeout: 20000,
-  });
-
-  if (chromeRun.error || chromeRun.status !== 0) {
-    fail('screenshot', `Chrome ${screenshotOnly ? 'screenshot' : 'render'} failed: ${chromeRun.error?.message || chromeRun.stderr || `status=${chromeRun.status}, signal=${chromeRun.signal || 'none'}`}`.trim());
-    rmSync(dir, { recursive: true, force: true });
-    return null;
-  }
-
-  if (saveScreenshot && !existsSync(screenshotPath)) {
-    fail('screenshot', 'Chrome completed without producing a screenshot file');
-  }
-  if (!screenshotOnly) pass('screenshot', 'Chrome rendered DOM successfully');
-
-  return {
-    screenshotPath,
-    cleanup: () => rmSync(dir, { recursive: true, force: true }),
-    renderedDom: screenshotOnly ? '' : chromeRun.stdout || '',
-  };
-}
-
-function parsePng(filePath) {
-  const buffer = readFileSync(filePath);
-  if (buffer.readUInt32BE(0) !== 0x89504e47 || buffer.toString('ascii', 1, 4) !== 'PNG') {
-    throw new Error('Screenshot is not a PNG file');
-  }
-
-  let offset = 8;
-  let width = 0;
-  let height = 0;
-  let bitDepth = 0;
-  let colorType = 0;
-  const idat = [];
-
-  while (offset < buffer.length) {
-    const length = buffer.readUInt32BE(offset);
-    const type = buffer.toString('ascii', offset + 4, offset + 8);
-    const data = buffer.subarray(offset + 8, offset + 8 + length);
-    offset += 12 + length;
-
-    if (type === 'IHDR') {
-      width = data.readUInt32BE(0);
-      height = data.readUInt32BE(4);
-      bitDepth = data[8];
-      colorType = data[9];
-    } else if (type === 'IDAT') {
-      idat.push(data);
-    } else if (type === 'IEND') {
-      break;
-    }
-  }
-
-  if (bitDepth !== 8 || ![2, 6].includes(colorType)) {
-    throw new Error(`Unsupported PNG format: bitDepth=${bitDepth}, colorType=${colorType}`);
-  }
-
-  const channels = colorType === 6 ? 4 : 3;
-  const stride = width * channels;
-  const inflated = inflateSync(Buffer.concat(idat));
-  const pixels = Buffer.alloc(width * height * channels);
-  let input = 0;
-  let output = 0;
-  let prev = Buffer.alloc(stride);
-
-  for (let y = 0; y < height; y += 1) {
-    const filter = inflated[input];
-    input += 1;
-    const row = Buffer.from(inflated.subarray(input, input + stride));
-    input += stride;
-
-    for (let x = 0; x < stride; x += 1) {
-      const left = x >= channels ? row[x - channels] : 0;
-      const up = prev[x] || 0;
-      const upLeft = x >= channels ? prev[x - channels] || 0 : 0;
-      let value = row[x];
-
-      if (filter === 1) value = (value + left) & 255;
-      else if (filter === 2) value = (value + up) & 255;
-      else if (filter === 3) value = (value + Math.floor((left + up) / 2)) & 255;
-      else if (filter === 4) {
-        const p = left + up - upLeft;
-        const pa = Math.abs(p - left);
-        const pb = Math.abs(p - up);
-        const pc = Math.abs(p - upLeft);
-        const predictor = pa <= pb && pa <= pc ? left : pb <= pc ? up : upLeft;
-        value = (value + predictor) & 255;
-      } else if (filter !== 0) {
-        throw new Error(`Unsupported PNG filter ${filter}`);
-      }
-
-      row[x] = value;
-    }
-
-    row.copy(pixels, output);
-    output += stride;
-    prev = row;
-  }
-
-  return { width, height, channels, pixels };
-}
-
-function analyzeScreenshot(screenshotPath) {
-  try {
-    if (statSync(screenshotPath).size < 20000) {
-      fail('screenshot', 'Screenshot file is too small and may be blank');
-      return;
-    }
-
-    const image = parsePng(screenshotPath);
-    const colors = new Set();
-    let samples = 0;
-    let nonWhite = 0;
-    const step = 8;
-
-    for (let y = 0; y < image.height; y += step) {
-      for (let x = 0; x < image.width; x += step) {
-        const idx = (y * image.width + x) * image.channels;
-        const r = image.pixels[idx];
-        const g = image.pixels[idx + 1];
-        const b = image.pixels[idx + 2];
-        colors.add(`${r >> 4},${g >> 4},${b >> 4}`);
-        if (!(r > 248 && g > 248 && b > 248)) nonWhite += 1;
-        samples += 1;
-      }
-    }
-
-    if (colors.size < 12 || nonWhite / samples < 0.08) {
-      fail('screenshot', 'Screenshot appears blank or nearly blank');
-    } else {
-      pass('screenshot', 'Screenshot is not blank');
-      if (saveScreenshot) pass('screenshot', `Screenshot saved: ${screenshotPath}`);
-    }
-
-    const cols = 12;
-    const rows = 8;
-    let maxBlankRun = 0;
-
-    for (let gy = 0; gy < rows; gy += 1) {
-      let run = 0;
-      for (let gx = 0; gx < cols; gx += 1) {
-        const x0 = Math.floor((gx * image.width) / cols);
-        const x1 = Math.floor(((gx + 1) * image.width) / cols);
-        const y0 = Math.floor((gy * image.height) / rows);
-        const y1 = Math.floor(((gy + 1) * image.height) / rows);
-        let count = 0;
-        let grayish = 0;
-        let sum = 0;
-        let sumSq = 0;
-
-        for (let y = y0; y < y1; y += 6) {
-          for (let x = x0; x < x1; x += 6) {
-            const idx = (y * image.width + x) * image.channels;
-            const r = image.pixels[idx];
-            const g = image.pixels[idx + 1];
-            const b = image.pixels[idx + 2];
-            const avg = (r + g + b) / 3;
-            if (Math.abs(r - g) < 8 && Math.abs(g - b) < 8 && avg > 224 && avg < 250) grayish += 1;
-            sum += avg;
-            sumSq += avg * avg;
-            count += 1;
-          }
-        }
-
-        const mean = sum / count;
-        const variance = sumSq / count - mean * mean;
-        const blankGrayCell = grayish / count > 0.86 && variance < 18;
-        run = blankGrayCell ? run + 1 : 0;
-        maxBlankRun = Math.max(maxBlankRun, run);
-      }
-    }
-
-    if (maxBlankRun >= 7) {
-      fail('screenshot', 'Screenshot contains a large continuous light-gray blank region');
-    } else {
-      pass('screenshot', 'No large continuous light-gray blank region detected');
-    }
-  } catch (error) {
-    fail('screenshot', `Screenshot analysis failed: ${error.message}`);
-  }
-}
-
-function checkRenderedDom(renderedDom) {
-  const dom = renderedDom || '';
-  if (!dom) return;
-
-  if (/(ReferenceError|TypeError|Script error|Failed to load|Cannot read|404 Not Found|ERR_FILE_NOT_FOUND)/i.test(dom)) {
-    fail('screenshot', 'Rendered DOM contains an error or failed-load message');
-  } else {
-    pass('screenshot', 'Rendered DOM has no obvious error text');
-  }
-
-  const shellChecks = [
-    ['Boss Ledger top bar', /(data-boss-shell=["']topbar|class=["'][^"']*topbar|Boss Ledger|退出|当前登录)/i],
-    ['primary navigation', /(data-boss-shell=["']primary-nav|class=["'][^"']*primary-nav|ant-menu-horizontal|一级导航)/i],
-    ['left menu', /(data-boss-shell=["']sider|class=["'][^"']*sider|ant-menu-inline|左侧菜单)/i],
-    ['tabs', /(data-boss-shell=["']tabs|ant-tabs|页签|Tabs)/i],
-    ['left-aligned sider collapse control', /(data-boss-sider-collapse|class=["'][^"']*sider-toggle)/i],
-    ['static tab-left icons', /(data-boss-tab-static-icon|class=["'][^"']*tab-static-icon)/i],
-    ['business content', /(data-boss-shell=["']content|data-boss-query-grid|ant-form|ant-table|查询条件|查询列表|业务内容)/i],
-  ];
-
-  for (const [label, pattern] of shellChecks) {
-    if (pattern.test(dom)) {
-      pass('screenshot', `First viewport contains ${label}`);
-    } else {
-      fail('screenshot', `First viewport must contain ${label}`);
-    }
-  }
-
-  const renderedMarkup = dom.replace(/<script\b[\s\S]*?<\/script>/gi, '').replace(/<style\b[\s\S]*?<\/style>/gi, '');
-
-  const stack = [];
-  const queryModules = [];
-  const resultModules = [];
-  const voidTags = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr']);
-  const tagPattern = /<\/?([a-z][a-z0-9-]*)\b([^>]*)>/gi;
-  let tagMatch;
-  let nodeId = 0;
-  while ((tagMatch = tagPattern.exec(renderedMarkup))) {
-    const fullTag = tagMatch[0];
-    const tag = tagMatch[1].toLowerCase();
-    const isClosing = fullTag.startsWith('</');
-    if (isClosing) {
-      while (stack.length) {
-        const node = stack.pop();
-        if (node.tag === tag) break;
-      }
-      continue;
-    }
-
-    const classMatch = tagMatch[2].match(/\bclass=["']([^"']*)["']/i);
-    const classes = classMatch ? classMatch[1].split(/\s+/).filter(Boolean) : [];
-    const parent = stack[stack.length - 1];
-    const node = { id: ++nodeId, tag, classes, parentId: parent?.id ?? null, parentClasses: parent?.classes ?? [] };
-    if (classes.includes('boss-query-module')) queryModules.push(node);
-    if (classes.includes('boss-result-module')) resultModules.push(node);
-    if (!voidTags.has(tag) && !fullTag.endsWith('/>')) stack.push(node);
-  }
-
-  if (queryModules.length || resultModules.length) {
-    const siblingPair = queryModules.some(query => resultModules.some(result => query.parentId === result.parentId
-      && query.parentClasses.includes('boss-content-stack') && result.parentClasses.includes('boss-content-stack')));
-    if (siblingPair) {
-      pass('screenshot', 'Query and result white modules render as direct siblings under boss-content-stack');
-    } else {
-      fail('screenshot', 'Query and result modules must render as direct sibling white modules under boss-content-stack');
-    }
-  }
-
-  const tabStaticIconCount = (renderedMarkup.match(/data-boss-tab-static-icon/g) || []).length;
-  if (tabStaticIconCount === 1) {
-    pass('screenshot', 'Only the active tab renders the static ReloadOutlined icon');
-  } else {
-    fail('screenshot', `Exactly one active tab static ReloadOutlined icon is required; found ${tabStaticIconCount}`);
-  }
-}
-
 if (!existsSync(previewPath)) {
   console.error(`preview.html not found: ${previewPath}`);
   process.exit(2);
@@ -1288,28 +985,14 @@ if (!existsSync(previewPath)) {
 const html = readFileSync(previewPath, 'utf8');
 checkSource(appendLocalPreviewAssets(html, previewPath));
 
-if (fastMode) {
-  result.screenshot.push({ ok: true, skipped: true, message: 'Fast mode: Chrome screenshot and DOM evaluation deferred to final delivery' });
-} else {
-  const rendered = runChrome(previewPath);
-  if (rendered) {
-    if (!domOnly) analyzeScreenshot(rendered.screenshotPath);
-    if (!screenshotOnly) checkRenderedDom(rendered.renderedDom);
-    rendered.cleanup();
-  }
-}
-
 const statuses = {
   validate: groupStatus('validate'),
-  screenshot: fastMode ? 'skipped' : groupStatus('screenshot'),
   charts: groupStatus('charts'),
   '中文文案': groupStatus('chineseCopy'),
 };
-const blockingStatuses = fastMode ? [statuses.validate, statuses.charts, statuses['中文文案']] : Object.values(statuses);
-const overall = blockingStatuses.every((status) => status === 'pass') ? 'pass' : 'failed';
+const overall = Object.values(statuses).every((status) => status === 'pass') ? 'pass' : 'failed';
 
 console.log(`validate: ${statuses.validate}`);
-console.log(`screenshot: ${statuses.screenshot}`);
 console.log(`charts: ${statuses.charts}`);
 console.log(`中文文案: ${statuses['中文文案']}`);
 console.log(`overall: ${overall}`);

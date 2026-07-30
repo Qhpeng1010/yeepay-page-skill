@@ -5,9 +5,8 @@ import { basename, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const fixtureArg = process.argv.find((arg) => arg.endsWith('.json'));
-const fast = process.argv.includes('--fast');
 if (!fixtureArg) {
-  console.error('Usage: node scripts/run-boss-ledger-page-spec-fixture.mjs [--fast] modules/boss-ledger/execution/fixtures/valid/{fixture}.json');
+  console.error('Usage: node scripts/run-boss-ledger-page-spec-fixture.mjs modules/boss-ledger/execution/fixtures/valid/{fixture}.json');
   process.exit(2);
 }
 
@@ -36,7 +35,7 @@ try {
   const changeRelative = `changes/${changeId}`;
   run('rules', 'scripts/read-boss-ledger-rules.mjs', [changeRelative, spec.metadata.templateId]);
   run('build', 'scripts/build-boss-ledger-page-spec.mjs', [`${changeRelative}/page-spec.json`]);
-  run('verify', 'scripts/verify-boss-ledger-page-spec.mjs', [...(fast ? ['--fast'] : []), `${changeRelative}/page-spec.json`]);
+  run('verify', 'scripts/verify-boss-ledger-page-spec.mjs', [`${changeRelative}/page-spec.json`]);
   console.log(`page-spec-fixture: pass (${basename(fixturePath)})`);
 } catch (error) {
   console.error(`page-spec-fixture: failed\n- ${error.message}`);

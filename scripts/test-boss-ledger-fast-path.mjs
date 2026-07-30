@@ -36,12 +36,12 @@ try {
   if (formRouted.resources.some((resource) => resource.startsWith('modules/shared/') && resource !== 'modules/shared/product.md') || JSON.stringify(formRouted).includes('legacy')) {
     throw new Error('A shadow Page Spec form loaded a retired compatibility path.');
   }
-  const pendingRouted = resolveResources('创建老板管账经营概览仪表盘', 'generate');
-  if (pendingRouted.execution?.availability !== 'pending'
-    || pendingRouted.execution?.mode !== 'page-spec-only'
-    || !pendingRouted.commands?.prepare?.includes('prepare-boss-ledger-page-spec.mjs')
-    || JSON.stringify(pendingRouted).includes('legacy')) {
-    throw new Error('A pending page exposed a retired compatibility path.');
+  const dashboardRouted = resolveResources('创建老板管账经营概览仪表盘', 'generate');
+  if (dashboardRouted.execution?.availability !== 'available'
+    || dashboardRouted.execution?.mode !== 'page-spec-default'
+    || !dashboardRouted.commands?.prepare?.includes('prepare-boss-ledger-page-spec.mjs')
+    || JSON.stringify(dashboardRouted).includes('legacy')) {
+    throw new Error('A Dashboard page did not resolve to the current Page Spec path.');
   }
   // mkdtemp creates the private test directory; remove it so the production command owns creation.
   rmSync(changeDir, { recursive: true, force: true });

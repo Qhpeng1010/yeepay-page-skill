@@ -1,7 +1,7 @@
 /* Generated from director-rules/01-visual-constitution.md. Do not edit. */
 (function installBossLedgerTheme(global) {
   global.BossLedgerTheme = Object.freeze({
-  "version": "rules-a350c07ee405",
+  "version": "rules-af4626a9e563",
   "tokens": {
     "colorPrimary": "#F36046",
     "colorPrimaryHover": "#D94E36",

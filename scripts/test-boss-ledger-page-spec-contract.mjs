@@ -45,6 +45,7 @@ const simplePageForm = readJson(resolve(fixtureRoot, 'valid/simple-page-form.jso
 const runtimeSource = readFileSync(resolve(root, 'modules/boss-ledger/execution/renderer/page-spec-runtime.js'), 'utf8');
 const businessCssSource = readFileSync(resolve(root, 'modules/boss-ledger/execution/renderer/page-spec-business.css'), 'utf8');
 const buildSource = readFileSync(resolve(root, 'scripts/build-boss-ledger-page-spec.mjs'), 'utf8');
+const previewValidatorSource = readFileSync(resolve(root, 'scripts/validate-boss-ledger-preview.mjs'), 'utf8');
 const directCases = [
   [
     'missing-assumptions',
@@ -176,6 +177,7 @@ if (runtimeSource.includes("h('h2', { className: 'boss-detail-title' }, spec.met
 
 if (!runtimeSource.includes("['form.page-simple', 'form.guided-simple'].includes(spec.metadata.templateId)")
   || !runtimeSource.includes('boss-inline-form-actions')
+  || !runtimeSource.includes('function BusinessGuide')
   || !runtimeSource.includes("src: './assets/guided-form-default.png'")) {
   failures.push('simple-form-runtime: simple pages must use inline actions and guided forms must render the default business illustration.');
 } else {
@@ -199,12 +201,20 @@ if (!businessCssSource.includes('width: min(100%, 1200px)')
 
 const completedPageResult = "if (completed) return h('div', { className: 'boss-content-stack' }, h('section', { className: 'boss-result-page' }, formBody));";
 if (!runtimeSource.includes('function renderWorkflowResult')
+  || !runtimeSource.includes('function ResultSummary')
   || !runtimeSource.includes('function ResultFeedback')
   || !runtimeSource.includes(completedPageResult)
   || !businessCssSource.includes('.boss-result-summary-panel')
   || !businessCssSource.includes('.boss-result-feedback')
   || !businessCssSource.includes('grid-template-columns: repeat(2, minmax(0, 1fr))')) {
   failures.push('workflow-result-composition: results must leave form guides, use the official Result structure, and support optional summary and feedback regions.');
+} else {
+  passed += 1;
+}
+
+if (!previewValidatorSource.includes("pageSpec?.metadata?.family === 'list'")
+  || !previewValidatorSource.includes('function hasExactCssClassSelector')) {
+  failures.push('query-list-validator-scope: list-only inset checks must use the Page Spec family and exact CSS class selectors.');
 } else {
   passed += 1;
 }

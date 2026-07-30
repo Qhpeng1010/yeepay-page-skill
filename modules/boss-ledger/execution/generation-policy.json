@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "policyVersion": "2026.07.30.9",
+  "policyVersion": "2026.07.30.11",
   "system": "boss-ledger",
   "allowedModes": ["shadow", "page-spec-default", "page-spec-only"],
   "families": [
@@ -112,7 +112,7 @@
       "id": "list.regular",
       "family": "list",
       "templateIds": ["list.regular"],
-      "evidence": "browser-business",
+      "evidence": "manual-business",
       "capabilities": ["query.basic", "table.flat", "table.pagination"],
       "ruleRefs": ["BL-TPL-001", "BL-TPL-010"]
     },
@@ -120,7 +120,7 @@
       "id": "list.column-settings",
       "family": "list",
       "templateIds": ["list.regular"],
-      "evidence": "browser-business",
+      "evidence": "manual-business",
       "capabilities": ["query.basic", "table.flat", "table.pagination", "table.columnSettings"],
       "ruleRefs": ["BL-TPL-016"]
     },
@@ -128,7 +128,7 @@
       "id": "list.drawer-detail",
       "family": "list",
       "templateIds": ["list.regular"],
-      "evidence": "browser-business",
+      "evidence": "manual-business",
       "capabilities": ["query.basic", "table.flat", "table.pagination", "detail.drawer"],
       "ruleRefs": ["BL-TPL-013", "BL-INT-004"]
     },
@@ -144,7 +144,7 @@
       "id": "list.card-statistics",
       "family": "list",
       "templateIds": ["list.card-summary"],
-      "evidence": "browser-business",
+      "evidence": "manual-business",
       "capabilities": ["query.basic", "table.flat", "table.pagination", "table.status", "table.amount", "statistics.cards"],
       "ruleRefs": ["BL-TPL-001", "BL-TPL-011", "BL-INT-001"]
     },
@@ -152,7 +152,7 @@
       "id": "form.grouped",
       "family": "form",
       "templateIds": ["form.grouped-page"],
-      "evidence": "browser-business",
+      "evidence": "manual-business",
       "capabilities": ["form.groups", "form.stickyActions"],
       "ruleRefs": ["BL-TPL-007", "BL-TPL-008"]
     },
@@ -160,7 +160,7 @@
       "id": "form.modal-simple",
       "family": "form",
       "templateIds": ["form.modal-simple"],
-      "evidence": "browser-business",
+      "evidence": "manual-business",
       "capabilities": ["form.simple"],
       "ruleRefs": ["BL-TPL-005", "BL-INT-005"]
     },
@@ -168,7 +168,7 @@
       "id": "form.page-simple",
       "family": "form",
       "templateIds": ["form.page-simple"],
-      "evidence": "browser-business",
+      "evidence": "manual-business",
       "capabilities": ["form.simple"],
       "ruleRefs": ["BL-TPL-005", "BL-TPL-019", "BL-INT-005", "BL-INT-006", "BL-INT-016"]
     },
@@ -176,7 +176,7 @@
       "id": "form.guided-simple",
       "family": "form",
       "templateIds": ["form.guided-simple"],
-      "evidence": "browser-business",
+      "evidence": "manual-business",
       "capabilities": ["form.simple", "form.sideGuide"],
       "ruleRefs": ["BL-TPL-006", "BL-TPL-008", "BL-VIS-020", "BL-INT-016"]
     },
@@ -184,7 +184,7 @@
       "id": "form.steps",
       "family": "form",
       "templateIds": ["form.staged-flow"],
-      "evidence": "browser-business",
+      "evidence": "manual-business",
       "capabilities": ["form.steps", "form.review", "form.stickyActions"],
       "ruleRefs": ["BL-TPL-007", "BL-INT-007"]
     },
@@ -192,7 +192,7 @@
       "id": "form.steps-return-source",
       "family": "form",
       "templateIds": ["form.staged-flow"],
-      "evidence": "browser-business",
+      "evidence": "manual-business",
       "capabilities": ["form.steps", "form.review", "form.stickyActions", "form.returnSource"],
       "ruleRefs": ["BL-TPL-007", "BL-INT-006", "BL-INT-007"]
     },
@@ -200,7 +200,7 @@
       "id": "form.upload-review",
       "family": "form",
       "templateIds": ["form.staged-flow"],
-      "evidence": "browser-business",
+      "evidence": "manual-business",
       "capabilities": ["form.steps", "form.review", "form.stickyActions", "form.upload", "form.reviewTable", "form.resultSummary", "form.resultFeedback"],
       "ruleRefs": ["BL-TPL-006", "BL-TPL-007", "BL-TPL-021", "BL-VIS-021", "BL-INT-005", "BL-INT-006", "BL-INT-017"]
     },
@@ -208,7 +208,7 @@
       "id": "detail.grouped",
       "family": "detail",
       "templateIds": ["detail.record"],
-      "evidence": "browser-fixture",
+      "evidence": "manual-business",
       "capabilities": ["detail.groups", "detail.metrics", "detail.embeddedTable"],
       "ruleRefs": ["BL-TPL-009", "BL-VIS-014"]
     },
@@ -216,7 +216,7 @@
       "id": "detail.modal-quick",
       "family": "detail",
       "templateIds": ["detail.record"],
-      "evidence": "browser-business",
+      "evidence": "manual-business",
       "capabilities": ["detail.groups", "detail.modal"],
       "ruleRefs": ["BL-TPL-009"]
     },
@@ -224,7 +224,7 @@
       "id": "detail.drawer-table",
       "family": "detail",
       "templateIds": ["detail.record"],
-      "evidence": "browser-business",
+      "evidence": "manual-business",
       "capabilities": ["detail.groups", "detail.embeddedTable", "detail.drawer"],
       "ruleRefs": ["BL-TPL-009", "BL-TPL-013"]
     },
@@ -232,7 +232,7 @@
       "id": "detail.page-anchors",
       "family": "detail",
       "templateIds": ["detail.record"],
-      "evidence": "browser-business",
+      "evidence": "manual-business",
       "capabilities": ["detail.groups", "detail.anchors"],
       "ruleRefs": ["BL-TPL-009", "BL-VIS-014"]
     },
@@ -240,7 +240,7 @@
       "id": "detail.tabs-metrics",
       "family": "detail",
       "templateIds": ["detail.record"],
-      "evidence": "browser-business",
+      "evidence": "manual-business",
       "capabilities": ["detail.groups", "detail.metrics", "detail.embeddedTable", "detail.tabs"],
       "ruleRefs": ["BL-TPL-009", "BL-VIS-014"]
     }

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "system": "boss-ledger",
   "source": "modules/boss-ledger/director-rules/02-template-application-rules.md",
-  "templateVersion": "rules-cf33399cc9e8",
+  "templateVersion": "rules-411335a3cc0e",
   "core": {
     "title": "固定运行边界",
     "ruleIds": [

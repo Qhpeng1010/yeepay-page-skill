@@ -125,12 +125,19 @@
     };
   }
 
-  function resultSummaryPanel(summary) {
+  function ResultSummary({ summary }) {
     const items = summary?.items || [];
     if (!items.length) return null;
     return h('div', { className: 'boss-result-summary-panel' }, ...items.map((item) => h('div', { key: item.key, className: 'boss-result-summary-item' },
       h('span', { className: 'boss-result-summary-label' }, item.label),
       h('span', { className: 'boss-result-summary-value' }, `${item.value}${item.unit || ''}`))));
+  }
+
+  function BusinessGuide({ guide }) {
+    return h('aside', { className: 'boss-form-side-guide' },
+      React.createElement('img', { className: 'boss-form-side-guide-image', src: './assets/guided-form-default.png', alt: '老板管账业务引导插图' }),
+      h('div', { className: 'boss-form-side-guide-title' }, guide.title),
+      h('div', { className: 'boss-form-side-guide-text' }, guide.text));
   }
 
   function ResultFeedback({ feedback }) {
@@ -165,7 +172,7 @@
       title,
       subTitle: description,
       extra: h('div', { className: 'boss-result-extra' },
-        resultSummaryPanel(summary),
+        h(ResultSummary, { summary }),
         resultActions.length ? h(Space, { className: 'boss-result-actions', wrap: true }, ...resultActions.map((action, index) => h(Button, {
           key: action.key || action.label,
           type: index === 0 ? 'primary' : 'default',
@@ -593,9 +600,7 @@
     if (presentation === 'modal') return h('div', { className: 'boss-content-stack' }, h(Modal, { open: true, title: spec.metadata.pageName, width: formSpec.width || 500, closable: true, onCancel: closeOrReset, footer: completed ? null : floatingActions }, formBody));
     if (presentation === 'drawer') return h('div', { className: 'boss-content-stack' }, h(Drawer, { open: true, title: spec.metadata.pageName, width: formSpec.width || 640, closeIcon: false, onClose: closeOrReset, extra: React.createElement(Button, { type: 'text', icon: h(CloseOutlined), 'aria-label': '关闭表单', onClick: closeOrReset }), footer: completed ? null : h('div', { className: 'boss-drawer-footer-actions' }, ...floatingActions) }, formBody));
     if (completed) return h('div', { className: 'boss-content-stack' }, h('section', { className: 'boss-result-page' }, formBody));
-    return h('div', { className: 'boss-content-stack' }, h('section', { className: `boss-form-module boss-full-page-form${usesInlinePageActions ? ' boss-inline-action-page' : ''}` }, formSpec.sideGuide ? h('div', { className: 'boss-guided-form-layout' }, h('div', { className: 'boss-guided-form-main' }, formBody), h('aside', { className: 'boss-form-side-guide' },
-      React.createElement('img', { className: 'boss-form-side-guide-image', src: './assets/guided-form-default.png', alt: '老板管账业务引导插图' }),
-      h('div', { className: 'boss-form-side-guide-title' }, formSpec.sideGuide.title), h('div', { className: 'boss-form-side-guide-text' }, formSpec.sideGuide.text))) : formBody));
+    return h('div', { className: 'boss-content-stack' }, h('section', { className: `boss-form-module boss-full-page-form${usesInlinePageActions ? ' boss-inline-action-page' : ''}` }, formSpec.sideGuide ? h('div', { className: 'boss-guided-form-layout' }, h('div', { className: 'boss-guided-form-main' }, formBody), h(BusinessGuide, { guide: formSpec.sideGuide })) : formBody));
   }
 
   function detailItems(fields) {
