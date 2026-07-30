@@ -4,7 +4,7 @@
     "changeId": "20260728-grouped-form-fixture",
     "pageName": "商户结算配置",
     "family": "form",
-    "templateId": "template-08-full-page-form",
+    "templateId": "form.grouped-page",
     "executionMode": "shadow",
     "validatedCombinations": ["form.grouped"],
     "request": "为商户维护按主体、账户和结算周期分组的结算配置。",

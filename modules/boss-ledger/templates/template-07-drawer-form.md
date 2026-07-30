@@ -1,84 +1,79 @@
-# Template 07 Extraction - Drawer Form
+# 抽屉表单
 
-Figma source:
-https://www.figma.com/design/Dbic1s0dVVFc3IreKWl26m/%E8%80%81%E6%9D%BF%E7%AE%A1%E8%B4%A6%E5%B8%B8%E7%94%A8%E4%B8%9A%E5%8A%A1%E7%B1%BB%E5%9E%8B%E9%A1%B5%E9%9D%A2%E6%A2%B3%E7%90%86?node-id=74-5631&m=dev
+> **历史归档，已废弃。** 自 2026-07-29 起，本文件不再属于资源解析、页面生成、评审、验收或发布的输入。页面方案请使用 `execution/rule-template-registry.json` 和生成的 `execution/context-packs/`。以下内容仅保留作历史追溯。
 
-Figma node: `74:5631`
+创建模板
 
-Figma name: `Drawer Form 抽屉编辑`
-
-Status: extracted as drawer edit/create template
-
-## Drawer Structure
+## 抽屉结构
 
 - Drawer: `x=800`, `y=0`, `w=640`, `h=778`
 - Header: `h=56`
-- Title position: `x=24`
-- Close icon position: `x=600`
-- Body: `x=0`, `y=56`, `w=640`, `h=666`
-- Footer: `x=0`, `y=722`, `w=640`, `h=56`
-- Footer button group: `x=490`, `y=12`, `w=134`, `h=32`
+- 标题位置：`x=24`]
+- 关闭图标位置：`x=600`]
+- 身体：`x=0`，`y=56`，`w=640`，`h=666`
+- 底部：`x=0`，`y=722`，`w=640`，`h=56`]
+- 底部按钮组：`x=490`，`y=12`，`w=134`，`h=32`]
 
-## Form Structure
+## 表格结构
 
-- Field block x: `24`
-- Field block width: `592`
-- Field block height: `60`
-- Label is above the control.
-- Form layout is vertical: every label is left / top aligned and controls fill the drawer form width.
-- Control y offset: `28`
-- Control height: `32`
-- Four vertical fields in sample.
-- Field y positions: `24`, `100`, `176`, `252`
+- 田块x：`24`]
+- 字段块宽度：`592`]
+- 田块高度：`60`]
+- 标签位于控件之上。
+- 表单布局是垂直的：每个标签都是左/上对齐的，并且控制填充了抽屉表单宽度。
+- 控制和偏移：`28`
+- 控制高度：`32`]
+- 样品中有四个垂直的区域。
+- 场地y位置：`24`，`100`，`176`，`252`]
 
-## Template Intent
+## 模板意图
 
-Use this template when a create/edit flow has more content than a small modal but does not need a full standalone page.
+请输入英文文本
 
 
-## Mandatory Generation Contract
+## 强制性生成合同
 
-- This template is not a reference example; it is the mandatory generation skeleton for its corresponding Boss Ledger page type.
+- 这个模板不是一个参考例子；它是一个强制生成骨架的页面类型，其对应的Boss Ledger页面类型。
 - When generating this class of Boss Ledger page, the AI must reuse this template structure.
-- Business requirements may replace business content only; they must not redesign the template skeleton.
-- If a business requirement conflicts with this template, the currently selected template and `modules/boss-ledger/design.md` take priority.
+- 商务需求可能仅替换业务内容；它们必须不重新设计模板骨架。
+- 如果企业需求与本模板冲突，目前选择的模板和`modules/boss-ledger/design.md`优先级更高。
 
-## Replacement Rules
+## 抱歉，我无法完成这个任务。
 
-Allowed replacement:
+您可以在“[C0]”和“[C1]”等 placeholder 和 proper names 中进行替换。
 
-- Page / Tab copy
-- Primary navigation / left menu copy
-- Query fields
-- Table columns
-- Status enums
-- Action buttons
-- Form fields
-- Detail fields
-- Statistic metrics
-- Chart data
-- Mock data
+- 页面/标签复制
+- 主导航 / 左侧菜单复制
+- 查询字段
+- 表格列
+- 状态枚举
+- 执行按钮
+- 表单字段
+- 详细字段
+- 统计指标
+- 图表数据
+- 模拟数据
 
-Forbidden replacement:
+禁止替换：
 
-- Shell structure
-- Top info bar height
-- Primary navigation height
-- Left navigation width
-- Tabs shape
-- Content area origin
-- Module spacing
-- Query area layout
-- Table area layout
-- Pagination position
-- Modal / Drawer / Steps / Result / Empty base structure
-- Drawer form label-above-control alignment and full-width controls
+- 壳结构
+- 顶部信息栏高度
+- 主导航高度
+- 左侧导航栏宽度
+- 选项卡形状
+- 内容区域起始点
+- 模块间距
+- 查询区域布局
+- 表格布局
+- 分页位置
+- 模态/抽屉/步骤/结果/空基结构
+- 抽屉表单标签-上方-控制对齐方式和全宽控制。
 
-## Ant Design Runtime Rules
+## Ant Design Runtime Rules"
 
-- Must use real Ant Design components or project wrappers based on Ant Design.
-- Must not use native `input`, `select`, `table`, or `button` as substitutes.
-- Must not handwrite Menu, Tabs, Pagination, Modal, Drawer, or Table.
-- Icons must use Ant Design Icons.
-- Charts must use Ant Design Charts or a project chart wrapper.
-- All default copy must be localized to Chinese. The preview must not contain `Start date`, `End date`, `OK`, `Cancel`, `No data`, or `items/page`.
+- 必须使用真实Ant Design组件或基于Ant Design的项目包装。
+- 必须不使用原生的`input`，`select`，`table`或`button`作为替代品。
+- 禁止手写菜单、标签、分页、模态、抽屉、或表格。
+- 图标必须使用Ant Design Icons。
+- 图表必须使用Ant Design Charts或一个项目图表封装。
+- 所有默认复制必须被本地化为中文。预览中不应包含`Start date`，`End date`，`OK`，`Cancel`，`No data`或`items/page`。

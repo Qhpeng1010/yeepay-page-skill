@@ -1,11 +1,13 @@
-# Boss Ledger Markdown Template Index
+# Boss Ledger 历史模板归档
 
-Boss Ledger 的模板合约是 Markdown 规范，不是可随意改造的 HTML 模板集。
+`templates/` 中的 `template-01` 至 `template-13` 是旧的设计稿抽取记录，保留仅用于追溯历史；它们已经退出资源解析、生成、评审、验收和发布清单，任何运行路径都不得读取它们。
 
-- 固定框架规范：`modules/boss-ledger/templates/template-01-framework-shell.md`
-- 页面意图与主模板的对应关系：`domain.json`
-- 具体的 `template-02` 到 `template-13` 路径由 `scripts/resolve-resources.mjs --stage template` 返回。
+活跃的页面选择机制如下：
 
-每次只选一个主内容模板。`template-01` 始终是支撑壳层，不是第二个主模板。
+- 面向人维护的设计决策：`director-rules/01-visual-constitution.md`、`02-template-application-rules.md`、`03-interaction-acceptance-rules.md`。
+- 自动生成的逻辑模板目录：`execution/rule-template-registry.json`。
+- 根据规则和策略自动生成的运行时输入：`execution/context-packs/`。
+- 由视觉宪法自动生成的固定渲染器主题：`execution/theme/`。
+- 当前可生成能力与组合：`execution/generation-policy.json`。
 
-模板描述页面语义和布局决策。实际执行能力以 `execution/generation-policy.json` 为准：模板存在不代表 Page Spec 渲染器已经开放该能力。Page Spec 生成必须同时通过选中模板规则、Director Rules、当前策略和契约验证。
+固定 Shell、组件实现和样式属于固定渲染器的职责。规则模板只回答“什么业务场景选择什么页面方案”，不包含坐标、样式、Figma、HTML、CSS 或组件代码。

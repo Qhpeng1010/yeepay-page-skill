@@ -4,7 +4,7 @@
     "changeId": "20260728-grouped-detail-fixture",
     "pageName": "结算账户详情",
     "family": "detail",
-    "templateId": "template-09-drawer-detail",
+    "templateId": "detail.record",
     "executionMode": "shadow",
     "validatedCombinations": ["detail.grouped"],
     "request": "查看结算账户的基础信息、余额指标和近期资金流水。",

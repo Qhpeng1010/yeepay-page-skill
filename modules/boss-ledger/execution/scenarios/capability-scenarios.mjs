@@ -1,5 +1,6 @@
 const ruleRefs = {
   form: ['BL-TPL-003', 'BL-TPL-005', 'BL-INT-005', 'BL-INT-006'],
+  simplePageForm: ['BL-TPL-003', 'BL-TPL-005', 'BL-TPL-019', 'BL-INT-005', 'BL-INT-006'],
   wizard: ['BL-TPL-003', 'BL-TPL-007', 'BL-INT-005', 'BL-INT-006', 'BL-INT-007'],
   list: ['BL-TPL-001', 'BL-TPL-010', 'BL-INT-003', 'BL-INT-008'],
   detail: ['BL-TPL-003', 'BL-TPL-009', 'BL-INT-004']
@@ -64,7 +65,7 @@ export const scenarios = [
     id: '01-contact-create',
     title: '普通信息收集',
     spec: base({
-      changeId: '20260729-capability-01-contact-create', pageName: '登记渠道联系人', family: 'form', templateId: 'template-06-modal-form', executionMode: 'shadow', validatedCombinations: ['form.modal-simple'],
+      changeId: '20260729-capability-01-contact-create', pageName: '登记渠道联系人', family: 'form', templateId: 'form.modal-simple', executionMode: 'shadow', validatedCombinations: ['form.modal-simple'],
       request: '运营人员登记渠道联系人，校验必填项和 11 位手机号码后保存。', selectionReason: '四个相互独立字段，使用短表单 Modal。', assumptions: ['保存成功仅显示客户端反馈。'], refs: ruleRefs.form,
       capabilities: ['form.simple'],
       body: { form: { presentation: 'modal', fields: [
@@ -76,10 +77,25 @@ export const scenarios = [
     })
   },
   {
+    id: '16-contact-create-page',
+    title: '独立简单表单页',
+    spec: base({
+      changeId: '20260730-capability-16-contact-create-page', pageName: '登记渠道联系人', family: 'form', templateId: 'form.page-simple', executionMode: 'shadow', validatedCombinations: ['form.page-simple'],
+      request: '运营人员从独立菜单进入登记渠道联系人页面，校验必填项和 11 位手机号码后保存。', selectionReason: '页面从独立任务入口进入，没有需要保留的来源上下文；四个字段相互独立，使用独立简单表单页。', assumptions: ['保存成功仅显示客户端反馈。'], refs: ruleRefs.simplePageForm,
+      capabilities: ['form.simple', 'form.stickyActions'],
+      body: { form: { presentation: 'page', stickyActions: true, fields: [
+        { key: 'contactName', label: '联系人姓名', control: 'input', required: true },
+        { key: 'mobile', label: '手机号码', control: 'input', required: true, pattern: '^\\d{11}$', patternMessage: '请输入 11 位手机号码' },
+        { key: 'channel', label: '所属渠道', control: 'select', required: true, options: [{ label: '线上收单', value: 'online' }, { label: '联营渠道', value: 'partner' }, { label: '直营网点', value: 'direct' }] },
+        { key: 'remark', label: '备注', control: 'textarea', rows: 3 }
+      ], submit: { primaryLabel: '保 存', cancelLabel: '取 消', success: { title: '保存成功', message: '渠道联系人已保存。' } } } }
+    })
+  },
+  {
     id: '02-settlement-account-change',
     title: '普通表单加右侧说明',
     spec: base({
-      changeId: '20260729-capability-02-settlement-account-change', pageName: '变更结算银行卡', family: 'form', templateId: 'template-13-guided-form', executionMode: 'shadow', validatedCombinations: ['form.guided-simple'],
+      changeId: '20260729-capability-02-settlement-account-change', pageName: '变更结算银行卡', family: 'form', templateId: 'form.guided-simple', executionMode: 'shadow', validatedCombinations: ['form.guided-simple'],
       request: '商户管理员变更结算银行卡，并在桌面端查看资金操作提示。', selectionReason: '单阶段字段填写，需要明确资金影响提示，使用引导式简单表单。', assumptions: ['窄屏隐藏右侧说明而不隐藏提交动作。'], refs: [...ruleRefs.form, 'BL-TPL-008'],
       capabilities: ['form.simple', 'form.sideGuide', 'form.stickyActions'],
       body: { form: { presentation: 'page', stickyActions: true, sideGuide: { title: '结算账户变更', text: '此操作会影响后续自动结算，请确认账户信息无误后提交。' }, fields: [
@@ -95,7 +111,7 @@ export const scenarios = [
     id: '03-merchant-settlement-config',
     title: '分组配置表单',
     spec: base({
-      changeId: '20260729-capability-03-merchant-settlement-config', pageName: '配置商户结算信息', family: 'form', templateId: 'template-08-full-page-form', executionMode: 'shadow', validatedCombinations: ['form.grouped'],
+      changeId: '20260729-capability-03-merchant-settlement-config', pageName: '配置商户结算信息', family: 'form', templateId: 'form.grouped-page', executionMode: 'shadow', validatedCombinations: ['form.grouped'],
       request: '财务人员按商户基本信息、收款账户和结算周期三组配置商户结算信息。', selectionReason: '字段较多且必须按三个语义信息组核对，使用分组全页表单。', refs: [...ruleRefs.form, 'BL-TPL-007'],
       capabilities: ['form.groups', 'form.stickyActions'],
       body: { form: { presentation: 'page', stickyActions: true, groups: [
@@ -109,7 +125,7 @@ export const scenarios = [
     id: '04-settlement-account-wizard',
     title: '分阶段账户变更',
     spec: base({
-      changeId: '20260729-capability-04-settlement-account-wizard', pageName: '变更商户结算账户', family: 'form', templateId: 'template-10-wizard', executionMode: 'shadow', validatedCombinations: ['form.steps-return-source'],
+      changeId: '20260729-capability-04-settlement-account-wizard', pageName: '变更商户结算账户', family: 'form', templateId: 'form.staged-flow', executionMode: 'shadow', validatedCombinations: ['form.steps-return-source'],
       request: '运营人员分三步变更商户结算账户，最终成功后返回列表。', selectionReason: '第二步依赖变更方式，提交前需完整只读确认，使用步骤流程。', refs: ruleRefs.wizard,
       capabilities: ['form.steps', 'form.review', 'form.stickyActions', 'form.returnSource'],
       body: { form: { presentation: 'page', stickyActions: true, steps: [
@@ -123,7 +139,7 @@ export const scenarios = [
     id: '05-settlement-import',
     title: '上传、复核和完成',
     spec: base({
-      changeId: '20260729-capability-05-settlement-import', pageName: '导入商户结算名单', family: 'form', templateId: 'template-10-wizard', executionMode: 'shadow', validatedCombinations: ['form.upload-review'],
+      changeId: '20260729-capability-05-settlement-import', pageName: '导入商户结算名单', family: 'form', templateId: 'form.staged-flow', executionMode: 'shadow', validatedCombinations: ['form.upload-review'],
       request: '财务人员上传一个 xlsx 文件，查看解析结果后确认导入并获得结果反馈。', selectionReason: '上传、解析、复核与提交有明确前后依赖，使用上传复核步骤流程。', refs: ruleRefs.wizard,
       capabilities: ['form.steps', 'form.review', 'form.stickyActions', 'form.upload', 'form.reviewTable'],
       body: { form: { presentation: 'page', stickyActions: true, steps: [
@@ -137,7 +153,7 @@ export const scenarios = [
     id: '06-split-rule-query',
     title: '列表加简单操作',
     spec: base({
-      changeId: '20260729-capability-06-split-rule-query', pageName: '分账规则查询', family: 'list', templateId: 'template-03-query-list-regular', executionMode: 'page-spec-default',
+      changeId: '20260729-capability-06-split-rule-query', pageName: '分账规则查询', family: 'list', templateId: 'list.regular', executionMode: 'page-spec-default',
       request: '运营人员按规则名称、商户编号和规则状态查询分账规则，并可修改或失效。', selectionReason: '以定位和处理记录集合为主要任务，使用常规查询列表。', refs: [...ruleRefs.list, 'BL-INT-010'],
       capabilities: ['query.basic', 'table.flat', 'table.pagination', 'table.status', 'table.amount', 'table.confirmAction', 'table.editAction'],
       body: { list: { query: { fields: [{ key: 'ruleName', label: '规则名称', control: 'input' }, { key: 'merchantNo', label: '商户编号', control: 'input' }, { key: 'status', label: '规则状态', control: 'select', options: [{ label: '生效中', value: 'active' }, { label: '待生效', value: 'pending' }, { label: '已失效', value: 'disabled' }] }] }, table: { rowKey: 'ruleNo', sectionTitle: '分账规则列表', columns: ruleColumns, rows: ruleRows, pagination: { page: 1, pageSize: 20, total: 3 }, rowActions: [
@@ -150,7 +166,7 @@ export const scenarios = [
     id: '07-settlement-rule-advanced',
     title: '高级查询、工具栏和列设置',
     spec: base({
-      changeId: '20260729-capability-07-settlement-rule-advanced', pageName: '结算规则查询', family: 'list', templateId: 'template-03-query-list-regular', executionMode: 'page-spec-default',
+      changeId: '20260729-capability-07-settlement-rule-advanced', pageName: '结算规则查询', family: 'list', templateId: 'list.regular', executionMode: 'page-spec-default',
       request: '财务人员以高级条件查询结算规则，并使用新增、批量配置、导出、刷新和可排序列设置。', selectionReason: '主要工作仍是多条件定位与处理规则集合，使用高级查询列表。', refs: [...ruleRefs.list, 'BL-TPL-016'],
       capabilities: ['query.advanced', 'table.flat', 'table.pagination', 'table.status', 'table.amount', 'table.refresh', 'table.columnSettings', 'table.columnOrder', 'table.export', 'table.editAction', 'table.confirmAction', 'list.drawerCreate'],
       body: { list: { query: { collapseThreshold: 3, defaultExpanded: false, fields: [
@@ -162,7 +178,7 @@ export const scenarios = [
     id: '08-settlement-bill-statistics',
     title: '列表统计',
     spec: base({
-      changeId: '20260729-capability-08-settlement-bill-statistics', pageName: '结算单查询', family: 'list', templateId: 'template-05-query-list-card-summary', executionMode: 'shadow', validatedCombinations: ['list.card-statistics'],
+      changeId: '20260729-capability-08-settlement-bill-statistics', pageName: '结算单查询', family: 'list', templateId: 'list.card-summary', executionMode: 'shadow', validatedCombinations: ['list.card-statistics'],
       request: '财务人员查询结算单并查看本期结算和打款统计。', selectionReason: '列表任务前需要四项高优先级统计，使用统计卡片查询列表。', refs: [...ruleRefs.list, 'BL-TPL-011'],
       capabilities: ['query.basic', 'table.flat', 'table.pagination', 'table.status', 'table.amount', 'statistics.cards'],
       body: { list: { query: { fields: [{ key: 'settlementDate', label: '结算日期', control: 'date' }, { key: 'statementNo', label: '结算单号', control: 'input' }, { key: 'merchantName', label: '商户名称', control: 'input' }, { key: 'status', label: '结算状态', control: 'select', options: [{ label: '已打款', value: 'paid' }, { label: '打款失败', value: 'failed' }] }] }, statistics: { items: [{ key: 'count', label: '本期结算笔数', value: 128, unit: '笔' }, { key: 'payable', label: '应付总金额', value: 2865400, precision: 2, unit: '元' }, { key: 'paid', label: '实打款总金额', value: 2798600, precision: 2, unit: '元' }, { key: 'failed', label: '打款失败', value: 3, unit: '笔' }] }, table: { rowKey: 'statementNo', sectionTitle: '结算单列表', columns: [{ key: 'statementNo', label: '结算单号', width: 150 }, { key: 'merchantName', label: '商户名称', width: 220 }, { key: 'payable', label: '应付金额', format: 'amount', unit: '元', width: 150 }, { key: 'paidAmount', label: '实打款金额', format: 'amount', unit: '元', width: 150 }, { key: 'status', label: '结算状态', format: 'status', statusMap, width: 120 }], rows: [{ statementNo: 'JS001', merchantName: '杭州星云商贸有限公司', payable: 120000, paidAmount: 118800, status: 'paid' }, { statementNo: 'JS002', merchantName: '上海锦程科技有限公司', payable: 98500, paidAmount: 0, status: 'failed' }, { statementNo: 'JS003', merchantName: '广州启明商贸有限公司', payable: 76200, paidAmount: 76200, status: 'paid' }], pagination: { page: 1, pageSize: 20, total: 3 } } } }
@@ -172,7 +188,7 @@ export const scenarios = [
     id: '09-settlement-rule-batch-review',
     title: '批量操作',
     spec: base({
-      changeId: '20260729-capability-09-settlement-rule-batch-review', pageName: '待审核结算规则', family: 'list', templateId: 'template-03-query-list-regular', executionMode: 'page-spec-default',
+      changeId: '20260729-capability-09-settlement-rule-batch-review', pageName: '待审核结算规则', family: 'list', templateId: 'list.regular', executionMode: 'page-spec-default',
       request: '运营人员查询待审核结算规则，选择记录后批量通过或批量驳回。', selectionReason: '记录审核是列表中的原子批量处理任务，使用带勾选的查询列表。', refs: [...ruleRefs.list, 'BL-TPL-015', 'BL-INT-002', 'BL-INT-010'],
       capabilities: ['query.basic', 'table.flat', 'table.pagination', 'table.status', 'table.batchAction'],
       body: { list: { query: { fields: [{ key: 'ruleName', label: '规则名称', control: 'input' }, { key: 'status', label: '审核状态', control: 'select', options: [{ label: '待审核', value: 'pendingReview' }, { label: '已通过', value: 'approved' }, { label: '已驳回', value: 'rejected' }] }] }, table: { rowKey: 'ruleNo', sectionTitle: '待审核规则', rowSelection: true, columns: [{ key: 'ruleNo', label: '规则编号', width: 100 }, { key: 'ruleName', label: '规则名称', width: 220 }, { key: 'merchantName', label: '商户名称', width: 220 }, { key: 'status', label: '审核状态', format: 'status', statusMap, width: 120 }, { key: 'createdAt', label: '创建时间', width: 180 }], rows: [{ ruleNo: 'R001', ruleName: '华东直营网点结算', merchantName: '杭州星云商贸有限公司', status: 'pendingReview', createdAt: '2026-07-16 11:35:22' }, { ruleNo: 'R002', ruleName: '联营渠道月度分润', merchantName: '上海锦程科技有限公司', status: 'pendingReview', createdAt: '2026-07-15 16:20:10' }, { ruleNo: 'R003', ruleName: '渠道服务费抵扣', merchantName: '广州启明商贸有限公司', status: 'approved', createdAt: '2026-07-14 09:35:22' }], batchActions: [{ key: 'approve', label: '批量通过', effect: { field: 'status', value: 'approved' }, confirm: { title: '确认批量通过', description: '确认通过所选结算规则？', impact: '所选规则将进入生效准备状态。', successMessage: '所选结算规则已通过。' } }, { key: 'reject', label: '批量驳回', danger: true, effect: { field: 'status', value: 'rejected' }, confirm: { title: '确认批量驳回', description: '确认驳回所选结算规则？', impact: '所选规则需重新修改后再提交审核。', reversible: false, successMessage: '所选结算规则已驳回。' } }], pagination: { page: 1, pageSize: 20, total: 3 } } } }
@@ -182,7 +198,7 @@ export const scenarios = [
     id: '10-settlement-batch-expand',
     title: '父表展开子表',
     spec: base({
-      changeId: '20260729-capability-10-settlement-batch-expand', pageName: '结算批次查询', family: 'list', templateId: 'template-03-query-list-regular', executionMode: 'page-spec-default',
+      changeId: '20260729-capability-10-settlement-batch-expand', pageName: '结算批次查询', family: 'list', templateId: 'list.regular', executionMode: 'page-spec-default',
       request: '财务人员查询结算批次，按需展开查看批次下的商户明细。', selectionReason: '父记录与少量直接子记录需要就地比对，使用可展开查询列表。', refs: [...ruleRefs.list, 'BL-TPL-015'],
       capabilities: ['query.basic', 'table.flat', 'table.pagination', 'table.status', 'table.amount', 'table.expandable'],
       body: { list: { query: { fields: [{ key: 'batchNo', label: '结算批次号', control: 'input' }, { key: 'status', label: '批次状态', control: 'select', options: [{ label: '已完成', value: 'completed' }, { label: '处理中', value: 'processing' }] }] }, table: { rowKey: 'batchNo', sectionTitle: '结算批次列表', columns: [{ key: 'batchNo', label: '批次号', width: 120 }, { key: 'period', label: '结算周期', width: 260 }, { key: 'merchantCount', label: '商户数量', width: 110 }, { key: 'payable', label: '应付总金额', format: 'amount', unit: '元', width: 150 }, { key: 'status', label: '批次状态', format: 'status', width: 120, statusMap: { completed: { label: '已完成', status: 'success' }, processing: { label: '处理中', status: 'processing' } } }], rows: [{ batchNo: 'B001', period: '2026-07-01 至 2026-07-07', merchantCount: 2, payable: 218500, status: 'completed', merchantDetails: [{ merchantName: '杭州星云商贸有限公司', amount: 120000, status: 'paid' }, { merchantName: '上海锦程科技有限公司', amount: 98500, status: 'paid' }] }], expandable: { childTable: { rowsSource: 'merchantDetails', rowKey: 'merchantName', columns: [{ key: 'merchantName', label: '商户名称' }, { key: 'amount', label: '应付金额', format: 'amount', unit: '元' }, { key: 'status', label: '结算状态', format: 'status', statusMap }] } }, pagination: { page: 1, pageSize: 20, total: 1 } } } }
@@ -192,7 +208,7 @@ export const scenarios = [
     id: '11-settlement-rule-management',
     title: '列表内新增与详情抽屉',
     spec: base({
-      changeId: '20260729-capability-11-settlement-rule-management', pageName: '结算规则管理', family: 'list', templateId: 'template-03-query-list-regular', executionMode: 'page-spec-default',
+      changeId: '20260729-capability-11-settlement-rule-management', pageName: '结算规则管理', family: 'list', templateId: 'list.regular', executionMode: 'page-spec-default',
       request: '运营人员在结算规则列表中新增规则并从行内打开只读详情。', selectionReason: '新增字段少、详情短且都必须保留当前列表上下文，使用 Drawer 组合。', refs: [...ruleRefs.list, 'BL-TPL-012', 'BL-TPL-013', 'BL-INT-004'],
       capabilities: ['query.basic', 'table.flat', 'table.pagination', 'table.status', 'list.drawerCreate', 'detail.drawer'],
       body: { list: { query: { fields: [{ key: 'ruleName', label: '规则名称', control: 'input' }, { key: 'status', label: '规则状态', control: 'select', options: [{ label: '生效中', value: 'active' }, { label: '待生效', value: 'pending' }] }] }, table: { rowKey: 'ruleNo', sectionTitle: '结算规则列表', primaryAction: { key: 'create', label: '新增规则', createRecord: { ruleNo: 'R003' }, form: { title: '新增结算规则', primaryLabel: '保 存', successMessage: '结算规则已新增。', fields: [{ key: 'ruleName', label: '规则名称', control: 'input', required: true }, { key: 'merchantName', label: '商户名称', control: 'input', required: true }, { key: 'status', label: '规则状态', control: 'select', required: true, options: [{ label: '生效中', value: 'active' }, { label: '待生效', value: 'pending' }] }] } }, columns: [{ key: 'ruleNo', label: '规则编号', width: 120, hideable: false }, { key: 'ruleName', label: '规则名称', width: 220 }, { key: 'merchantName', label: '商户名称', width: 240 }, { key: 'status', label: '规则状态', format: 'status', statusMap, width: 120 }, { key: 'actions', label: '操作', width: 100, hideable: false }], drawerDetail: { title: '结算规则详情', closeLabel: '关 闭', groups: [{ key: 'basic', title: '基本信息', fields: [{ key: 'ruleNo', label: '规则编号', source: 'ruleNo' }, { key: 'ruleName', label: '规则名称', source: 'ruleName' }, { key: 'merchantName', label: '商户名称', source: 'merchantName' }, { key: 'status', label: '规则状态', source: 'status', format: 'status', statusMap }] }] }, rowActions: [{ key: 'detail', label: '详情', type: 'detail' }], rows: [{ ruleNo: 'R001', ruleName: '华东直营网点结算', merchantName: '杭州星云商贸有限公司', status: 'active' }, { ruleNo: 'R002', ruleName: '联营渠道月度分润', merchantName: '上海锦程科技有限公司', status: 'pending' }], pagination: { page: 1, pageSize: 20, total: 2 } } } }
@@ -202,7 +218,7 @@ export const scenarios = [
     id: '12-settlement-quick-detail',
     title: '快速详情弹窗',
     spec: base({
-      changeId: '20260729-capability-12-settlement-quick-detail', pageName: '结算单详情', family: 'detail', templateId: 'template-09-drawer-detail', executionMode: 'shadow', validatedCombinations: ['detail.modal-quick'],
+      changeId: '20260729-capability-12-settlement-quick-detail', pageName: '结算单详情', family: 'detail', templateId: 'detail.record', executionMode: 'shadow', validatedCombinations: ['detail.modal-quick'],
       request: '运营人员快速查看一笔结算单的关键信息。', selectionReason: '信息量很小且只需关闭，使用快速详情 Modal。', refs: ruleRefs.detail,
       capabilities: ['detail.groups', 'detail.modal'],
       body: { detail: { presentation: 'modal', width: 640, closeLabel: '关 闭', groups: [{ key: 'basic', title: '结算单信息', fields: [{ key: 'statementNo', label: '结算单号', value: 'JS20260716001' }, { key: 'merchantName', label: '商户名称', value: '杭州星云商贸有限公司', span: 2 }, { key: 'settlementDate', label: '结算日期', value: '2026-07-16' }, { key: 'payable', label: '应付金额', value: 120000, format: 'amount', unit: '元' }, { key: 'paidAmount', label: '实打款金额', value: 118800, format: 'amount', unit: '元' }, { key: 'status', label: '结算状态', value: '已打款', format: 'status', status: 'success' }] }] } }
@@ -212,7 +228,7 @@ export const scenarios = [
     id: '13-split-record-drawer',
     title: '详情抽屉和退款明细',
     spec: base({
-      changeId: '20260729-capability-13-split-record-drawer', pageName: '分账记录查询', family: 'list', templateId: 'template-03-query-list-regular', executionMode: 'page-spec-default',
+      changeId: '20260729-capability-13-split-record-drawer', pageName: '分账记录查询', family: 'list', templateId: 'list.regular', executionMode: 'page-spec-default',
       request: '运营人员从分账记录列表打开 Drawer 查看订单信息和两条退款明细。', selectionReason: '来源记录和有限退款明细需同时保留列表上下文，使用带子表的只读详情 Drawer。', refs: [...ruleRefs.list, 'BL-TPL-013', 'BL-INT-004'],
       capabilities: ['query.basic', 'table.flat', 'table.pagination', 'table.status', 'table.amount', 'detail.drawer', 'detail.drawerTable'],
       body: { list: { query: { fields: [{ key: 'batchNo', label: '分账批次号', control: 'input' }] }, table: { rowKey: 'batchNo', sectionTitle: '分账记录列表', columns: [{ key: 'batchNo', label: '分账批次号', width: 260 }, { key: 'merchantName', label: '商户简称', width: 220 }, { key: 'status', label: '分账状态', format: 'status', width: 120, statusMap: { partial: { label: '部分成功', status: 'processing' } } }, { key: 'totalAmount', label: '分账总金额', hidden: true }, { key: 'receivedAmount', label: '到账总金额', hidden: true }, { key: 'mode', label: '分账方式', hidden: true }, { key: 'count', label: '分账到账笔数', hidden: true }, { key: 'operator', label: '操作员', hidden: true }, { key: 'createdAt', label: '分账发起时间', hidden: true }, { key: 'actions', label: '操作', width: 100, hideable: false }], drawerDetail: { title: '分账记录详情', closeLabel: '我知道了', groups: [{ key: 'order', title: '订单信息', fields: [{ key: 'merchantName', label: '商户简称', source: 'merchantName' }, { key: 'status', label: '分账状态', source: 'status', format: 'status', statusMap: { partial: { label: '部分成功', status: 'processing' } } }, { key: 'totalAmount', label: '分账总金额', source: 'totalAmount', format: 'amount', unit: '元' }, { key: 'receivedAmount', label: '到账总金额', source: 'receivedAmount', format: 'amount', unit: '元' }, { key: 'mode', label: '分账方式', source: 'mode' }, { key: 'count', label: '分账到账笔数', source: 'count' }, { key: 'operator', label: '操作员', source: 'operator' }, { key: 'createdAt', label: '分账发起时间', source: 'createdAt' }, { key: 'batchNo', label: '分账批次号', source: 'batchNo', span: 2 }] }, { key: 'refund', title: '退款信息', table: { rowsSource: 'refunds', rowKey: 'requestNo', columns: [{ key: 'requestedAt', label: '退款请求时间' }, { key: 'requestNo', label: '退款请求号' }, { key: 'completedAt', label: '退款完成时间' }, { key: 'amount', label: '退款金额', format: 'amount', unit: '元' }, { key: 'description', label: '退款说明' }, { key: 'remark', label: '账备注' }, { key: 'status', label: '退款状态', format: 'status', statusMap: { success: { label: '成功', status: 'success' }, failed: { label: '失败', status: 'error' } } }] } }] }, rowActions: [{ key: 'detail', label: '详情', type: 'detail' }], rows: [{ batchNo: '1320250529180001984748592271', merchantName: '签约名10080028707', status: 'partial', totalAmount: 766651.38, receivedAmount: 6654.98, mode: '自动', count: '2 笔', operator: '杨小雨', createdAt: '2025-05-29 18:00:02', refunds: [{ requestedAt: '2025-05-29 18:08:21', requestNo: '10082983398', completedAt: '2025-05-29 18:09:10', amount: 26293.99, description: '-', remark: '-', status: 'success' }, { requestedAt: '2025-05-29 18:12:45', requestNo: '10082983400', completedAt: '2025-05-29 18:13:21', amount: 2332.87, description: '余额不足', remark: '余额不足', status: 'failed' }] }], pagination: { page: 1, pageSize: 20, total: 1 } } } }
@@ -222,7 +238,7 @@ export const scenarios = [
     id: '14-merchant-settlement-long-detail',
     title: '长详情页和锚点定位',
     spec: base({
-      changeId: '20260729-capability-14-merchant-settlement-long-detail', pageName: '渠道结算配置详情', family: 'detail', templateId: 'template-09-drawer-detail', executionMode: 'shadow', validatedCombinations: ['detail.page-anchors'],
+      changeId: '20260729-capability-14-merchant-settlement-long-detail', pageName: '渠道结算配置详情', family: 'detail', templateId: 'detail.record', executionMode: 'shadow', validatedCombinations: ['detail.page-anchors'],
       request: '财务人员查看杭州星云商贸有限公司的七组渠道结算配置，只读并快速定位任一分组。', selectionReason: '分组多且需要定位，使用带锚点的独立详情页。', refs: ruleRefs.detail,
       capabilities: ['detail.groups', 'detail.anchors'],
       body: { detail: { presentation: 'page', anchors: true, groups: [
@@ -240,7 +256,7 @@ export const scenarios = [
     id: '15-settlement-account-tabs',
     title: '分组标签详情和指标',
     spec: base({
-      changeId: '20260729-capability-15-settlement-account-tabs', pageName: '结算账户详情', family: 'detail', templateId: 'template-09-drawer-detail', executionMode: 'shadow', validatedCombinations: ['detail.tabs-metrics'],
+      changeId: '20260729-capability-15-settlement-account-tabs', pageName: '结算账户详情', family: 'detail', templateId: 'detail.record', executionMode: 'shadow', validatedCombinations: ['detail.tabs-metrics'],
       request: '财务人员查看结算账户的三个指标，并按标签查看基本信息、结算配置和资金流水。', selectionReason: '指标需置顶且详情按三个等价内容组切换，使用指标加 Tabs 详情。', refs: ruleRefs.detail,
       capabilities: ['detail.groups', 'detail.metrics', 'detail.embeddedTable', 'detail.tabs'],
       body: { detail: { presentation: 'page', metrics: [{ key: 'balance', label: '账户余额', value: 286540, precision: 2, unit: '元' }, { key: 'available', label: '可用余额', value: 265400, precision: 2, unit: '元' }, { key: 'frozen', label: '冻结金额', value: 21140, precision: 2, unit: '元' }], tabs: [{ key: 'basic', label: '基本信息', groupKeys: ['basic'] }, { key: 'config', label: '结算配置', groupKeys: ['config'] }, { key: 'flows', label: '资金流水', groupKeys: ['flows'] }], groups: [

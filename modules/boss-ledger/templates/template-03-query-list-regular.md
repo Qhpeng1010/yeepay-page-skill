@@ -1,129 +1,124 @@
-# Template 03 Extraction - Query List Regular
+# 提取模板03查询列表常规
 
-Figma source:
-https://www.figma.com/design/Dbic1s0dVVFc3IreKWl26m/%E8%80%81%E6%9D%BF%E7%AE%A1%E8%B4%A6%E5%B8%B8%E7%94%A8%E4%B8%9A%E5%8A%A1%E7%B1%BB%E5%9E%8B%E9%A1%B5%E9%9D%A2%E6%A2%B3%E7%90%86?node-id=2-1512&m=dev
+> **历史归档，已废弃。** 自 2026-07-29 起，本文件不再属于资源解析、页面生成、评审、验收或发布的输入。页面方案请使用 `execution/rule-template-registry.json` 和生成的 `execution/context-packs/`。以下内容仅保留作历史追溯。
 
-Figma node: `2:1512`
+状态：提取为常规查询列表模板
 
-Figma name: `Query List 查询列表/常规`
+## 内容结构
 
-Status: extracted as regular query-list template
+- 内容框：`x=224`，`y=140`，`w=1200`，`h=619`]
+- 查询模块：`w=1200`，`h=160`
+- 结果模块：`y=176`，`w=1200`，`h=443`]
+- 模块差距：`16px`]
 
-## Content Structure
+## 查询模块
 
-- Content frame: `x=224`, `y=140`, `w=1200`, `h=619`
-- Query module: `w=1200`, `h=160`
-- Result module: `y=176`, `w=1200`, `h=443`
-- Module gap: `16px`
+- 内边距：`16px`]
+- 第行：`x=16`，`y=16`，`w=1168`，`h=32`]
+- 主字段宽度：`460px`]
+- 快速日期组从`x=470`开始，宽度`288px`。
+- 今日, 昨日, 本周, 上周, 本月, 上月
+- 第二行第一列：`x=16`，`y=64`，`w=1168`，`h=80`
+- 过滤控件使用Ant表单、输入、选择、日期选择器、或范围选择器。
+- 查询条件使用`Form layout="horizontal"`；标签文本是右对齐的，有一个稳定的标签列和所有控制在网格列共享相同的左边缘。
+- 查询字段必须保持水平对齐：标签坐在固定右侧对齐的列旁边，它们的控制。不要使用垂直表布局或将标签放在控制上方，在查询列表字段网格中。
+- 操作按钮位于第二行的右侧：重置，查询。
 
-## Query Module
+## 结果模块
 
-- Inner padding: `16px`
-- Row 1: `x=16`, `y=16`, `w=1168`, `h=32`
-- Main field width: `460px`
-- Quick date group starts at `x=470`, width `288px`
-- Quick date options: 今日, 昨日, 本周, 上周, 本月, 上月
-- Row 2 block: `x=16`, `y=64`, `w=1168`, `h=80`
-- Filter controls use Ant Form, Input, Select, DatePicker, or RangePicker.
-- Query conditions use `Form layout="horizontal"`; label text is right-aligned with a stable label column and all controls in a grid column share the same left edge.
-- Query fields must stay horizontally aligned: labels sit in a fixed right-aligned column beside their controls. Do not use vertical Form layout or place labels above controls in a query-list field grid.
-- Action buttons are right-aligned in the second row: 重 置, 查 询.
-
-## Result Module
-
-- Toolbar: `x=16`, `y=0`, `w=1168`, `h=56`
-- Result module top inset: `0`; the Toolbar starts at the result module top. Keep the module gap at `16px` and do not add a second `16px` top padding.
-- Toolbar title example: 提现记录
-- Right toolbar group: `x=928`, `y=12`, `w=240`, `h=32`
-- Toolbar actions: dropdown trigger, secondary button, column setting icon button.
+- 工具栏：`x=16`，`y=0`，`w=1168`，`h=56`]
+- 结果模块顶部内嵌：`0`；工具栏从结果模块顶部开始。保持模块间隙为`16px`，并且不要添加第二个`16px`顶部填充。
+- 记录揭示"
+- 右工具栏组：`x=928`，`y=12`，`w=240`，`h=32`]
+- 工具栏操作：下拉触发，二级按钮，列设置图标按钮。
 - Table: `x=16`, `y=56`, `w=1168`, `h=387`
-- Table columns area height: `323px`
-- Pagination area height: `64px`
-- Operation column is the rightmost column.
+- 高度：`323px`]
+- 页眉高度：`64px`]
+- 操作列是右最右边的列。
 
-## Template Intent
+## 模板意图
 
-Use this template for ordinary query-and-table pages with no summary statistics above the table.
+查询表页面
 
 
-## Mandatory Generation Contract
+## 强制性生成合同
 
-- This template is not a reference example; it is the mandatory generation skeleton for its corresponding Boss Ledger page type.
+- 这个模板不是一个参考例子；它是一个强制生成骨架的页面类型，其对应的Boss Ledger页面类型。
 - When generating this class of Boss Ledger page, the AI must reuse this template structure.
-- Business requirements may replace business content only; they must not redesign the template skeleton.
-- If a business requirement conflicts with this template, the currently selected template and `modules/boss-ledger/design.md` take priority.
+- 商务需求可能仅替换业务内容；它们必须不重新设计模板骨架。
+- 如果企业需求与本模板冲突，目前选择的模板和`modules/boss-ledger/design.md`优先级更高。
 
-## Replacement Rules
+## 抱歉，我无法完成这个任务。
 
-Allowed replacement:
+您可以在“[C0]”和“[C1]”等 placeholder 和 proper names 中进行替换。
 
-- Page / Tab copy
-- Primary navigation / left menu copy
-- Query fields
-- Table columns
-- Status enums
-- Action buttons
-- Form fields
-- Detail fields
-- Statistic metrics
-- Chart data
-- Mock data
+- 页面/标签复制
+- 主导航 / 左侧菜单复制
+- 查询字段
+- 表格列
+- 状态枚举
+- 执行按钮
+- 表单字段
+- 详细字段
+- 统计指标
+- 图表数据
+- 模拟数据
 
-Forbidden replacement:
+禁止替换：
 
-- Shell structure
-- Top info bar height
-- Primary navigation height
-- Left navigation width
-- Tabs shape
-- Content area origin
-- Module spacing
-- Query area layout
-- Table area layout
-- Pagination position
-- Modal / Drawer / Steps / Result / Empty base structure
+- 壳结构
+- 顶部信息栏高度
+- 主导航高度
+- 左侧导航栏宽度
+- 选项卡形状
+- 内容区域起始点
+- 模块间距
+- 查询区域布局
+- 表格布局
+- 分页位置
+- 模态/抽屉/步骤/结果/空基结构
 
-## Ant Design Runtime Rules
+## Ant Design Runtime Rules"
 
-- Must use real Ant Design components or project wrappers based on Ant Design.
-- Must not use native `input`, `select`, `table`, or `button` as substitutes.
-- Must not handwrite Menu, Tabs, Pagination, Modal, Drawer, or Table.
-- Icons must use Ant Design Icons.
-- Charts must use Ant Design Charts or a project chart wrapper.
-- All default copy must be localized to Chinese. The preview must not contain `Start date`, `End date`, `OK`, `Cancel`, `No data`, or `items/page`.
+- 必须使用真实Ant Design组件或基于Ant Design的项目包装。
+- 必须不使用原生的`input`，`select`，`table`或`button`作为替代品。
+- 禁止手写菜单、标签、分页、模态、抽屉、或表格。
+- 图标必须使用Ant Design Icons。
+- 图表必须使用Ant Design Charts或一个项目图表封装。
+- 所有默认复制必须被本地化为中文。预览中不应包含`Start date`，`End date`，`OK`，`Cancel`，`No data`或`items/page`。
 
-## Query List Mandatory Rules
+## 查询列表必须规则
 
-- Query Module and Result Module must be two sibling white modules.
-- Both modules must keep an explicit computed `#FFFFFF` background for their full rendered height. The Query Module and Result Module must be direct children of `boss-content-stack`, use `boss-query-module` and `boss-result-module`, and be separated by exactly `16px` of the gray workspace background.
-- Query Module and Result Module must not be wrapped inside one shared white shell.
-- Transparent query/result modules, white backgrounds applied only to inner controls/Table, and result backgrounds that stop before Pagination are forbidden.
-- Query Module and Result Module each provide the only `16px` content inset. Direct result regions (`boss-result-summary`, `boss-result-toolbar`, `boss-table-body`, `boss-table-pagination`) must not add horizontal padding; stacked module and child padding that creates a `32px` inset is forbidden.
-- Query fields must use a three-column grid.
-- Query field labels must be right-aligned; do not move query labels above controls.
-- Query action area must always sit in the rightmost column of the three-column grid and align right.
-- Query action area is an independent grid display slot, equivalent to a new condition slot. It must not be merged into the last query field cell.
-- If there are exactly 6 query fields, render the 6 fields as two complete rows of three fields, then render the action area as the 7th slot on a new row in the rightmost third column.
-- Query action order is fixed: 展开 / 收起, 重 置, 查 询.
+- 查询模块和结果模块必须是两个白模块的兄弟模块。
+- 两模块必须保持明确计算的 `#FFFFFF` 背景，以他们的完整渲染高度。查询模块和结果模块必须是直接子节点的 `boss-content-stack` ，使用 `boss-query-module` 和 `boss-result-module` ，并且被准确分离为 `16px` 个灰色工作区背景中的确切位置。
+- 查询模块和结果模块不能被封装在一个共享的白色壳子里。
+- 透明查询/结果模块，白色背景仅应用于内部控制/表，以及结果背景在分页之前停止。禁止使用分页之前的分页停止的背景。
+- 查询模块和结果模块各自提供唯一的`16px`内容内嵌。直接结果区域(`boss-result-summary`, `boss-result-toolbar`}, {C3}, {C4}))必须不添加水平间距；堆叠模块和子间距，创建一个`32px`内嵌是禁止的。
+- 查询字段必须使用三列网格。
+- 查询字段标签必须右对齐；不要将查询字段标签放置在控制之上。
+- 查询操作区域必须始终位于三个列网格的最右边一列，并对齐右。
+- 查询动作区域是一个独立的网格显示单元格，相当于一个新的条件单元格。它必须不被合并到最后一个查询字段单元格中。
+- 如果查询字段数恰好为6，将这6个字段渲染成两行完整的三个字段，然后将动作区域渲染成右下角最右边第三列的第7个位置的新一行。
+- 查询操作顺序固定：展开/收起，重置，查询。
 - When expand/collapse is present, its Button must use `boss-query-expand-button`; both text and `DownOutlined` / `UpOutlined` use primary text color `rgba(0, 0, 0, .85)`, not secondary or brand color.
-- If there are 6 or fewer query fields, show all fields by default and do not render, reserve, or display any expand/collapse entry, including `icon + 展 开`, `icon + 收 起`, text-only expand/collapse, arrows, or placeholder buttons. Expand/collapse is allowed and required only when there are more than 6 query fields.
-- Result Module must contain Toolbar, Ant Design Table, Pagination, and Column Setting.
-- Pagination must stay inside Result Module and must not leave the table white module.
-- Pagination must show the page-size changer by default, with Chinese page-size text such as `10 条/页` and `20 条/页`.
-- Pagination must use the Ant Design default pagination size; do not inherit Table compact / mini sizing or add a local `size="small"` / `size="mini"` override.
-- Pagination page-size dropdown must not be clipped or covered by the table module, content scroller, or footer; avoid wrapping Pagination in `overflow: hidden`, and mount the dropdown to `document.body` or an equivalent top-level container when needed.
-- Column Setting must use `SettingOutlined`.
-- Column Setting is mandatory by default for every rendered Table and must not be omitted.
-- Column Setting must implement real visibility toggles with Ant Design `Dropdown` / `Popover` plus `Checkbox`; an inert icon is invalid.
-- Do not render persistent toolbar helper copy such as `请选择订单`, `请选择数据`, `请选择记录`, or `请先选择`.
-- Column Setting must be icon-only with no visible border line, outline stroke, or button shadow in normal, hover, focus, and active states.
-- Column Setting dropdown options must always be arranged vertically, one Checkbox per row, using the official Ant Design Checkbox structure.
-- Column Setting dropdown must retain the official Ant Design white surface, rounded corners, and shadow elevation.
-- Column Setting must use `#FAFAFA` as its control background. The Button, `.anticon`, and SVG must all use secondary text color `rgba(0, 0, 0, .45)` in normal, hover, focus, and active states; do not use the brand primary color.
-- Operation column must be fixed on the rightmost side.
-- Operation-column text buttons must not be bold.
-- Operation column may show at most two direct text actions. When more than two row operations are available, show the first two high-frequency actions and move all remaining operations into an Ant Design Dropdown named `更多`.
-- Operation-column clickable text buttons must use Ant Design Table link-style hover: text color may change, but gray backgrounds, outlined backgrounds, block backgrounds, and button-like hover fills are forbidden.
-- Operation-column clickable text buttons must use Boss Ledger primary color `#F36046`; do not render secondary row actions in gray unless the action is disabled or unavailable.
-- Operation-column wrappers must include `data-boss-operation-column`. Configure `ConfigProvider` with `colorPrimary: '#F36046'`, `colorLink: '#F36046'`, and a darker `colorLinkHover`; also provide a `[data-boss-operation-column]` scoped CSS fallback for link text and the `更多` trigger. Never rely on `colorPrimary` alone because Ant Design link controls can otherwise resolve to default blue `#1677FF`.
-- Business action Buttons (查询、重置、新增、查看、编辑、导出、提交、取消) must be text-only by default; reserve icons for icon-only tool affordances such as column setting. Table status columns must render Ant Design `Badge` status dot + Chinese text and must not use `Tag`.
+- 如果查询字段数量少于或等于6个，那么默认显示所有查询字段，并不进行渲染、保留、或者显示任何展开/折叠项，包括[ C0 ], [ C1 ],文本-仅展开/折叠，箭头，或者 placeholder按钮。展开/折叠是允许的和必需的只有当查询字段数量多于或等于6个时。
+- 结果模块必须包含工具栏、Ant Design表格、分页、列设置等。
+- 结果模块中的分页必须留在Result Module中，不能离开表格空白模块。
+- 分页必须默认显示页大小切换器，页面大小文本为中文，如`10 条/页`和`20 条/页`。
+- 请提供英文原文，以便进行翻译。
+- 分页页面大小下拉框不得被剪切或覆盖于表格模块、内容滚动器或底部；避免将分页装入`overflow: hidden`，并将下拉框安装在`document.body`或等效顶级容器上需要时。
+- 列设置必须使用`SettingOutlined`。
+- 表格设置默认为必填，且在每个渲染的表格中都必须不被遗漏。
+- 列设置必须实现真正的可见切换，使用Ant Design的`Dropdown` / `Popover`加上`Checkbox`，一个无生命的图标是无效的。
+- 不要渲染持久的工具栏辅助复制，如`请选择订单`，`请选择数据`，`请选择记录`，或`请先选择`。
+- 列设置必须为图标-only，没有任何可见的边线、描边、或按钮阴影，在正常、悬停、焦点、和激活状态。
+- 列设置下拉选项必须始终按照竖直排列，每一行一个复选框，使用官方Ant Design复选框结构。
+- 列设置下拉框必须保留官方Ant Design白色表面，圆角边缘，以及阴影高度。
+- 列设置必须使用`#FAFAFA`作为其控制背景。按钮、`.anticon`和SVG都必须在正常、悬停、焦点、激活状态时，使用次要文本颜色`rgba(0, 0, 0, .45)`；不要使用品牌主要颜色。
+- 操作列必须固定在最右侧。
+- 操作列文本按钮的粗细必须不为粗体。
+- 操作列可能显示最多两个直接文本操作。当可用的行操作超过两个时，显示前两个高频操作，并将所有剩余的操作移动到Ant Design下拉菜单中，名为`更多`。
+- 操作列可点击文本按钮必须使用Ant DesignTable链接样式hover:text颜色可能改变，但灰色背景、描边背景、块状背景、按钮式hover填充禁止。
+- 操作列可点击文本按钮必须使用Boss Ledger主颜色`#F36046`;不要渲染次级行操作在灰色除非动作是禁用或不可用。
+- 操作列标签必须包含`data-boss-operation-column`。配置`ConfigProvider`为`colorPrimary: '#F36046'`, `colorLink: '#F36046'`,和一个更暗的`colorLinkHover`;同时提供一个`[data-boss-operation-column]` scoped CSS fallback for link text and的触发器`更多`。永远不要依赖`colorPrimary`独自解决，因为Ant Design链接控制可以其他方式解决为默认蓝色`#1677FF`。
+- 业务行动按钮（查询、重置、新增、查看、编辑、导出、提交、取消）必须默认为文本-仅；保留图标用于仅图标工具功能的设置，如列设置。状态列必须渲染Ant Design`Badge`状态点+中文文本，并且不能使用`Tag`。

@@ -10,7 +10,7 @@
 
 本文件只负责代码结构、技术栈、类型定义、状态管理、mock 数据、交互实现和接口接入预留。
 
-本文件不负责具体平台视觉规则。颜色、间距、导航样式、Tabs 样式、页面视觉表现等，以 `modules/shared/design-system.md` 和当前模块中的 `design.md` 为准。
+本文件不负责具体平台视觉规则。颜色、间距、导航样式、Tabs 样式和页面视觉表现，以 `modules/shared/design-system.md` 和当前模块已发布的设计规则为准。
 
 ---
 
@@ -101,12 +101,12 @@ changes/{change-id}/preview.html
 - 必须读取并应用 `modules/shared/design-system.md`。
 - 必须读取并应用 `modules/shared/theme-routing.md`。
 - 必须读取并应用 `modules/shared/template-routing.md`。
-- 必须读取并应用当前模块中的 `design.md` 主题文件。
-- Boss Ledger 预览必须读取并遵守 `modules/boss-ledger/design.md`。
-- Boss Ledger 每次输出前还必须完整读取 `modules/shared/design-system.md`、`modules/boss-ledger/design.md` 与 `modules/boss-ledger/templates/template-01-framework-shell.md`；`rules-read.md` 必须记录三者的当前哈希，过期清单视为未读取。
+- 必须读取并应用当前模块已发布的设计规则。
+- Boss Ledger 预览必须读取并遵守 `modules/boss-ledger/director-rules/`。
+- Boss Ledger 每次输出前由 `rules-read.md` 记录完整的三份导演规则、编译后的逻辑模板、主题 Token 和所选 Context Pack 的当前哈希；过期清单视为未读取。
 - YOP 预览必须读取并遵守 `modules/open-platform/theme.md`。
 - 必须读取并应用 `modules/shared/page-templates.md` 和 `modules/shared/components.md`。
-- Boss Ledger 页面还必须读取并应用 `modules/boss-ledger/design.md` 中的平台专属组件与交互契约。
+- Boss Ledger 页面还必须读取并应用导演规则中定义的平台专属组件与交互契约。
 - 必须根据当前 theme 生成页面视觉，不允许混用其他平台主题色、导航样式、页面框架或专属组件规则。
 - 必须是无需开发服务器即可直接打开的完整 change 预览包。入口为 `preview.html`，允许加载同目录下的固定本地 CSS、JavaScript、vendor 和 assets 文件。
 - Boss Ledger 禁止重新手写或内联框架 CSS；必须通过 `scripts/scaffold-boss-ledger-preview.mjs` 复制 `modules/boss-ledger/shell/` 固定资源。

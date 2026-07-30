@@ -4,6 +4,8 @@
   const antd = global.antd;
   const icons = global.icons || global.antdIcons || global.AntDesignIcons || {};
   const h = React.createElement;
+  const theme = global.BossLedgerTheme;
+  if (!theme?.antTokens) throw new Error('Boss Ledger generated theme is missing. Rebuild Director artifacts before rendering.');
 
   const {
     App: AntApp,
@@ -124,7 +126,16 @@
   function matchesQuery(row, field, value) {
     if (value === undefined || value === null || value === '' || (Array.isArray(value) && value.length === 0)) return true;
     const source = row[field.filterKey || field.key];
-    if (field.control === 'date-range') return true;
+    if (field.control === 'date-range') {
+      const sourceTime = Date.parse(source);
+      if (Number.isNaN(sourceTime)) return false;
+      const [start, end] = Array.isArray(value) ? value : [];
+      const startTime = start?.startOf ? start.startOf('day').valueOf() : start ? Date.parse(start) : null;
+      const endTime = end?.endOf ? end.endOf('day').valueOf() : end ? Date.parse(end) : null;
+      if (startTime !== null && !Number.isNaN(startTime) && sourceTime < startTime) return false;
+      if (endTime !== null && !Number.isNaN(endTime) && sourceTime > endTime) return false;
+      return true;
+    }
     if (field.control === 'select' || field.control === 'radio' || field.control === 'switch') return source === value;
     return String(source ?? '').toLowerCase().includes(String(value).toLowerCase());
   }
@@ -163,7 +174,7 @@
       width: workflow?.width || 640,
       closeIcon: false,
       onClose,
-      extra: h(Button, { type: 'text', icon: h(CloseOutlined), 'aria-label': '关闭表单', onClick: onClose }),
+      extra: React.createElement(Button, { type: 'text', icon: h(CloseOutlined), 'aria-label': '关闭表单', onClick: onClose }),
       footer: h('div', { className: 'boss-drawer-footer-actions' },
         h(Button, { onClick: onClose }, workflow?.cancelLabel || '取 消'),
         h(Button, { type: 'primary', onClick: submit }, workflow?.primaryLabel || '保 存'))
@@ -245,7 +256,7 @@
         width: 416,
         okText: '确 定',
         cancelText: '取 消',
-        okButtonProps: { className: 'boss-confirm-button', style: { background: '#F36046', borderColor: '#F36046' } },
+        okButtonProps: { className: 'boss-confirm-button' },
         onOk
       });
     };
@@ -398,7 +409,7 @@
         width: 416,
         okText: '提 交',
         cancelText: '取 消',
-        okButtonProps: { className: 'boss-confirm-button', style: { background: '#F36046', borderColor: '#F36046' } },
+        okButtonProps: { className: 'boss-confirm-button' },
         onOk: () => new Promise((resolveSubmit) => {
           const values = form.getFieldsValue(true);
           setSubmitError(null);
@@ -489,15 +500,15 @@
     const closeOrReset = () => { setCompleted(false); setSubmitError(null); form.resetFields(); };
     const presentation = formSpec.presentation || 'page';
     const pageActions = h('div', { className: `boss-form-actions ${presentation === 'page' ? 'boss-full-page-action-bar' : formSpec.stickyActions ? 'is-sticky' : ''}`, 'data-boss-full-page-action-bar': presentation === 'page' ? true : undefined }, h(Button, { onClick: () => form.resetFields() }, formSpec.submit.cancelLabel || '取 消'), h(Button, { type: 'primary', loading: submitting, onClick: submit }, formSpec.submit.primaryLabel));
-    const floatingActions = [h(Button, { key: 'cancel', onClick: closeOrReset }, formSpec.submit.cancelLabel || '取 消'), h(Button, { key: 'submit', type: 'primary', loading: submitting, onClick: submit }, formSpec.submit.primaryLabel)];
+    const floatingActions = [h(Button, { key: 'secondary', onClick: closeOrReset }, formSpec.submit.cancelLabel || '取 消'), h(Button, { key: 'submit', type: 'primary', loading: submitting, onClick: submit }, formSpec.submit.primaryLabel)];
     const formBody = completed
       ? h(Result, { status: 'success', title: formSpec.submit.success.title || '提交成功', subTitle: formSpec.submit.success.message, extra: h(Button, { type: 'primary', onClick: closeOrReset }, formSpec.submit.success.actionLabel || '返回填写') })
-      : h(Form, { form, layout: presentation === 'modal' ? 'horizontal' : 'vertical', initialValues, className: presentation === 'modal' ? 'boss-modal-form' : undefined },
+      : h(Form, { form, layout: presentation === 'modal' ? 'horizontal' : 'vertical', labelCol: presentation === 'modal' ? { flex: '104px' } : undefined, initialValues, className: presentation === 'modal' ? 'boss-modal-form' : undefined },
         ...(sections || []).map((section) => h('div', { key: section.key, className: 'boss-form-section' }, section.title ? h('div', { className: 'boss-section-title' }, section.title) : null, h('div', { className: 'boss-form-grid' }, ...(section.fields || []).map((field) => formItem(field))))),
         submitError ? h(Alert, { className: 'boss-form-submit-error', type: 'error', showIcon: true, message: submitError.message, description: submitError.recovery }) : null,
         presentation === 'page' ? pageActions : null);
     if (presentation === 'modal') return h('div', { className: 'boss-content-stack' }, h(Modal, { open: true, title: spec.metadata.pageName, width: formSpec.width || 500, closable: true, onCancel: closeOrReset, footer: completed ? null : floatingActions }, formBody));
-    if (presentation === 'drawer') return h('div', { className: 'boss-content-stack' }, h(Drawer, { open: true, title: spec.metadata.pageName, width: formSpec.width || 640, onClose: closeOrReset, footer: completed ? null : h('div', { className: 'boss-drawer-footer-actions' }, ...floatingActions) }, formBody));
+    if (presentation === 'drawer') return h('div', { className: 'boss-content-stack' }, h(Drawer, { open: true, title: spec.metadata.pageName, width: formSpec.width || 640, closeIcon: false, onClose: closeOrReset, extra: React.createElement(Button, { type: 'text', icon: h(CloseOutlined), 'aria-label': '关闭表单', onClick: closeOrReset }), footer: completed ? null : h('div', { className: 'boss-drawer-footer-actions' }, ...floatingActions) }, formBody));
     return h('div', { className: 'boss-content-stack' }, h('section', { className: 'boss-form-module boss-full-page-form' }, h('h2', { className: 'boss-form-title' }, spec.metadata.pageName), formSpec.sideGuide ? h('div', { className: 'boss-guided-form-layout' }, h('div', { className: 'boss-guided-form-main' }, formBody), h('aside', { className: 'boss-form-side-guide' }, h('div', { className: 'boss-form-side-guide-title' }, formSpec.sideGuide.title), h('div', { className: 'boss-form-side-guide-text' }, formSpec.sideGuide.text))) : formBody));
   }
 
@@ -526,7 +537,7 @@
       detail.metrics?.length ? h('div', { className: 'boss-detail-metrics', style: { '--boss-metric-columns': detail.metrics.length } }, ...detail.metrics.map((metric) => h('div', { key: metric.key, className: 'boss-detail-metric' }, h(Statistic, { title: metric.label, value: metric.value, suffix: metric.unit, precision: metric.precision })))) : null,
       detail.anchors ? h('div', { className: 'boss-detail-with-anchors' }, h('nav', { className: 'boss-detail-anchors', 'aria-label': '详情目录' }, ...detail.groups.map((group) => h('a', { key: group.key, href: `#detail-${group.key}` }, group.title))), h('div', { className: 'boss-detail-anchor-content' }, groupedContent)) : groupedContent);
     if (detail.presentation === 'modal') return h('div', { className: 'boss-content-stack' }, h(Modal, { open, title: spec.metadata.pageName, onCancel: () => setOpen(false), footer: h(Button, { onClick: () => setOpen(false) }, detail.closeLabel || '关 闭'), width: detail.width || 640 }, body));
-    if (detail.presentation === 'drawer') return h('div', { className: 'boss-content-stack' }, h(Drawer, { open, title: spec.metadata.pageName, width: detail.width || 808, onClose: () => setOpen(false), footer: h('div', { className: 'boss-drawer-footer-actions' }, h(Button, { onClick: () => setOpen(false) }, detail.closeLabel || '我知道了')) }, body));
+    if (detail.presentation === 'drawer') return h('div', { className: 'boss-content-stack' }, h(Drawer, { open, title: spec.metadata.pageName, width: detail.width || 808, closeIcon: false, onClose: () => setOpen(false), extra: React.createElement(Button, { type: 'text', icon: h(CloseOutlined), 'aria-label': '关闭详情', onClick: () => setOpen(false) }), footer: h('div', { className: 'boss-drawer-footer-actions' }, h(Button, { onClick: () => setOpen(false) }, detail.closeLabel || '我知道了')) }, body));
     return h('div', { className: 'boss-content-stack' }, h('section', { className: 'boss-detail-module' }, h('h2', { className: 'boss-detail-title' }, spec.metadata.pageName), body));
   }
 
@@ -555,13 +566,7 @@
       h(ConfigProvider, {
         locale: antd.locales?.zh_CN,
         theme: {
-          token: {
-            colorPrimary: '#F36046',
-            colorLink: '#F36046',
-            colorLinkHover: '#D94E36',
-            borderRadius: 4,
-            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif'
-          }
+          token: theme.antTokens
         }
       }, h(AntApp, null, h(BossLedgerShell, { config: shellConfig, renderContent }))));
   }

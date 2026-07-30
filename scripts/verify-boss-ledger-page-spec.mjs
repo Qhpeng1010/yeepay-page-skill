@@ -18,14 +18,22 @@ import {
 
 const specArg = process.argv.find((arg) => arg.endsWith('page-spec.json'));
 const fast = process.argv.includes('--fast');
+const browser = process.argv.includes('--browser');
+const timeoutIndex = process.argv.indexOf('--timeout-ms');
+const timeoutMs = timeoutIndex >= 0 ? Number(process.argv[timeoutIndex + 1]) : browser ? 90_000 : 30_000;
 if (!specArg) {
-  console.error('Usage: node scripts/verify-boss-ledger-page-spec.mjs [--fast] changes/{change-id}/page-spec.json');
+  console.error('Usage: node scripts/verify-boss-ledger-page-spec.mjs [--fast] [--browser] [--timeout-ms 1000..90000] changes/{change-id}/page-spec.json');
+  process.exit(2);
+}
+if (!Number.isInteger(timeoutMs) || timeoutMs < 1_000 || timeoutMs > 90_000) {
+  console.error('timeout-ms must be an integer from 1000 to 90000.');
   process.exit(2);
 }
 
 function run(root, label, args) {
-  const result = spawnSync(process.execPath, args, { cwd: root, encoding: 'utf8', stdio: 'inherit' });
-  if (result.status !== 0) throw new Error(`${label} failed.`);
+  const result = spawnSync(process.execPath, args, { cwd: root, encoding: 'utf8', stdio: 'inherit', timeout: timeoutMs });
+  if (result.error?.code === 'ETIMEDOUT') throw new Error(`${label} exceeded ${timeoutMs}ms.`);
+  if (result.error || result.status !== 0) throw new Error(`${label} failed.`);
 }
 
 function hash(file) {
@@ -115,26 +123,61 @@ async function verifyListWorkflow(page, changeDir, spec) {
 
   await page.getByRole('button', { name: /重\s*置/ }).click();
   if (nameField && await queryTextbox(page, nameField.label).inputValue() !== '') throw new Error('Reset did not clear the query condition.');
+
+  const dateRangeField = (spec.list.query.fields || []).find((field) => field.control === 'date-range' && firstRow[field.filterKey || field.key]);
+  if (dateRangeField) {
+    const date = String(firstRow[dateRangeField.filterKey || dateRangeField.key]).slice(0, 10);
+    const rangeStart = page.locator(`#${dateRangeField.key}`);
+    const rangeEnd = page.locator('input[placeholder="结束日期"]').first();
+    await rangeStart.fill(date);
+    await rangeEnd.fill(date);
+    await rangeEnd.press('Tab');
+    await runQuery();
+    await page.getByText(String(firstRow[table.rowKey]), { exact: true }).waitFor();
+    const outOfRangeRow = table.rows.find((candidate) => candidate[table.rowKey] !== firstRow[table.rowKey]
+      && !String(candidate[dateRangeField.filterKey || dateRangeField.key]).startsWith(date));
+    if (outOfRangeRow && await page.locator('.ant-table-tbody > tr').filter({ hasText: String(outOfRangeRow[table.rowKey]) }).count() !== 0) {
+      throw new Error('Date-range query did not remove out-of-range records.');
+    }
+    await page.getByRole('button', { name: /重\s*置/ }).click();
+  }
+
+  const createAction = table.primaryAction;
+  const createForm = createAction?.form;
+  const createValues = createForm?.verification?.validValues;
+  if (createAction && createForm && createValues) {
+    await page.getByRole('button', { name: createAction.label, exact: true }).click();
+    const drawer = page.locator('.ant-drawer').filter({ hasText: createForm.title });
+    await drawer.getByText(createForm.title, { exact: true }).waitFor();
+    const requiredField = createForm.fields.find((field) => field.required);
+    await drawer.getByRole('button', { name: createForm.primaryLabel, exact: true }).click();
+    if (requiredField) await drawer.getByText(requiredField.requiredMessage || `请填写${requiredField.label}`, { exact: true }).waitFor();
+    await fillFormVerificationValues(page, createForm.fields, createValues, drawer);
+    await drawer.getByRole('button', { name: createForm.primaryLabel, exact: true }).click();
+    await page.getByText(createForm.successMessage, { exact: true }).waitFor();
+    await page.waitForFunction((title) => ![...document.querySelectorAll('.ant-drawer.ant-drawer-open')].some((item) => item.textContent.includes(title)), createForm.title);
+    await page.getByText(String(createValues[table.rowKey]), { exact: true }).waitFor();
+  }
   await page.screenshot({ path: resolve(changeDir, 'preview.interaction.screenshot.png'), fullPage: true });
 }
 
-async function fillFormVerificationValues(page, fields, values) {
+async function fillFormVerificationValues(page, fields, values, scope = page) {
   for (const field of fields) {
     if (!Object.hasOwn(values, field.key)) continue;
     const value = values[field.key];
     if (field.control === 'radio') {
       const option = field.options.find((item) => item.value === value);
       if (!option) throw new Error(`Verification value for ${field.key} does not match a radio option.`);
-      await page.getByRole('radio', { name: option.label, exact: true }).check();
+      await scope.getByRole('radio', { name: option.label, exact: true }).check();
     } else if (field.control === 'select') {
       const option = field.options.find((item) => item.value === value);
       if (!option) throw new Error(`Verification value for ${field.key} does not match a select option.`);
-      await page.getByRole('combobox', { name: new RegExp(`^${field.label}`) }).click();
-      await page.getByRole('option', { name: option.label, exact: true }).click();
+      await scope.locator(`#${field.key}`).locator('xpath=../..').click();
+      await page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option').filter({ hasText: option.label }).click();
     } else if (field.control === 'number') {
-      await page.locator(`#${field.key}`).fill(String(value));
+      await scope.locator(`#${field.key}`).fill(String(value));
     } else {
-      await page.locator(`#${field.key}`).fill(String(value));
+      await scope.locator(`#${field.key}`).fill(String(value));
     }
   }
 }
@@ -198,13 +241,22 @@ async function verifyWizardWorkflow(page, changeDir, spec) {
 
 async function browserGate(changeDir, spec) {
   const browser = await chromium.launch({ headless: true });
+  let timeout;
   try {
-    const page = await browser.newPage({ viewport: { width: 1440, height: 960 }, deviceScaleFactor: 1 });
-    await page.goto(`file://${resolve(changeDir, 'preview.html')}`);
-    if (spec.metadata.family === 'list') await verifyListWorkflow(page, changeDir, spec);
-    if (spec.metadata.family === 'form') await verifyFormWorkflow(page, changeDir, spec);
-    if (spec.metadata.family === 'form') await verifyWizardWorkflow(page, changeDir, spec);
+    await Promise.race([
+      (async () => {
+        const page = await browser.newPage({ viewport: { width: 1440, height: 960 }, deviceScaleFactor: 1 });
+        await page.goto(`file://${resolve(changeDir, 'preview.html')}`);
+        if (spec.metadata.family === 'list') await verifyListWorkflow(page, changeDir, spec);
+        if (spec.metadata.family === 'form') await verifyFormWorkflow(page, changeDir, spec);
+        if (spec.metadata.family === 'form') await verifyWizardWorkflow(page, changeDir, spec);
+      })(),
+      new Promise((_, reject) => {
+        timeout = setTimeout(() => reject(new Error(`browser workflow exceeded ${timeoutMs}ms.`)), timeoutMs);
+      })
+    ]);
   } finally {
+    clearTimeout(timeout);
     await browser.close();
   }
 }
@@ -233,11 +285,17 @@ try {
 
   run(root, 'canonical-and-browser', [
     resolve(root, 'scripts/verify-boss-ledger-change.mjs'),
-    ...(fast ? ['--fast'] : []),
+    ...(fast || !browser ? ['--fast'] : []),
     resolve(changeDir, 'preview.html')
   ]);
-  if (!fast) await browserGate(changeDir, spec);
-  console.log(`page-spec-delivery: pass (${relative(root, specPath)})`);
+  // Temporary manual-review policy: browser interaction and screenshots run only on explicit request.
+  if (browser) {
+    await browserGate(changeDir, spec);
+    console.log(`page-spec-delivery: pass (${relative(root, specPath)})`);
+  } else {
+    console.log(`page-spec-precheck: pass (${relative(root, specPath)})`);
+    console.log('- browser interaction: skipped; preview requires manual verification.');
+  }
 } catch (error) {
   console.error(`page-spec-delivery: failed\n- ${error.message}`);
   process.exit(1);

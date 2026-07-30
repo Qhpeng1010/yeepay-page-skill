@@ -1,5 +1,7 @@
 const { App: AntApp, ConfigProvider, Steps, Form, Input, Button, Result } = antd;
 const h = React.createElement;
+const bossLedgerTheme = window.BossLedgerTheme;
+if (!bossLedgerTheme?.antTokens) throw new Error('Boss Ledger generated theme is missing. Rebuild Director artifacts before rendering.');
 
 const shellConfig = {
   topbar: { left: '上次登录时间：2026-07-15 09:18:32　登录 IP：10.24.18.66', right: '商户后台　帮助中心　消息' },
@@ -38,4 +40,4 @@ function WizardTemplate() {
 
 function renderBusinessContent({ activeTabKey }) { return activeTabKey === 'wizard' ? h(WizardTemplate) : h(Result, { status: 'success', title: '提交成功' }); }
 
-ReactDOM.createRoot(document.getElementById('root')).render(h(ConfigProvider, { locale: antd.locales?.zh_CN, theme: { token: { colorPrimary: '#F36046', colorLink: '#F36046', colorLinkHover: '#D94E36', borderRadius: 4 } } }, h(AntApp, null, h(BossLedgerShell, { config: shellConfig, renderContent: renderBusinessContent }))));
+ReactDOM.createRoot(document.getElementById('root')).render(h(ConfigProvider, { locale: antd.locales?.zh_CN, theme: { token: bossLedgerTheme.antTokens } }, h(AntApp, null, h(BossLedgerShell, { config: shellConfig, renderContent: renderBusinessContent }))));

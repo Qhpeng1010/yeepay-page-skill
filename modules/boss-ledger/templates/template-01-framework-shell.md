@@ -1,13 +1,6 @@
-# Template 01 Extraction - Framework Shell
+# Template 01 - Framework Shell
 
-Figma source:
-https://www.figma.com/design/Dbic1s0dVVFc3IreKWl26m/%E8%80%81%E6%9D%BF%E7%AE%A1%E8%B4%A6%E5%B8%B8%E7%94%A8%E4%B8%9A%E5%8A%A1%E7%B1%BB%E5%9E%8B%E9%A1%B5%E9%9D%A2%E6%A2%B3%E7%90%86?node-id=76-11037&m=dev
-
-Figma node: `76:11037`
-
-Figma name: `框架层`
-
-Status: extracted as locked shell baseline
+> **历史归档，已废弃。** 自 2026-07-29 起，本文件不再属于资源解析、页面生成、评审、验收或发布的输入。Shell 由固定渲染器维护；页面方案请使用 `execution/rule-template-registry.json` 和生成的 `execution/context-packs/`。以下内容仅保留作历史追溯。
 
 ## Canonical HTML Baseline
 
@@ -43,7 +36,7 @@ The following framework responsibilities are frozen and must not be redesigned p
 - Validation markers: `data-boss-shell`, `data-boss-sider-collapse`, and `data-boss-tab-static-icon`.
 - Platform footer structure, copy fallback, height, zero margin, and placement after the business content body.
 
-Generated preview pages must run `scripts/scaffold-boss-ledger-preview.mjs` and use the copied canonical Shell assets. Only `preview-app.js` and `business.css` are editable. Production projects may use an equivalent shared Shell component, but must preserve the same structure and tokens.
+Generated preview pages must run `scripts/scaffold-boss-ledger-preview.mjs` and use the copied canonical Shell assets. In Page Spec mode, only `page-spec.json` is editable; renderer, Shell, CSS, and preview files are derived artifacts. Production projects may use an equivalent shared Shell component, but must preserve the same structure and tokens.
 
 ## Dynamic Shell Configuration
 

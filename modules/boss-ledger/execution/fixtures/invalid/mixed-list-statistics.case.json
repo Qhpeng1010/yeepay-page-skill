@@ -6,7 +6,7 @@
       "changeId": "20260728-invalid-list-fixture",
       "pageName": "非法统计列表",
       "family": "list",
-      "templateId": "template-05-query-list-card-summary",
+      "templateId": "list.card-summary",
       "ruleRefs": ["BL-TPL-011"]
     },
     "ui": { "system": "boss-ledger", "runtime": "react-antd-page-spec", "rendererVersion": 1 },

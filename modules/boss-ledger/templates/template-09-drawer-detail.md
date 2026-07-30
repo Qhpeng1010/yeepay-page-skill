@@ -1,88 +1,83 @@
-# Template 09 Extraction - Drawer Detail
+# 抽屉细节
 
-Figma source:
-https://www.figma.com/design/Dbic1s0dVVFc3IreKWl26m/%E8%80%81%E6%9D%BF%E7%AE%A1%E8%B4%A6%E5%B8%B8%E7%94%A8%E4%B8%9A%E5%8A%A1%E7%B1%BB%E5%9E%8B%E9%A1%B5%E9%9D%A2%E6%A2%B3%E7%90%86?node-id=74-6471&m=dev
+> **历史归档，已废弃。** 自 2026-07-29 起，本文件不再属于资源解析、页面生成、评审、验收或发布的输入。页面方案请使用 `execution/rule-template-registry.json` 和生成的 `execution/context-packs/`。以下内容仅保留作历史追溯。
 
-Figma node: `74:6471`
+【详情】：已提取为抽屉细节模板
 
-Figma name: `Detail 详情/基础`
-
-Status: extracted as drawer detail template
-
-## Drawer Structure
+## 抽屉结构
 
 - Drawer: `x=632`, `y=0`, `w=808`, `h=778`
 - Header: `h=56`
 - Header title x: `24`
-- Close icon x: `768`
-- Body: `x=0`, `y=56`, `w=808`, `h=666`
-- Footer: `x=0`, `y=722`, `w=808`, `h=56`
-- Footer contains one right-aligned button.
+- 关闭图标 x: [C1]]
+- 身体：`x=0`，`y=56`，`w=808`，`h=666`
+- 底部：`x=0`，`y=722`，`w=808`，`h=56`]
+- 底部包含一个右对齐的按钮。
 - Drawer header keeps Ant Design's default height, padding, typography, and close-button sizing; only the title-left / close-icon-right distribution is customized. No status, Badge, auxiliary copy, or business action may appear in the header.
-- Any business operation belongs in the Ant Design Drawer `footer` action area and must not be placed inside the detail body.
-- Footer actions are always right-aligned.
-- Detail body content must not add a second business-level inner padding layer; use the Drawer content area's default inset and set any detail wrapper to `padding: 0` unless a specific business requirement says otherwise.
+- 任何商业操作都应放在Ant Design Drawer `footer`动作区域，且不能放置在详细体中。
+- 底部操作始终右对齐。
+- 详细内容体内的内容必须不能添加第二个商业级别的内部填充层；使用抽屉内容区域的默认内边距，并设置任何细节包装为`padding: 0`]除非有特定的商业需求说否则。
 
-## Detail Content
+## 详细内容
 
-- Detail content frame: `x=24`, `y=24`, `w=760`, `h=540`
-- Three detail sections in sample.
-- Section width: `760`
-- Section height: `158`
-- Section y positions: `0`, `191`, `382`
-- Divider y positions: `174`, `365`
-- Detail grid columns:
-  - Column x positions: `0`, `280`, `560`
-  - Column width: `200`
-- Status uses dot plus text.
+- 详细内容框架：`x=24`，`y=24`，`w=760`，`h=540`
+- 样本中有三个细节部分。
+- 宽度：`760`]
+- 高度：`158`]
+- y位置：`0`，`191`，`382`]
+- 分隔符和位置：`174`，`365`
+- 详细网格列的详细信息：
+  - 列x位置：`0`，`280`，`560`]
+  - 列宽：`200`]
+- 状态使用点加文本。
 
-## Template Intent
+## 模板意图
 
-Use this template for read-only detail views opened from a table row.
+使用以下模板用于仅读取详情视图，这些视图是从表格行打开的。
 
 
-## Mandatory Generation Contract
+## 强制性生成合同
 
-- This template is not a reference example; it is the mandatory generation skeleton for its corresponding Boss Ledger page type.
+- 这个模板不是一个参考例子；它是一个强制生成骨架的页面类型，其对应的Boss Ledger页面类型。
 - When generating this class of Boss Ledger page, the AI must reuse this template structure.
-- Business requirements may replace business content only; they must not redesign the template skeleton.
-- If a business requirement conflicts with this template, the currently selected template and `modules/boss-ledger/design.md` take priority.
+- 商务需求可能仅替换业务内容；它们必须不重新设计模板骨架。
+- 如果企业需求与本模板冲突，目前选择的模板和`modules/boss-ledger/design.md`优先级更高。
 
-## Replacement Rules
+## 抱歉，我无法完成这个任务。
 
-Allowed replacement:
+您可以在“[C0]”和“[C1]”等 placeholder 和 proper names 中进行替换。
 
-- Page / Tab copy
-- Primary navigation / left menu copy
-- Query fields
-- Table columns
-- Status enums
-- Action buttons
-- Form fields
-- Detail fields
-- Statistic metrics
-- Chart data
-- Mock data
+- 页面/标签复制
+- 主导航 / 左侧菜单复制
+- 查询字段
+- 表格列
+- 状态枚举
+- 执行按钮
+- 表单字段
+- 详细字段
+- 统计指标
+- 图表数据
+- 模拟数据
 
-Forbidden replacement:
+禁止替换：
 
-- Shell structure
-- Top info bar height
-- Primary navigation height
-- Left navigation width
-- Tabs shape
-- Content area origin
-- Module spacing
-- Query area layout
-- Table area layout
-- Pagination position
-- Modal / Drawer / Steps / Result / Empty base structure
+- 壳结构
+- 顶部信息栏高度
+- 主导航高度
+- 左侧导航栏宽度
+- 选项卡形状
+- 内容区域起始点
+- 模块间距
+- 查询区域布局
+- 表格布局
+- 分页位置
+- 模态/抽屉/步骤/结果/空基结构
 
-## Ant Design Runtime Rules
+## Ant Design Runtime Rules"
 
-- Must use real Ant Design components or project wrappers based on Ant Design.
-- Must not use native `input`, `select`, `table`, or `button` as substitutes.
-- Must not handwrite Menu, Tabs, Pagination, Modal, Drawer, or Table.
-- Icons must use Ant Design Icons.
-- Charts must use Ant Design Charts or a project chart wrapper.
-- All default copy must be localized to Chinese. The preview must not contain `Start date`, `End date`, `OK`, `Cancel`, `No data`, or `items/page`.
+- 必须使用真实Ant Design组件或基于Ant Design的项目包装。
+- 必须不使用原生的`input`，`select`，`table`或`button`作为替代品。
+- 禁止手写菜单、标签、分页、模态、抽屉、或表格。
+- 图标必须使用Ant Design Icons。
+- 图表必须使用Ant Design Charts或一个项目图表封装。
+- 所有默认复制必须被本地化为中文。预览中不应包含`Start date`，`End date`，`OK`，`Cancel`，`No data`或`items/page`。

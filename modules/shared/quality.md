@@ -89,7 +89,7 @@ charts: pass / failed
 - [ ] 是否选择了明确页面模板
 - [ ] 是否读取了 `modules/shared/template-routing.md`
 - [ ] 是否选择了一个主页面模板
-- [ ] 是否读取了对应 `modules/boss-ledger/templates/template-xx-*.md`
+- [ ] Boss Ledger 是否读取了 `director-rules/02-template-application-rules.md`、`director-rules/03-interaction-acceptance-rules.md` 及所选页面族的编译规则包
 - [ ] 是否说明选择原因
 - [ ] 是否使用了标准页面结构
 - [ ] 是否明确核心模块顺序
@@ -120,18 +120,18 @@ charts: pass / failed
 - [ ] 是否读取了 `modules/shared/theme-routing.md`
 - [ ] 是否只选择了一个 theme
 - [ ] 是否读取了 `modules/shared/design-system.md`
-- [ ] 是否读取了对应模块的 `design.md`
+- [ ] 是否读取了对应模块已发布的设计规则
 - [ ] 是否在 proposal.md 中说明了平台假设
 - [ ] 是否避免混用其他平台的主色
 - [ ] 是否避免混用其他平台的导航规则
 - [ ] 是否避免混用其他平台的页面风格
 - [ ] 是否将具体视觉表现交由当前 theme 控制
-- [ ] Boss Ledger 页面是否只读取 `modules/boss-ledger/design.md`，且没有混用 `modules/open-platform/theme.md`
-- [ ] `rules-read.md` 是否以当前哈希证明已完整读取共享 DESIGN 源、Boss Ledger DESIGN 主题源与固定框架规则
+- [ ] Boss Ledger 页面是否只读取 `modules/boss-ledger/director-rules/`，且没有混用 `modules/open-platform/theme.md`
+- [ ] `rules-read.md` 是否以当前哈希证明已完整读取共享规则、Boss Ledger 导演规则、编译主题与固定框架规则
 
 ## Theme Selection Rules
 
-- 如果需求属于 Boss Ledger、运营后台、商户后台、审核后台、查询列表、商户资料、结算记录、配置管理等场景，应使用 `modules/boss-ledger/design.md`。
+- 如果需求属于 Boss Ledger、运营后台、商户后台、审核后台、查询列表、商户资料、结算记录、配置管理等场景，应使用 `modules/boss-ledger/director-rules/`。
 - 如果需求属于 YOP、开放平台、开发者中心、API 文档、产品文档中心、接口详情、错误码、接入流程等场景，应使用 `modules/open-platform/theme.md`。
 - 如果用户未说明平台，默认使用 Boss Ledger，并在合理假设中说明。
 
@@ -219,10 +219,10 @@ HTML Preview Review 用于确认 `changes/{change-id}/preview.html` 是否可以
 - [ ] 是否不依赖外部远程图片资源；Boss Ledger Logo 是否引用或原样复制 `modules/boss-ledger/assets/boss-logo.svg`，未使用临时 SVG 占位或自由设计 logo
 - [ ] 是否正确识别当前 theme
 - [ ] 是否读取并应用了 `modules/shared/design-system.md`
-- [ ] 是否读取并应用了对应模块的 `design.md`
+- [ ] 是否读取并应用了对应模块已发布的设计规则
 - [ ] 是否遵守 `modules/shared/page-templates.md`
 - [ ] 是否遵守 `modules/shared/components.md`
-- [ ] Boss Ledger 页面是否遵守 `modules/boss-ledger/design.md` 中的平台专属组件与交互契约
+- [ ] Boss Ledger 页面是否遵守导演规则中定义的平台专属组件与交互契约
 - [ ] 是否没有混用其他平台视觉规则
 - [ ] 是否与 `page-design.md` 的页面结构一致
 - [ ] 是否与 `proposal.md` 的字段、状态、操作一致

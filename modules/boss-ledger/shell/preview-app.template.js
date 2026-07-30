@@ -1,4 +1,6 @@
 const { App: AntApp, ConfigProvider, Empty } = antd;
+const bossLedgerTheme = window.BossLedgerTheme;
+if (!bossLedgerTheme?.antTokens) throw new Error('Boss Ledger generated theme is missing. Rebuild Director artifacts before rendering.');
 
 const shellConfig = {
   topbar: {
@@ -51,13 +53,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   React.createElement(ConfigProvider, {
     locale: antd.locales?.zh_CN,
     theme: {
-      token: {
-        colorPrimary: '#F36046',
-        colorLink: '#F36046',
-        colorLinkHover: '#D94E36',
-        borderRadius: 4,
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif'
-      }
+      token: bossLedgerTheme.antTokens
     }
   }, React.createElement(AntApp, null,
     React.createElement(BossLedgerShell, { config: shellConfig, renderContent: renderBusinessContent })))

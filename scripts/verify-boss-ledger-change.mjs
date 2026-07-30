@@ -21,6 +21,7 @@ const templateDir = resolve(root, 'modules/boss-ledger/shell');
 const pageSpecPath = resolve(changeDir, 'page-spec.json');
 const isPageSpecChange = existsSync(pageSpecPath);
 const rendererDir = resolve(root, 'modules/boss-ledger/execution/renderer');
+const themeDir = resolve(root, 'modules/boss-ledger/execution/theme');
 const failures = [];
 
 const rulesManifestPath = resolve(changeDir, 'rules-read.md');
@@ -29,14 +30,16 @@ if (!existsSync(rulesManifestPath)) {
 } else {
   const manifest = readFileSync(rulesManifestPath, 'utf8');
   const mandatoryRuleFiles = [
-    'modules/shared/design-system.md',
-    'modules/shared/theme-routing.md',
-    'modules/shared/template-routing.md',
-    'modules/shared/page-templates.md',
-    'modules/boss-ledger/design.md',
-    'modules/boss-ledger/templates/template-01-framework-shell.md',
+    'modules/boss-ledger/director-rules/README.md',
+    'modules/boss-ledger/director-rules/01-visual-constitution.md',
+    'modules/boss-ledger/director-rules/02-template-application-rules.md',
+    'modules/boss-ledger/director-rules/03-interaction-acceptance-rules.md',
+    'modules/boss-ledger/execution/rule-template-registry.json',
+    'modules/boss-ledger/execution/generation-policy.json',
+    'modules/boss-ledger/execution/theme/theme-tokens.json',
+    'modules/boss-ledger/execution/context-packs/core.md',
+    'modules/boss-ledger/execution/context-packs/index.md',
     'modules/boss-ledger/business-rules.md',
-    'modules/shared/components.md',
     'modules/shared/frontend.md',
     'modules/shared/quality.md',
   ];
@@ -53,24 +56,17 @@ if (!existsSync(rulesManifestPath)) {
       failures.push(`rules-read.md is stale or does not prove the current ${file} was read; rerun scripts/read-boss-ledger-rules.mjs`);
     }
   }
-  const selectedTemplatesMatch = manifest.match(/^- Selected business templates: (.+)$/m);
-  const selectedTemplates = selectedTemplatesMatch
-    ? selectedTemplatesMatch[1].split(',').map((template) => template.trim()).filter(Boolean)
-    : [];
-  if (!selectedTemplates.length) {
-    failures.push('rules-read.md must name at least one selected business template');
+  const selectedTemplateMatch = manifest.match(/^- Rule template: `?([^`\n]+)`?$/m);
+  const selectedTemplate = selectedTemplateMatch?.[1]?.trim();
+  const registryPath = 'modules/boss-ledger/execution/rule-template-registry.json';
+  const registry = existsSync(resolve(root, registryPath)) ? JSON.parse(readFileSync(resolve(root, registryPath), 'utf8')) : null;
+  if (!selectedTemplate || !(registry?.templates || []).some((template) => template.id === selectedTemplate)) {
+    failures.push('rules-read.md must name a current Rule template from rule-template-registry.json');
   }
-  for (const template of selectedTemplates) {
-    const file = `modules/boss-ledger/templates/${template}`;
-    const filePath = resolve(root, file);
-    if (!existsSync(filePath)) {
-      failures.push(`rules-read.md names a missing selected business template: ${file}`);
-      continue;
-    }
-    const hash = createHash('sha256').update(readFileSync(filePath)).digest('hex').slice(0, 16);
-    if (manifestHashes.get(file) !== hash) {
-      failures.push(`rules-read.md is stale or does not prove the current selected template ${file} was read; rerun scripts/read-boss-ledger-rules.mjs`);
-    }
+  const selectedPackMatch = manifest.match(/^- Selected rule pack: (modules\/boss-ledger\/execution\/context-packs\/[^\n]+)$/m);
+  const selectedPack = selectedPackMatch?.[1]?.trim();
+  if (!selectedPack || !manifestHashes.has(selectedPack)) {
+    failures.push('rules-read.md must include the selected family Rule Pack and its current hash');
   }
   for (const [file, recordedHash] of manifestHashes) {
     if (file === 'modules/boss-ledger/components.md' && !existsSync(resolve(root, file))) continue;
@@ -84,12 +80,12 @@ if (!existsSync(rulesManifestPath)) {
       failures.push(`rules-read.md contains a stale hash for ${file}; rerun scripts/read-boss-ledger-rules.mjs`);
     }
   }
-  if (manifestRows.length < mandatoryRuleFiles.length + selectedTemplates.length) {
-    failures.push('rules-read.md must include the selected content template hash in addition to all shared rule hashes');
+  if (manifestRows.length < mandatoryRuleFiles.length) {
+    failures.push('rules-read.md must include all required Director Rules, rule registry, and generated Context Pack hashes');
   }
-  if (!/Boss Ledger DESIGN source read completely: modules\/boss-ledger\/design\.md/.test(manifest)
-      || !/Framework rule read completely: modules\/boss-ledger\/templates\/template-01-framework-shell\.md/.test(manifest)) {
-    failures.push('rules-read.md must explicitly confirm the complete Boss Ledger DESIGN and framework rule were read');
+  if (!/Fixed Shell: renderer-owned; it is not a business template input\./.test(manifest)
+      || !/Director artifacts freshness: verified before this record was created\./.test(manifest)) {
+    failures.push('rules-read.md must explicitly confirm the fixed Shell boundary and fresh generated Director artifacts');
   }
 }
 
@@ -111,6 +107,8 @@ sameFile(previewPath, resolve(isPageSpecChange ? rendererDir : templateDir, isPa
 sameFile(resolve(changeDir, 'shell-runtime.js'), resolve(templateDir, 'shell-runtime.js'), 'shell-runtime.js');
 sameFile(resolve(changeDir, 'shell.css'), resolve(templateDir, 'shell.css'), 'shell.css');
 sameFile(resolve(changeDir, 'content-base.css'), resolve(templateDir, 'content-base.css'), 'content-base.css');
+sameFile(resolve(changeDir, 'theme.css'), resolve(themeDir, 'theme.css'), 'theme.css');
+sameFile(resolve(changeDir, 'theme.js'), resolve(themeDir, 'theme.js'), 'theme.js');
 sameFile(resolve(changeDir, 'assets/boss-logo.svg'), resolve(root, 'modules/boss-ledger/assets/boss-logo.svg'), 'assets/boss-logo.svg');
 compareTree(resolve(changeDir, 'vendor'), resolve(templateDir, 'vendor'), 'vendor');
 

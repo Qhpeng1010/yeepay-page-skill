@@ -71,7 +71,7 @@ Edit only `preview-app.js` and `business.css`. The scaffold owns `preview.html`,
 ## Theme Rules
 
 - `preview.html` must apply the selected theme from `{{theme_source}}`.
-- Boss Ledger pages must follow `modules/boss-ledger/design.md`.
+- Boss Ledger pages must follow `modules/boss-ledger/director-rules/`.
 - YOP / YeePay Open Platform pages must follow `modules/open-platform/theme.md`.
 - Page generation must choose exactly one theme according to `modules/shared/theme-routing.md`.
 - Boss Ledger pages must not read or mix `modules/open-platform/theme.md`.
@@ -82,16 +82,16 @@ Edit only `preview-app.js` and `business.css`. The scaffold owns `preview.html`,
 
 ### Boss Ledger Hard Contract
 
-When `{{theme}}` is Boss Ledger, `modules/boss-ledger/design.md` is the highest-priority source of truth.
+When `{{theme}}` is Boss Ledger, `modules/boss-ledger/director-rules/01-visual-constitution.md` is the highest-priority visual source of truth.
 
 Boss Ledger previews must:
 
-- Re-read the current `modules/boss-ledger/design.md` before generation and apply the latest rules in that file, not an older change package or prior conversation memory.
+- Re-read the current Boss Ledger director rules before generation and apply their latest compiled logical template and theme, not an older Change package or prior conversation memory.
 - Use `modules/boss-ledger/shell/` as the sole reusable framework-shell implementation and visual/interaction baseline. Reuse its topbar, primary navigation, Ant Design Menu sider, collapse control, multi-tabs, workspace, and content viewport; do not select a historical change package as the shell source.
 - Treat primary / secondary / tertiary navigation labels and routes, selected/open menu keys, tab labels and routes, and route-to-content mappings as dynamic configuration. These values may change without changing the framework component hierarchy or CSS contract.
 - Treat multi-tabs as framework UI. Preserve their Ant Design editable-card implementation, size, appearance, active-only ReloadOutlined rule, switching, closing, and overflow behavior; replace only their configured data and routes.
 - Do not copy settlement-specific query fields, summary, table, pagination, drawer, records, or copy from the framework baseline into unrelated business content.
-- Use exactly one main page template according to `modules/shared/template-routing.md` and read the required `modules/boss-ledger/templates/template-xx-*.md` files.
+- Use exactly one logical rule template according to `modules/boss-ledger/director-rules/02-template-application-rules.md` and read the selected generated Context Pack.
 - Reuse the latest validated Boss Ledger shell and Ant Design implementation pattern.
 - Use React, Ant Design, Ant Design Icons, dayjs, and `ConfigProvider` with Boss Ledger tokens.
 - Use Ant Design `Menu`, `Tabs`, `Form`, `Input`, `Select`, `DatePicker`, `Button`, `Table`, `Pagination`, `Dropdown`, `Modal`, `Drawer`, `Descriptions`, `Empty`, and `message` where applicable.
@@ -110,12 +110,12 @@ Boss Ledger previews must:
 - Let the canonical `BossLedgerShell` render the platform footer automatically inside the content scroll flow after business modules. Business page code must not render another footer. Keep `.boss-shell-content` at `padding: 0 16px`; keep `.boss-shell-footer` at `margin: 12px 0 0`, `height: 32px`, and `flex: 0 0 32px`. The footer must remain in normal flow so overflowing content pushes it below the viewport.
 - Table column setting buttons must be icon-only `SettingOutlined` controls with no visible border line, outline stroke, or button shadow in normal, hover, focus, and active states.
 - Table row operation columns may show at most two direct text actions. If more than two operations are available, render the first two high-frequency actions and move the rest into an Ant Design `Dropdown` named `更多`.
-- Table operation wrappers must include `data-boss-operation-column`. Set `ConfigProvider` tokens `colorPrimary` and `colorLink` to `#F36046`, set a darker `colorLinkHover`, and include a scoped `[data-boss-operation-column]` CSS fallback so direct actions and the `更多` trigger cannot fall back to Ant Design blue `#1677FF`.
+- Table operation wrappers must include `data-boss-operation-column`. Use the generated Boss Ledger theme for `ConfigProvider` and the scoped `[data-boss-operation-column]` CSS fallback so direct actions and the `更多` trigger cannot fall back to a framework default color.
 - Business action buttons in Boss Ledger previews should be text-only by default; only icon-only tool affordances such as column setting may use icons. Table status columns must use Badge status dot + Chinese text, never Tag.
 - Only replace business content: navigation labels, menu labels, tabs, filters, metrics, charts, table columns, mock data, and actions.
 - Never handwrite native `input`, `select`, `table`, `button`, fake menus, fake tabs, fake pagination, fake modal, fake drawer, Unicode icons, emoji icons, or CSS/SVG mock charts as substitutes for Ant Design or platform components.
-- Before final output, audit the preview against `boss-ledger.md` Mandatory Latest-Rule Execution Contract and Boss Ledger Self-Check, including current rules for module spacing, form placeholders, table operation weight, query-list statistics, query expand/collapse visibility, and data-dashboard white statistic modules.
-- Stop and update the theme spec/template first if the requested page cannot be generated under the latest Boss Ledger rules.
+- Before final output, audit the preview against the Boss Ledger director rules and current automated checks, including module spacing, form placeholders, table operation weight, query-list statistics, query expand/collapse visibility and data-dashboard statistic modules.
+- Stop and update the director rules or generation policy first if the requested page cannot be generated under the current Boss Ledger rules.
 
 ### Boss Ledger Required Validation Markers
 

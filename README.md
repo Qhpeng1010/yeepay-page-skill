@@ -1,6 +1,6 @@
 # Yeepay Page Skill
 
-这是一个用于生成、评审和验证易宝业务页面的规则工程。它的目标不是让 AI 随意拼页面，而是让页面先选择合适的产品域和模板，再按受控规则生成，并通过可复查的验证后交付。
+这是一个用于生成、评审和验证易宝业务页面的规则工程。它的目标不是让 AI 随意拼页面，而是先路由到正确的业务系统，再按该系统的规则和当前已开放能力生成可复查交付。
 
 当前包含四个业务域：
 
@@ -13,30 +13,32 @@
 
 如果你是设计师或产品同学，建议按下面顺序阅读：
 
-1. [老板管账导演规则](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/modules/boss-ledger/director-rules/README.md:1)：了解页面应遵守的总体设计与决策原则。
-2. [导演规则使用说明](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/modules/boss-ledger/director-rules/使用说明.md:1)：了解如何手工修改规则、如何提出新页面需求。
-3. [能力迁移矩阵](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/modules/boss-ledger/migration/capability-matrix.md:1)：确认哪些模板已默认支持，哪些仍在验证中。
-4. [交付流程](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/workflows/delivery.md:1)：了解一个页面从需求到交付的完整过程。
+1. [老板管账导演规则](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/modules/boss-ledger/director-rules/README.md:1)：了解页面整体气质、模板选择和交互验收规则。
+2. [导演规则使用说明](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/modules/boss-ledger/director-rules/使用说明.md:1)：了解设计师应维护什么、哪些文件不应修改。
+3. [能力迁移矩阵](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/modules/boss-ledger/migration/capability-matrix.md:1)：确认当前能生成哪些页面方案和组合。
+4. [交付流程](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/workflows/delivery.md:1)：了解一个页面从需求到人工验收的执行过程。
 
 ## 目录说明
 
 ```text
 Yeepay-skill/
-├── SKILL.md                  整个工程的生成与交付总规则
+├── SKILL.md                  跨系统路由、边界与交付入口
 ├── README.md                 本说明
 ├── PRODUCT.md                某个产品场景的简要定义示例
 ├── references/               产品域路由表
-├── modules/                  各业务域的规则、模板、资产和执行能力
+├── modules/                  各业务域的规则、固定实现和执行能力
 │   ├── boss-ledger/          老板管账后台
 │   ├── easy-account/         易账通后台
 │   ├── open-platform/        易宝开放平台
 │   ├── Yilaiqian Checkout Counter/  易来钱收银台
 │   └── shared/               多业务域通用规则和文档模板
-├── workflows/                页面交付步骤说明
+├── workflows/                路由后执行的页面交付步骤
 ├── scripts/                  路由、构建、校验和发布检查工具
 ├── changes/                  每次页面需求的独立交付目录
 └── agents/                   默认执行代理配置
 ```
+
+`SKILL.md` 只负责把请求送往正确的系统。它不定义页面样式、模板细则或具体执行命令；这些由路由后的规则、适配器和固定渲染器分别负责。
 
 ## 老板管账目录
 
@@ -44,28 +46,40 @@ Yeepay-skill/
 
 ```text
 modules/boss-ledger/
-├── director-rules/           设计师维护的中文导演规则
+├── director-rules/           设计师维护的唯一设计决策来源
 │   ├── 01-visual-constitution.md
 │   ├── 02-template-application-rules.md
 │   ├── 03-interaction-acceptance-rules.md
 │   └── 使用说明.md
-├── execution/                系统如何把规则转为合规页面
-│   ├── generation-policy.json  当前允许生成的能力和模板状态
+├── execution/                规则编译产物、策略、规格与固定渲染器
+│   ├── generation-policy.json  当前允许生成的能力和规则模板状态
 │   ├── page-spec.schema.json   页面规格的数据结构约束
+│   ├── rule-template-registry.json  由导演规则生成的逻辑模板目录
 │   ├── context-packs/          AI 生成规格时读取的精简上下文
+│   ├── theme/                  由视觉宪法生成的渲染主题
 │   ├── renderer/               固定页面渲染器
 │   └── release-manifest.json   当前规则与渲染器的发布指纹
 ├── migration/                能力迁移状态和黄金样例说明
 ├── shell/                    固定后台壳层：导航、Tabs、Footer、运行时
-├── templates/                页面模板定义
+├── templates/                历史设计稿抽取归档，不参与运行
 ├── business-rules.md         业务字段、状态、权限和结果规则
-├── design.md                 老版本详细设计规范，仍作为输入材料
-└── domain.json               页面意图、模板和执行方式的机器路由配置
+├── design.md                 历史设计资料，不参与运行
+└── domain.json               页面意图、规则模板和执行方式的机器路由配置
 ```
+
+### 应修改哪里
+
+| 目标 | 唯一维护位置 | 不应修改的位置 |
+| --- | --- | --- |
+| 全局色彩、字体、密度、圆角、组件气质 | `director-rules/01-visual-constitution.md` | `execution/theme/` 生成物、单页预览 |
+| 页面家族、模板选择、页面组合 | `director-rules/02-template-application-rules.md` | 历史 `templates/` |
+| 用户流程、状态、危险确认、验收 | `director-rules/03-interaction-acceptance-rules.md` | 生成后的 HTML、CSS、JavaScript |
+| 单页字段、数据、文案、默认值 | 当前 Change 的 `page-spec.json` | 跨页面导演规则 |
+| 固定导航、Tabs、Footer 等框架实现 | 先修改视觉宪法，再由研发同步 `shell/` | 单页 Page Spec 或历史模板 |
 
 ### 导演规则与页面需求的区别
 
-导演规则管理“同类页面长期都应该遵守什么”。例如：查询列表只能有一个查询模块和一个结果模块、复杂表单不能配右侧插图、危险操作必须二次确认。
+导演规则管理“同类页面长期都应该遵守什么”。例如：查询列表只能有一个查询模块和一个结果模块、复杂表单不能配右侧说明、危险操作必须二次确认。
 
 单页需求管理“这一个页面要展示什么”。例如：商户查询要有商户名称、商户编号和部门条件；列表要展示哪些列；错误状态写什么文案。
 
@@ -86,15 +100,16 @@ modules/boss-ledger/
 
 ```text
 业务需求
-  -> 路由到业务域和页面模板
-  -> 读取导演规则与当前可用能力
+  -> 路由到业务域和逻辑规则模板
+  -> 读取导演规则、生成的 Context Pack 与当前可用能力
   -> 填写 page-spec.json
   -> 固定渲染器生成页面
-  -> 检查规则、模板、生成文件、Shell 和浏览器表现
+  -> 运行当前页面的快速检查
+  -> 人工验收预览
   -> 通过后交付
 ```
 
-页面不会因为模板文件存在就一定可以生成。以 [能力迁移矩阵](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/modules/boss-ledger/migration/capability-matrix.md:1) 和 `generation-policy.json` 的状态为准。
+页面不会因为规则模板存在就一定可以生成。以 [能力迁移矩阵](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/modules/boss-ledger/migration/capability-matrix.md:1) 和 `generation-policy.json` 的状态为准。旧 `templates/` 文件不再参与任何运行路径。
 
 ## 如何提出一个新页面
 
@@ -124,10 +139,11 @@ modules/boss-ledger/
 规则变更后的最小检查由 AI 或研发同学执行：
 
 ```bash
+node scripts/build-boss-ledger-context-packs.mjs
 node scripts/check-boss-ledger-generation-policy.mjs
 node scripts/refresh-boss-ledger-release-manifest.mjs
 node scripts/verify-boss-ledger-release-manifest.mjs
-node scripts/validate-boss-ledger-page-spec-system.mjs
+node scripts/validate-boss-ledger-page-spec-system.mjs --fast
 ```
 
 ## Change 交付目录
@@ -137,14 +153,14 @@ node scripts/validate-boss-ledger-page-spec-system.mjs
 ```text
 changes/YYYYMMDD-功能名称/
 ├── proposal.md               需求理解和范围
-├── page-design.md            页面设计与模板选择
+├── page-design.md            页面设计与规则模板选择
 ├── tasks.md                  实施任务
 ├── implementation.md         实现说明
 ├── review.md                 验收结论
 ├── page-spec.json            新机制下唯一可编辑的页面规格
 ├── page-spec-checklist.md    已选规则和能力的检查清单
 ├── preview.html              可直接打开的页面预览
-└── preview.screenshot.png    浏览器验证截图
+└── preview.screenshot.png    仅在明确运行浏览器回归时生成的截图证据
 ```
 
 并非每个 Change 都同时具备所有文件：旧路径的 Change 会有 `preview-app.js` 和 `business.css`；新 Page Spec 路径中这些文件由系统生成，不应手工修改。
@@ -153,12 +169,12 @@ changes/YYYYMMDD-功能名称/
 
 **为什么页面不能生成？**
 
-通常是当前模板或能力仍处于 `shadow`、`legacy`、`pending` 或 `workflow-only` 状态。系统应报告能力缺口，不应勉强拼出一个看似可用的页面。
+通常是当前规则模板对应的能力仍处于 `shadow`、`legacy`、`pending` 或 `workflow-only` 状态。系统应报告能力缺口，不应勉强拼出一个看似可用的页面。
 
 **为什么我改了导演规则，页面没有变化？**
 
-导演规则描述“应当如何”；若规则需要新的组件能力、页面结构或自动化检查，还必须同步扩展策略、规格校验、固定渲染器和回归样例。
+视觉 Token 和逻辑模板目录会自动编译；若规则需要新的组件能力、页面结构或自动化检查，还必须由研发同步扩展策略、规格校验、固定渲染器和回归样例。
 
 **页面预览可以直接打开吗？**
 
-可以。每个 Change 的 `preview.html` 是独立评审预览，通常可直接在浏览器打开；它不是正式生产前端工程。
+可以。每个 Change 的 `preview.html` 是独立评审预览，通常可直接在浏览器打开；默认由人工验收，它不是正式生产前端工程。

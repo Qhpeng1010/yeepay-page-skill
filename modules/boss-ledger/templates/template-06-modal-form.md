@@ -1,93 +1,88 @@
-# Template 06 Extraction - Modal Form
+# 模态形式的模板06提取。
 
-Figma source:
-https://www.figma.com/design/Dbic1s0dVVFc3IreKWl26m/%E8%80%81%E6%9D%BF%E7%AE%A1%E8%B4%A6%E5%B8%B8%E7%94%A8%E4%B8%9A%E5%8A%A1%E7%B1%BB%E5%9E%8B%E9%A1%B5%E9%9D%A2%E6%A2%B3%E7%90%86?node-id=2-2116&m=dev
+> **历史归档，已废弃。** 自 2026-07-29 起，本文件不再属于资源解析、页面生成、评审、验收或发布的输入。页面方案请使用 `execution/rule-template-registry.json` 和生成的 `execution/context-packs/`。以下内容仅保留作历史追溯。
 
-Figma node: `2:2116`
+状态：提取为模态编辑/创建模板
 
-Figma name: `Modal Form 弹窗编辑`
-
-Status: extracted as modal edit/create template
-
-## Modal Structure
+## 模态结构
 
 - Modal: `x=480`, `y=185`, `w=480`, `h=408`
 - Header: `h=56`
-- Title position: `x=24`, `y=16`
-- Close icon position: `x=440`, `y=20`
+- 标题位置：`x=24`, `y=16`
+- 关闭图标位置：`x=440`, `y=20`
 - Content: `x=0`, `y=56`, `w=480`, `h=300`
-- Footer: `x=0`, `y=356`, `w=480`, `h=52`
-- Footer buttons are right-aligned: cancel then confirm.
-- Use the official Ant Design Modal header, body, and footer structure.
+- 底部：`x=0`，`y=356`，`w=480`，`h=52`]
+- 底部按钮右对齐：取消然后确认。
+- 弹出对话框
 - Header must have a full-width `1px solid #F0F0F0` bottom divider.
-- Footer must have a full-width `1px solid #F0F0F0` top divider.
-- `.ant-modal-content` must not keep horizontal padding that shortens header/footer divider lines.
-- Modal body must use `padding: 24px 24px 0`: top/left/right 24px, bottom 0.
-- Modal form uses horizontal layout with right-aligned labels. Use one fixed label width calculated from the longest label in the current form so all controls start on the same x position.
-- Normal form modal width must stay between `480px` and `520px`.
-- Modal form labels must align within the same form. If labels have mixed visual widths, use one fixed label width based on the longest label. If all labels have the same visual width, content-adaptive label width is allowed.
-- Do not handwrite the modal shell or replace Ant Design's official focus, mask, close, footer, and keyboard behavior.
+- 底部必须有一个全宽的 `1px solid #F0F0F0` 上下分割条。
+- [ C0 ] 不应保留过短的水平填充，以缩短标题/页脚分隔线。
+- 模态体必须使用`padding: 24px 24px 0`:顶部/左侧/右侧24px，底部0。
+- 模态表单使用水平布局，右侧对齐标签。使用一个固定标签宽度计算从当前表单中最长的标签中得出，以便所有控件开始在相同的x位置上。
+- 正常形式模态宽度必须保持在[ C0 ]和[ C1 ]之间。
+- 模态表单标签必须在同一个表单中对齐。如果标签的视觉宽度混合，使用一个固定的标签宽度，基于最长的标签。如果所有的标签都有相同的视觉宽度，内容适应性标签宽度是允许的。
+- 不要手写模态壳或替换Ant Design的官方焦点，口罩，关闭，底部，和键盘行为。
 
-## Form Structure
+## 表格结构
 
-- Form content x origin: `24`
-- Usable width: `432`
-- Label width in form rows: `87`
-- Control x origin: `95`
-- Control width: `337`
-- Control height: `32`
-- Total rows in sample: 6
-- Editable field rows in sample: 4
-- Field y positions: `100`, `148`, `196`, `244`
+- 内容x来源：`24`
+- 可用宽度：`432`]
+- 表单行宽度：`87`]
+- 控制x起始点：`95`]
+- 控制宽度：`337`]
+- 控制高度：`32`]
+- 样本中总行数：6
+- 四行可编辑字段在样本中的位置：4
+- 场地y位置：`100`，`148`，`196`，`244`]
 
-## Template Intent
+## 模板意图
 
-Use this template for create/edit flows with 6 fields or fewer, especially simple bank-card information maintenance.
+输入字段：卡号、姓名、地址、电话号码
 
 
-## Mandatory Generation Contract
+## 强制性生成合同
 
-- This template is not a reference example; it is the mandatory generation skeleton for its corresponding Boss Ledger page type.
+- 这个模板不是一个参考例子；它是一个强制生成骨架的页面类型，其对应的Boss Ledger页面类型。
 - When generating this class of Boss Ledger page, the AI must reuse this template structure.
-- Business requirements may replace business content only; they must not redesign the template skeleton.
-- If a business requirement conflicts with this template, the currently selected template and `modules/boss-ledger/design.md` take priority.
+- 商务需求可能仅替换业务内容；它们必须不重新设计模板骨架。
+- 如果企业需求与本模板冲突，目前选择的模板和`modules/boss-ledger/design.md`优先级更高。
 
-## Replacement Rules
+## 抱歉，我无法完成这个任务。
 
-Allowed replacement:
+您可以在“[C0]”和“[C1]”等 placeholder 和 proper names 中进行替换。
 
-- Page / Tab copy
-- Primary navigation / left menu copy
-- Query fields
-- Table columns
-- Status enums
-- Action buttons
-- Form fields
-- Detail fields
-- Statistic metrics
-- Chart data
-- Mock data
+- 页面/标签复制
+- 主导航 / 左侧菜单复制
+- 查询字段
+- 表格列
+- 状态枚举
+- 执行按钮
+- 表单字段
+- 详细字段
+- 统计指标
+- 图表数据
+- 模拟数据
 
-Forbidden replacement:
+禁止替换：
 
-- Shell structure
-- Top info bar height
-- Primary navigation height
-- Left navigation width
-- Tabs shape
-- Content area origin
-- Module spacing
-- Query area layout
-- Table area layout
-- Pagination position
-- Modal / Drawer / Steps / Result / Empty base structure
-- Full-width modal header divider, full-width footer divider, `.ant-modal-body` `padding: 24px 24px 0`, horizontal right-aligned labels, per-form label width strategy, and normal form modal width `480-520px`
+- 壳结构
+- 顶部信息栏高度
+- 主导航高度
+- 左侧导航栏宽度
+- 选项卡形状
+- 内容区域起始点
+- 模块间距
+- 查询区域布局
+- 表格布局
+- 分页位置
+- 模态/抽屉/步骤/结果/空基结构
+- 全宽模态头部分隔符，全宽底部分隔符，`.ant-modal-body` `padding: 24px 24px 0`，水平右对齐标签，每项表单标签宽度策略，以及正常形式模态宽度`480-520px`]
 
-## Ant Design Runtime Rules
+## Ant Design Runtime Rules"
 
-- Must use real Ant Design components or project wrappers based on Ant Design.
-- Must not use native `input`, `select`, `table`, or `button` as substitutes.
-- Must not handwrite Menu, Tabs, Pagination, Modal, Drawer, or Table.
-- Icons must use Ant Design Icons.
-- Charts must use Ant Design Charts or a project chart wrapper.
-- All default copy must be localized to Chinese. The preview must not contain `Start date`, `End date`, `OK`, `Cancel`, `No data`, or `items/page`.
+- 必须使用真实Ant Design组件或基于Ant Design的项目包装。
+- 必须不使用原生的`input`，`select`，`table`或`button`作为替代品。
+- 禁止手写菜单、标签、分页、模态、抽屉、或表格。
+- 图标必须使用Ant Design Icons。
+- 图表必须使用Ant Design Charts或一个项目图表封装。
+- 所有默认复制必须被本地化为中文。预览中不应包含`Start date`，`End date`，`OK`，`Cancel`，`No data`或`items/page`。

@@ -31,6 +31,7 @@ function validatePageDesign(changeDir, spec, policy) {
   const design = readFileSync(designPath, 'utf8');
   const templateId = spec.metadata.templateId.replace(/\.md$/, '');
   const templateEvidence = [
+    `Rule template: \`${templateId}\``,
     `Template: \`${templateId}\``,
     `Template: \`${templateId}.md\``
   ];
@@ -49,7 +50,7 @@ function validatePageDesign(changeDir, spec, policy) {
     const combinationEvidence = `Validated combinations: ${spec.metadata.validatedCombinations.map((id) => `\`${id}\``).join('、')}`;
     if (!design.includes(combinationEvidence)) throw new Error(`page-design.md is missing required shadow evidence: ${combinationEvidence}`);
   }
-  // Earlier reviewed design records identify templates by their Markdown filename.
+  // Earlier reviewed design records may identify historical templates by Markdown filename.
   if (!templateEvidence.some((line) => design.includes(line))) {
     throw new Error(`page-design.md is missing required selection evidence: ${templateEvidence[0]}`);
   }
@@ -74,11 +75,14 @@ try {
 
   const shellRoot = resolve(root, 'modules/boss-ledger/shell');
   const rendererRoot = resolve(root, 'modules/boss-ledger/execution/renderer');
+  const themeRoot = resolve(root, 'modules/boss-ledger/execution/theme');
   mkdirSync(resolve(changeDir, 'assets'), { recursive: true });
   const fixedCopies = [
     [resolve(rendererRoot, 'page-spec-preview.template.html'), resolve(changeDir, 'preview.html')],
     [resolve(rendererRoot, 'page-spec-runtime.js'), resolve(changeDir, 'page-spec-runtime.js')],
     [resolve(rendererRoot, 'page-spec-business.css'), resolve(changeDir, 'business.css')],
+    [resolve(themeRoot, 'theme.css'), resolve(changeDir, 'theme.css')],
+    [resolve(themeRoot, 'theme.js'), resolve(changeDir, 'theme.js')],
     [resolve(shellRoot, 'shell-runtime.js'), resolve(changeDir, 'shell-runtime.js')],
     [resolve(shellRoot, 'shell.css'), resolve(changeDir, 'shell.css')],
     [resolve(shellRoot, 'content-base.css'), resolve(changeDir, 'content-base.css')],
@@ -118,7 +122,7 @@ try {
   writeFileSync(resolve(changeDir, 'page-spec-build.json'), `${JSON.stringify(buildRecord, null, 2)}\n`);
 
   const shadowEvidence = spec.metadata.validatedCombinations?.length ? `- [x] 已验证组合：${spec.metadata.validatedCombinations.join('、')}\n` : '';
-  const checklist = `# ${spec.metadata.pageName} Page Spec 检查清单\n\n- [x] 系统：Boss Ledger\n- [x] 页面族：${spec.metadata.family}\n- [x] 模板：${spec.metadata.templateId}\n- [x] 运行模式：${spec.metadata.executionMode}\n${shadowEvidence}- [x] 能力：${spec.content.capabilities.join('、')}\n- [x] 规则：${spec.metadata.ruleRefs.join('、')}\n- [x] Page Spec 契约通过\n- [x] 固定渲染器与 canonical Shell 已构建\n- [x] 派生产物已记录哈希\n`;
+  const checklist = `# ${spec.metadata.pageName} Page Spec 检查清单\n\n- [x] 系统：Boss Ledger\n- [x] 页面族：${spec.metadata.family}\n- [x] 规则模板：${spec.metadata.templateId}\n- [x] 运行模式：${spec.metadata.executionMode}\n${shadowEvidence}- [x] 能力：${spec.content.capabilities.join('、')}\n- [x] 规则：${spec.metadata.ruleRefs.join('、')}\n- [x] Page Spec 契约通过\n- [x] 固定渲染器与 canonical Shell 已构建\n- [x] 派生产物已记录哈希\n`;
   writeFileSync(resolve(changeDir, 'page-spec-checklist.md'), checklist);
 
   const syntax = spawnSync(process.execPath, ['--check', appPath], { cwd: root, encoding: 'utf8' });

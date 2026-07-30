@@ -13,7 +13,7 @@
 
 ## Boss Ledger Routing
 
-以下场景必须选择 `modules/boss-ledger/design.md`：
+以下场景必须选择 `modules/boss-ledger/director-rules/`：
 
 - Boss Ledger
 - boss
@@ -37,9 +37,9 @@
 - 风控审核
 - 财务、对账、核销、订单、交易、退款等后台操作页面
 
-Boss Ledger 页面只允许读取 `modules/boss-ledger/design.md` 作为主题规范，不得读取或混用 `modules/open-platform/theme.md`。
+Boss Ledger 页面只允许读取 `modules/boss-ledger/director-rules/01-visual-constitution.md`、`02-template-application-rules.md` 和 `03-interaction-acceptance-rules.md` 作为设计规则，不得读取或混用 `modules/open-platform/theme.md`。
 
-`modules/boss-ledger/design.md` 是 Boss Ledger 的最高优先级主题规范；不得复制、重写或用旧 change 包替代。
+视觉宪法是 Boss Ledger 的最高优先级视觉规范；逻辑模板目录和运行时主题均由导演规则自动编译，不得复制、重写或用旧 Change 包替代。
 
 ## YOP Routing
 

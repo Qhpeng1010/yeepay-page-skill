@@ -1,24 +1,19 @@
-# Template 02 Extraction - Dashboard Home
+# 首页 - 战报仪表板
 
-Figma source:
-https://www.figma.com/design/Dbic1s0dVVFc3IreKWl26m/%E8%80%81%E6%9D%BF%E7%AE%A1%E8%B4%A6%E5%B8%B8%E7%94%A8%E4%B8%9A%E5%8A%A1%E7%B1%BB%E5%9E%8B%E9%A1%B5%E9%9D%A2%E6%A2%B3%E7%90%86?node-id=70-10306&m=dev
+> **历史归档，已废弃。** 自 2026-07-29 起，本文件不再属于资源解析、页面生成、评审、验收或发布的输入。页面方案请使用 `execution/rule-template-registry.json` 和生成的 `execution/context-packs/`。以下内容仅保留作历史追溯。
 
-Figma node: `70:10306`
-
-Figma name: `Dashboard/首页模版`
-
-Status: extracted as home dashboard template
+【状态】：提取为家庭桌面模板
 
 ## Canvas
 
-- Frame size: `1440 x 993`
-- Uses the locked shell:
-  - Top region: `0,0,1440,92`
-  - Sider: `0,92,208,901`
-  - Multi-tabs: `224,96,542,44`
+- 帧大小：`1440 x 993`]
+- 使用锁定的壳：
+  - 东部地区：`0,0,1440,92`
+  - sider: `0,92,208,901`]
+  - [多标签：`224,96,542,44`]
   - Content: `224,140,1201,841`
 
-## Variables Found
+## 变量已找到。
 
 - `主色`: `#F36046`
 - `Character/Title .85`: `#000000`
@@ -28,176 +23,176 @@ Status: extracted as home dashboard template
 - `Color/Neutral/Text/colorTextLabel`: `#000000a6`
 - `Dust Red / 6`: `#F5222D`
 - `Polar Green / 6`: `#52C41A`
-- Body regular: `Roboto`, `14px`, line height `22`, weight `400`
-- Footnote description: `Roboto`, `12px`, line height `20`, weight `400`
+- 身体匀称：`Roboto`，`14px`，行高`22`，重量`400`。
+- 注释描述：`Roboto`，`12px`，行高`20`，重量`400`
 
-## Shell State In This Template
+## 这个模板的Shell状态是什么？
 
-Primary nav:
+主导航：
 
-- Selected first-level nav: 首页
+- 首页
 
-Sider:
+我建议你：
 
-- Selected second-level menu is expanded.
-- First third-level menu is selected.
+- 选择的二级菜单被展开。
+- 第一级第三层菜单被选中。
 
 Tabs:
 
-- Same four-tab structure as the shell baseline.
-- Active tab uses selected tab component.
+- 四个标签结构与shell基准相同。
+- 当前激活的标签使用了所选标签组件。
 
-## Content Structure
+## 内容结构
 
-Content frame: `70:10354`, `x=224`, `y=140`, `w=1201`, `h=841`
+内容框：`70:10354`，`x=224`，`y=140`，`w=1201`，`h=841`
 
-### Region 1 - Top Filter Bar
+### 区域一 - 最高过滤栏
 
-Frame: `70:10355`, `x=0`, `y=0`, `w=1201`, `h=56`
+框：`70:10355`，`x=0`，`y=0`，`w=1201`，`h=56`]
 
-Inner layout:
+【C0】【C1】
 
-- Left controls group: `x=16`, `y=12`, `w=388`, `h=32`
+- 左控制组：`x=16`，`y=12`，`w=388`，`h=32`]
   - Select `160 x 32`
   - Select `220 x 32`
-  - Gap between selects: `8px`
-- Right controls group: `x=740`, `y=12`, `w=444`, `h=32`
-  - Quick date text group: 今日, 近7日, 近30日
-  - Date field: `256 x 32`
-  - Fullscreen icon: `16 x 16`
+  - 选择之间的差距：`8px`
+- 右控制组：`x=740`，`y=12`，`w=444`，`h=32`]
+  - 今天，近7天，近30日。
+  - 日期字段：`256 x 32`]
+  - 全屏图标：`16 x 16`]
 
-Rules:
+1. Only one Chinese translation is allowed.
 
-- Filter controls are dashboard scope controls, not a query-list filter area.
-- Do not add query buttons unless the Figma template is updated to include them.
-- Quick date options and date field belong on the right side.
+- 过滤控件是仪表盘范围内的控制，而不是查询列表的过滤区域。
+- 不添加查询按钮；仪表盘控制只负责更新当前页面范围的数据。
+- 快速日期选项和日期字段应位于右侧。
 
-### Region 2 - Summary And Distribution
+### 区域二 - 概述和分发
 
-Frame: `70:10368`, `x=0`, `y=72`, `w=1201`, `h=359`
+框：`70:10368`，`x=0`，`y=72`，`w=1201`，`h=359`]
 
-Layout:
+页面布局：
 
-- Left summary card: `70:10369`, `x=0`, `y=0`, `w=850`, `h=359`
-- Right distribution card: `70:10418`, `x=866`, `y=0`, `w=335`, `h=359`
-- Gap between cards: `16px`
+- 右摘要卡片：`70:10369`，`x=0`，`y=0`，`w=850`，`h=359`
+- 右发卡：`70:10418`，`x=866`，`y=0`，`w=335`，`h=359`]
+- 卡片之间的间隔：`16px`
 
-Left card:
+左边卡片：
 
-- Title: 交易汇总
-- Title position: `x=16`, `y=16`
-- Content area: `x=16`, `y=54`, `w=818`, `h=281`
-- Contains one primary total Statistic block and a child statistic grid below it.
-- Summary capability hard rule: total data is on top; child data is below. The top area contains exactly one primary total metric. The child area uses a grid with at most four columns and at most two rows. A single summary module may contain at most eight child metrics.
-- Do not use a left-right split where the primary total metric is on the left and child metrics are on the right. Do not add a third row of child metrics. If more than eight child metrics are required, split them into another white summary module, ranking module, or list module.
-- Uses trend indicators below statistics.
-- Figma includes a light red/white background treatment in this card. This is allowed only for this template and only in this card.
+- 交易汇总
+- 标题位置：`x=16`, `y=16`
+- 内容区域：`x=16`, `y=54`, `w=818`, `h=281`
+- 包含一个主要的总统计块和它下面的一个子统计网格。
+- 总数据在上，子数据在下。顶部区域包含一个唯一的主总计度指标。子区域使用网格，最多四个列和最多两个行。单一汇总模块可能包含最多八个子度量指标。
+- 请不要使用左对齐的表格，其中主要总指标在左侧，子指标在右侧。也不要添加第三个行的子指标。如果需要超过八个子指标，则将它们分割到另一个白色摘要模块、排名模块或列表模块中。
+- 使用趋势指标，低于统计数据。
+- 当前模板允许交易汇总卡使用浅红色/白色背景处理；此处理不得扩展到其他页面或卡片。
 
-Right card:
+右边的卡片：
 
-- Title: 交易分布
-- Title position: `x=16`, `y=16`
-- Toggle texts: 交易额, 交易量
-- Chart content: `x=16`, `y=54`, `w=303`, `h=277`
-- Uses pie/donut distribution visual with legend.
+- 交易分布
+- 标题位置：`x=16`, `y=16`
+- 交易额，交易量
+- 图表内容：`x=16`，`y=54`，`w=303`，`h=277`]
+- 使用饼/圈分布视觉，有图例。
 
-### Region 3 - Trend And Ranking Grid
+### 区域3 - 前景和排名网格
 
-Frame: `70:10470`, `x=0`, `y=447`, `w=1201`, `h=394`
+框：`70:10470`，`x=0`，`y=447`，`w=1201`，`h=394`]
 
-Layout:
+页面布局：
 
-- Three equal-width cards.
-- Card width: approximately `389.67px`
-- Card gap: `16px`
+- 三张宽度相等的卡片。
+- 卡片宽度：大约为`389.67px`]
+- 间隙：`16px`]
 
-Cards:
+卡片：
 
 1. 交易趋势
-   - Frame: `70:10471`
+   - 框架：`70:10471`]
    - `x=0`, `y=0`, `w=389.67`, `h=394`
-   - Contains chart legend and mixed bar/line chart.
+   - 包含图表图例和混合条线图。
 2. 分账趋势
-   - Frame: `70:10544`
+   - 框架：`70:10544`]
    - `x=405.67`, `y=0`, `w=389.67`, `h=394`
-   - Contains chart legend and mixed bar/line chart.
-3. 收入TOP10
-   - Frame: `70:10629`
+   - 包含图表图例和混合条线图。
+3. 前十大收入来源。
+   - 框架：`70:10629`]
    - `x=811.33`, `y=0.25`, `w=389.67`, `h=393.5`
-   - Contains horizontal ranking bar chart.
+   - 包含水平排名条形图。
 
-## Template Rules
+## 模板规则
 
-- This is a dashboard/home template, not a query-list page.
-- It must inherit the locked shell.
-- It uses dashboard scope controls, not query-list submit/reset controls.
-- It must not add marketing hero, shortcut panels, or extra decorative sections.
-- It may use the one visual background treatment already present in the transaction summary card.
-- The summary card must use the standard total-and-child statistics layout: one primary total metric on top, child metrics below in a maximum 4-column by 2-row grid, with no more than 8 child metrics.
-- It should use chart components or a platform chart wrapper for charts.
-- It should keep the 2-row dashboard layout:
-  - top filter bar
-  - summary/distribution row
-  - trend/ranking row
+- 这是一个仪表板/主页模板，而不是查询列表页面。
+- 它必须继承锁定的壳。
+- 它使用仪表板范围控制，而不是查询列表提交/重置控制。
+- 它不能添加营销英雄、快捷面板或额外装饰部分。
+- 它可能使用已经存在于交易总结卡中的唯一视觉背景处理。
+- 总结卡片必须使用标准的总和及儿童统计布局：一个主要的总指标在顶部，下面有最多不超过8个子指标。
+- 它应该使用图表组件或一个平台图表包装器来显示图表。
+- 它应该保持2行仪表板布局：
+  - 顶部过滤器栏
+  - 摘要/分发行
+  - 趋势/排名行
 
-## QA Checklist
+## 质量保证检查清单
 
-- Content frame starts at `x=224`, `y=140`.
-- Top filter bar is `56px` high.
-- Filter bar has two left selects and right quick-date/date/fullscreen controls.
-- First dashboard row starts at `y=72`.
-- Summary card is `850 x 359`.
-- Summary card total metric is above the child metric grid.
-- Summary child metric grid has at most four columns, two rows, and eight child metrics.
-- Distribution card is `335 x 359`.
-- Row gap and card gap are `16px`.
-- Second dashboard row starts at `y=447`.
-- Bottom row has three cards of approximately equal width.
-- No query-list toolbar, table, pagination, or create button is added.
+- 内容框从`x=224`, `y=140`开始。
+- 顶部过滤器栏的高值为 `56px`。
+- 过滤条有两个左选择和右快速约会/日期/全屏控制。
+- 第一屏数据行从`y=72`开始。
+- 摘要卡片是`850 x 359`。
+- 汇总卡片总指标高于子指标网格。
+- 子指标网格最多有四列，两行，和八个子指标。
+- 分发卡是`335 x 359`。
+- 行间距和卡片间距都是 `16px`]。
+- 第二张仪表板的第二行从`y=447`开始。
+- 底部行有三张卡片，宽度大致相等。
+- 没有查询列表工具栏、表格、分页或创建按钮被添加。
 
 
-## Mandatory Generation Contract
+## 强制生成约定
 
-- This template is not a reference example; it is the mandatory generation skeleton for its corresponding Boss Ledger page type.
-- When generating this class of Boss Ledger page, the AI must reuse this template structure.
-- Business requirements may replace business content only; they must not redesign the template skeleton.
-- If a business requirement conflicts with this template, the currently selected template and `modules/boss-ledger/design.md` take priority.
+- 本模板不是参考示例，而是相应老板管账页面类型的强制生成骨架。
+- 您需要使用一个专门用于处理财务数据的软件或平台。这样，您可以更方便地管理和分析您的财务数据。
+- 业务需求仅可替换业务内容，不得重新设计模板骨架。
+- 如业务需求与本模板冲突，以当前选定模板及 `modules/boss-ledger/design.md` 为准。
 
-## Replacement Rules
+## 替换规则
 
-Allowed replacement:
+允许替换：
 
-- Page / Tab copy
-- Primary navigation / left menu copy
-- Query fields
-- Table columns
-- Status enums
-- Action buttons
-- Form fields
-- Detail fields
-- Statistic metrics
-- Chart data
-- Mock data
+- 页面/标签页文案
+- 一级导航/左侧菜单文案
+- 查询字段
+- 表格列
+- 状态枚举
+- 操作按钮
+- 表单字段
+- 详情字段
+- 统计指标
+- 图表数据
+- 模拟数据
 
-Forbidden replacement:
+禁止替换：
 
-- Shell structure
-- Top info bar height
-- Primary navigation height
-- Left navigation width
-- Tabs shape
-- Content area origin
-- Module spacing
-- Query area layout
-- Table area layout
-- Pagination position
-- Modal / Drawer / Steps / Result / Empty base structure
+- 外壳结构
+- 顶部信息栏高度
+- 一级导航高度
+- 左侧导航宽度
+- 标签页形状
+- 内容区域原点
+- 模块间距
+- 查询区域布局
+- 表格区域布局
+- 分页位置
+- Modal / Drawer / Steps / Result / Empty 的基础结构
 
-## Ant Design Runtime Rules
+## Ant Design 运行时规则
 
-- Must use real Ant Design components or project wrappers based on Ant Design.
-- Must not use native `input`, `select`, `table`, or `button` as substitutes.
-- Must not handwrite Menu, Tabs, Pagination, Modal, Drawer, or Table.
-- Icons must use Ant Design Icons.
-- Charts must use Ant Design Charts or a project chart wrapper.
-- All default copy must be localized to Chinese. The preview must not contain `Start date`, `End date`, `OK`, `Cancel`, `No data`, or `items/page`.
+- 必须使用真实的 Ant Design 组件或基于 Ant Design 的项目封装组件。
+- 不得使用原生 `input`、`select`、`table` 或 `button` 作为替代。
+- 不得手写 Menu、Tabs、Pagination、Modal、Drawer 或 Table。
+- 图标必须使用Ant Design Icons。
+- 图表必须使用Ant Design Charts或项目图表封装组件。
+- 所有默认文案必须本地化为中文。预览中不得出现 `Start date`、`End date`、`OK`、`Cancel`、`No data` 或 `items/page`。

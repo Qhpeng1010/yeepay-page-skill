@@ -1,77 +1,72 @@
-# Template 12 Extraction - Empty State
+# 空状态
 
-Figma source:
-https://www.figma.com/design/Dbic1s0dVVFc3IreKWl26m/%E8%80%81%E6%9D%BF%E7%AE%A1%E8%B4%A6%E5%B8%B8%E7%94%A8%E4%B8%9A%E5%8A%A1%E7%B1%BB%E5%9E%8B%E9%A1%B5%E9%9D%A2%E6%A2%B3%E7%90%86?node-id=74-10828&m=dev
+> **历史归档，已废弃。** 自 2026-07-29 起，本文件不再属于资源解析、页面生成、评审、验收或发布的输入。页面方案请使用 `execution/rule-template-registry.json` 和生成的 `execution/context-packs/`。以下内容仅保留作历史追溯。
 
-Figma node: `74:10828`
+空状态模板
 
-Figma name: `空状态`
+## 内容结构
 
-Status: extracted as empty-state template
+- 使用锁定的shell和多标签栏。
+- Sider样本包括两个扩展的二级水平组。
+- 这个样本的多标签宽度为：`498`]
+- 活动标签宽度在样本中的值：`136`]
+- 内容框：`x=224`，`y=140`，`w=1200`，`h=611`]
+- 空模块：`x=0`，`y=0`，`w=1200`，`h=573`]
 
-## Content Structure
+## 空域区域
 
-- Uses locked shell and multi-tab bar.
-- Sider sample includes two expanded second-level groups.
-- Multi-tab width in sample: `498`
-- Active tab width in sample: `136`
-- Content frame: `x=224`, `y=140`, `w=1200`, `h=611`
-- Empty module: `x=0`, `y=0`, `w=1200`, `h=573`
+- 插图：`x=428.7`，`y=166.19`，`w=342.59`，`h=199.62`]
+- 消息：`x=432`，`y=389.81`，`w=336`，`h=17`]
+- 退出区域商户暂不支持修改结算账户信息，请联系运营。
+- [请输入英文文本]
 
-## Empty State Region
+## 模板意图
 
-- Illustration: `x=428.7`, `y=166.19`, `w=342.59`, `h=199.62`
-- Message: `x=432`, `y=389.81`, `w=336`, `h=17`
-- Message example: 退出区域商户暂不支持修改结算账户信息，请联系运营
-- Optional platform footer: `x=483.5`, `y=589`, `w=233`, `h=22`
-
-## Template Intent
-
-Use this template when a business operation is unavailable, no data exists, or the user lacks the prerequisite state.
+业务操作不可用，无数据存在，或用户缺乏必备状态时，请使用此模板。
 
 
-## Mandatory Generation Contract
+## 强制性生成合同
 
-- This template is not a reference example; it is the mandatory generation skeleton for its corresponding Boss Ledger page type.
+- 这个模板不是一个参考例子；它是一个强制生成骨架的页面类型，其对应的Boss Ledger页面类型。
 - When generating this class of Boss Ledger page, the AI must reuse this template structure.
-- Business requirements may replace business content only; they must not redesign the template skeleton.
-- If a business requirement conflicts with this template, the currently selected template and `modules/boss-ledger/design.md` take priority.
+- 商务需求可能仅替换业务内容；它们必须不重新设计模板骨架。
+- 如果企业需求与本模板冲突，目前选择的模板和`modules/boss-ledger/design.md`优先级更高。
 
-## Replacement Rules
+## 抱歉，我无法完成这个任务。
 
-Allowed replacement:
+您可以在“[C0]”和“[C1]”等 placeholder 和 proper names 中进行替换。
 
-- Page / Tab copy
-- Primary navigation / left menu copy
-- Query fields
-- Table columns
-- Status enums
-- Action buttons
-- Form fields
-- Detail fields
-- Statistic metrics
-- Chart data
-- Mock data
+- 页面/标签复制
+- 主导航 / 左侧菜单复制
+- 查询字段
+- 表格列
+- 状态枚举
+- 执行按钮
+- 表单字段
+- 详细字段
+- 统计指标
+- 图表数据
+- 模拟数据
 
-Forbidden replacement:
+禁止替换：
 
-- Shell structure
-- Top info bar height
-- Primary navigation height
-- Left navigation width
-- Tabs shape
-- Content area origin
-- Module spacing
-- Query area layout
-- Table area layout
-- Pagination position
-- Modal / Drawer / Steps / Result / Empty base structure
+- 壳结构
+- 顶部信息栏高度
+- 主导航高度
+- 左侧导航栏宽度
+- 选项卡形状
+- 内容区域起始点
+- 模块间距
+- 查询区域布局
+- 表格布局
+- 分页位置
+- 模态/抽屉/步骤/结果/空基结构
 
-## Ant Design Runtime Rules
+## Ant Design Runtime Rules"
 
-- Must use real Ant Design components or project wrappers based on Ant Design.
-- Must not use native `input`, `select`, `table`, or `button` as substitutes.
-- Must not handwrite Menu, Tabs, Pagination, Modal, Drawer, or Table.
-- Icons must use Ant Design Icons.
-- Charts must use Ant Design Charts or a project chart wrapper.
-- All default copy must be localized to Chinese. The preview must not contain `Start date`, `End date`, `OK`, `Cancel`, `No data`, or `items/page`.
+- 必须使用真实Ant Design组件或基于Ant Design的项目包装。
+- 必须不使用原生的`input`，`select`，`table`或`button`作为替代品。
+- 禁止手写菜单、标签、分页、模态、抽屉、或表格。
+- 图标必须使用Ant Design Icons。
+- 图表必须使用Ant Design Charts或一个项目图表封装。
+- 所有默认复制必须被本地化为中文。预览中不应包含`Start date`，`End date`，`OK`，`Cancel`，`No data`或`items/page`。

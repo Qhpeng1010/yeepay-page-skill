@@ -22,9 +22,10 @@ for (const name of readdirSync(resolve(fixtureRoot, 'invalid')).filter((file) =>
   else passed += 1;
 }
 
-const merchantPilot = readJson(resolve(root, 'changes/20260728-page-spec-merchant-query/page-spec.json'));
-const settlementForm = readJson(resolve(root, 'changes/20260729-page-spec-merchant-settlement-config/page-spec.json'));
-const splitRuleWizard = readJson(resolve(root, 'changes/20260729-page-spec-split-rule-create/page-spec.json'));
+const merchantPilot = readJson(resolve(root, 'changes/20260729-merchant-query-speed-run/page-spec.json'));
+const settlementForm = readJson(resolve(root, 'changes/20260729-merchant-settlement-config-request/page-spec.json'));
+const splitRuleQuery = readJson(resolve(root, 'changes/20260729-split-rule-query-request/page-spec.json'));
+const simplePageForm = readJson(resolve(fixtureRoot, 'valid/simple-page-form.json'));
 const directCases = [
   [
     'missing-assumptions',
@@ -43,38 +44,57 @@ const directCases = [
   ],
   [
     'state-change-without-impact',
-    { ...merchantPilot, list: { ...merchantPilot.list, table: { ...merchantPilot.list.table, rowActions: merchantPilot.list.table.rowActions.map((action) => action.key === 'disable' ? { ...action, confirm: { ...action.confirm, impact: '' } } : action) } } },
+    { ...splitRuleQuery, list: { ...splitRuleQuery.list, table: { ...splitRuleQuery.list.table, rowActions: splitRuleQuery.list.table.rowActions.map((action) => action.key === 'disable' ? { ...action, confirm: { ...action.confirm, impact: '' } } : action) } } },
     'list.table.rowActions[1].confirm.impact is required.'
   ],
   [
     'form-failure-without-recovery-verification',
-    { ...settlementForm, form: { ...settlementForm.form, verification: undefined } },
+    {
+      ...settlementForm,
+      form: {
+        ...settlementForm.form,
+        verification: undefined,
+        submit: {
+          ...settlementForm.form.submit,
+          failure: {
+            trigger: { field: 'merchantNo', value: 'M-FAIL' },
+            message: '保存失败。',
+            recovery: '请修正商户编号后重新保存。'
+          }
+        }
+      }
+    },
     'form.submit.failure requires form.verification.validValues for recovery regression.'
   ],
   [
     'mode-override',
     { ...merchantPilot, metadata: { ...merchantPilot.metadata, executionMode: 'shadow', validatedCombinations: ['form.grouped'] } },
-    'metadata.executionMode must equal policy mode page-spec-default for template-03-query-list-regular.'
+    'metadata.executionMode must equal policy mode page-spec-default for list.regular.'
   ],
   [
     'shadow-without-validated-combination',
-    { ...splitRuleWizard, metadata: { ...splitRuleWizard.metadata, validatedCombinations: undefined } },
+    { ...settlementForm, metadata: { ...settlementForm.metadata, validatedCombinations: undefined } },
     'shadow Page Spec must declare non-empty unique metadata.validatedCombinations.'
   ],
   [
     'shadow-with-wrong-combination',
-    { ...splitRuleWizard, metadata: { ...splitRuleWizard.metadata, validatedCombinations: ['form.grouped'] } },
+    { ...settlementForm, metadata: { ...settlementForm.metadata, validatedCombinations: ['form.guided-simple'] } },
     'metadata.validatedCombinations must reference verified policy combinations for the selected family and template.'
+  ],
+  [
+    'simple-page-form-in-modal',
+    { ...simplePageForm, form: { ...simplePageForm.form, presentation: 'modal' } },
+    'form.page-simple requires simple fields in a page presentation.'
   ],
   [
     'non-wizard-guide',
     { ...settlementForm, form: { ...settlementForm.form, wizardGuide: { title: '不应出现', text: '分组表单不能使用 Wizard 引导区。' } } },
-    'form.wizardGuide is reserved for template-10-wizard step forms.'
+    'form.wizardGuide is reserved for form.staged-flow step forms.'
   ],
   [
     'default-list-with-shadow-summary',
     { ...merchantPilot, content: { ...merchantPilot.content, capabilities: [...merchantPilot.content.capabilities, 'summary.inline'] }, list: { ...merchantPilot.list, summary: { items: [{ key: 'count', label: '商户数', value: 4 }] } } },
-    'template-03-query-list-regular cannot use inline summary or statistics cards.'
+    'list.regular cannot use inline summary or statistics cards.'
   ]
 ];
 

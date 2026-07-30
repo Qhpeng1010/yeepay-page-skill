@@ -31,11 +31,14 @@ if (existsSync(resolve(target, 'preview.html'))) {
 
 const shellRoot = resolve(root, 'modules/boss-ledger/shell');
 const rendererRoot = resolve(root, 'modules/boss-ledger/execution/renderer');
+const themeRoot = resolve(root, 'modules/boss-ledger/execution/theme');
 const vendorSource = resolve(shellRoot, 'vendor');
 mkdirSync(resolve(target, 'assets'), { recursive: true });
 cpSync(resolve(rendererRoot, 'page-spec-preview.template.html'), resolve(target, 'preview.html'));
 cpSync(resolve(rendererRoot, 'page-spec-runtime.js'), resolve(target, 'page-spec-runtime.js'));
 cpSync(resolve(rendererRoot, 'page-spec-business.css'), resolve(target, 'business.css'));
+cpSync(resolve(themeRoot, 'theme.css'), resolve(target, 'theme.css'));
+cpSync(resolve(themeRoot, 'theme.js'), resolve(target, 'theme.js'));
 cpSync(resolve(shellRoot, 'shell-runtime.js'), resolve(target, 'shell-runtime.js'));
 cpSync(resolve(shellRoot, 'shell.css'), resolve(target, 'shell.css'));
 cpSync(resolve(shellRoot, 'content-base.css'), resolve(target, 'content-base.css'));
@@ -50,4 +53,4 @@ if (materializeVendor) {
 
 console.log(`Boss Ledger Page Spec scaffolded: ${target}`);
 console.log('Editable source: page-spec.json');
-console.log('Derived files: preview.html, preview-app.js, page-spec-runtime.js, business.css, Shell, vendor and assets');
+console.log('Derived files: preview.html, preview-app.js, page-spec-runtime.js, business.css, theme, Shell, vendor and assets');

@@ -1,16 +1,26 @@
-# Boss Ledger Page Spec Core Context
+# 老板管账核心规则包
 
-Read the selected Director Rules and current generation policy before this file.
+> 由导演规则编译。请勿直接编辑。
 
-The generation agent writes `page-spec.json` only. The fixed renderer owns React, Ant Design components, business CSS and Shell composition. Generated `preview-app.js`, `business.css`, `page-spec-runtime.js`, Shell files and `preview.html` are derived and must not be edited.
+- `BL-VIS-001` 老板管账是安静、高密度、以任务为中心的运营系统。页面必须体现可靠和高效，不能做成营销页、插画页或装饰性页面。
+- `BL-VIS-002` 固定 Boss Ledger Shell 负责顶部信息栏、一级导航、侧边导航、收起控制、Tabs、工作区和 Footer。业务页面可以配置导航内容，但不得重新绘制 Shell 的结构或样式。
+- `BL-VIS-004` 工作区使用浅中性灰背景，任务模块使用白色。文字采用深中性层级，边框和分隔线保持低对比度。成功、警告、错误、处理中和默认状态使用稳定语义色，不能只依赖颜色传达含义。
+- `BL-VIS-006` 优先保证紧凑且易读的信息密度和稳定对齐。过长的 Label、值和表格单元格必须换行、省略并提供完整提示，或给出足够列宽；不得覆盖其他控件。
+- `BL-VIS-007` 默认圆角为 `4px`，边框克制，阴影最小化。禁止大圆角卡片、玻璃效果、装饰渐变和卡片中嵌套装饰卡片。
+- `BL-VIS-008` 工作区内边距为 `16px`。独立任务模块各自使用 `16px` 内边距，模块间距为 `16px`。单一任务表面保持白色，多个独立任务表面之间应露出中性工作区背景。
+- `BL-VIS-009` Card 只用于指标、重复对象和真正需要框定的任务单元。页面分区不应自动套 Card，Card 内不得再放装饰性子 Card。
+- `BL-VIS-010` 必须使用真实的 Ant Design 组件。页面不得用手写 HTML 模仿输入框、表格、下拉、抽屉、弹窗、分页或结果页。
+- `BL-VIS-015` 桌面端是主要目标。窄屏应重排内容，不能整体缩小；查询网格和详情列逐级折叠，宽表格只在结果模块内部横向滚动，整页不得产生横向滚动。
+- `BL-VIS-016` 控件必须可通过键盘访问且名称明确。图标工具必须使用常见符号并提供 Tooltip；焦点、对比度、校验信息和状态含义即使不依赖颜色也必须可辨识。
+- `BL-VIS-017` 当 Ant Design 通用默认值与本视觉宪法冲突时，以本视觉宪法为准。已选模板中更具体且不违反本宪法的布局规则，优先于本宪法的通用规则。
+- `BL-VIS-018` 下表是老板管账唯一的主题数据源。设计师只在本表维护跨页面的颜色、字体和圆角 Token；系统自动生成渲染器主题文件。业务页面、旧设计稿和 Page Spec 都不得覆盖这些 Token。
+- `BL-INT-011` 每条硬规则至少由一个明确场景验收。没有可执行证据的清单，不能宣称已验证运行时行为。
+- `BL-INT-012` Page Spec 交付必须同时通过以下检查：
+- `BL-INT-013` 任一门禁失败即阻止交付，不存在“带备注通过”。能力缺口必须报告为不支持，不能记录为成功页面。
+- `BL-INT-014` 需求专属反馈优先修改 Page Spec；重复出现或具有通用性的反馈，应修改导演规则、策略、契约或渲染器，并补充回归覆盖。生成的 HTML、JavaScript 和 CSS 绝不是长期修复位置。
 
-Every Page Spec declares:
+## 交付边界
 
-- `metadata.request`, `family`, `templateId`, `executionMode`, selection reason, non-empty assumptions and applicable Rule IDs. `shadow` 还必须声明策略中的 `validatedCombinations`。
-- `ui.system: boss-ledger`, `runtime: react-antd-page-spec`, `rendererVersion: 1`.
-- only capabilities returned by the current generation policy.
-- explicit loading, empty, error and success behavior relevant to its family.
-
-Unsupported capability requirements are recorded as gaps. Do not add arbitrary HTML, JavaScript, CSS or component props to bypass the contract.
-
-Before build, `page-design.md` must record the selected family, template, runtime mode, capabilities, selection reason, rejected candidates, assumptions and every selected Rule ID. The fixed build gate checks this evidence against `page-spec.json`.
+- 在 Page Spec 和 `page-design.md` 中记录已选规则模板、运行模式、能力、排除的候选方案、假设和 Rule ID。
+- 只能使用生成策略当前允许的能力。
+- 将 Loading、空数据、错误、权限、校验、成功和危险操作视为显式业务状态。

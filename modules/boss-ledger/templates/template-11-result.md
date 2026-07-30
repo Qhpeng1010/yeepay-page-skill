@@ -1,81 +1,76 @@
-# Template 11 Extraction - Result
+# 模板11提取结果
 
-Figma source:
-https://www.figma.com/design/Dbic1s0dVVFc3IreKWl26m/%E8%80%81%E6%9D%BF%E7%AE%A1%E8%B4%A6%E5%B8%B8%E7%94%A8%E4%B8%9A%E5%8A%A1%E7%B1%BB%E5%9E%8B%E9%A1%B5%E9%9D%A2%E6%A2%B3%E7%90%86?node-id=2-3488&m=dev
+> **历史归档，已废弃。** 自 2026-07-29 起，本文件不再属于资源解析、页面生成、评审、验收或发布的输入。页面方案请使用 `execution/rule-template-registry.json` 和生成的 `execution/context-packs/`。以下内容仅保留作历史追溯。
 
-Figma node: `2:3488`
+状态：提取为反馈模板的结果反馈
 
-Figma name: `Result 结果页`
+## 内容结构
 
-Status: extracted as result feedback template
+- 使用锁定的shell和多标签栏。
+- 这个样本的多标签宽度为：`642`]
+- 活动标签宽度在样本中的值：`136`]
+- 内容模块：`x=224`，`y=140`，`w=1200`，`h=622`
 
-## Content Structure
+## 结果区域
 
-- Uses locked shell and multi-tab bar.
-- Multi-tab width in sample: `642`
-- Active tab width in sample: `136`
-- Content module: `x=224`, `y=140`, `w=1200`, `h=622`
+- 结果组：`x=256.83`，`y=100`，`w=686.33`，`h=324`]
+- 结果组件：`x=0`，`y=0`，`w=686.33`，`h=214`]
+- 详细摘要条：`x=0`，`y=254`，`w=686.33`，`h=70`
+- 摘要条内行：`x=40`，`y=24`，`w=606.33`，`h=22`
+- 三个总结要点，均匀分布。
+- 摘要条纹使用一个 `6px` 边缘半径。
+- 主要结果动作是左上角的按钮；次要返回动作紧挨着它在右上角。
+- 结果模块必须在Tab和Footer被预留后，填满完整的可用内容区域；不要让白色模块缩小到内容的内在高度。
+- 结果组件、摘要条纹和动作形成一个垂直对齐组，中心位于那个全高模块。
+- 实现必须使用一个稳定的`min-height`/flex计算，基于可用的工作空间高度，而不是仅仅依赖`height: 100%`。
 
-## Result Region
+## 模板意图
 
-- Result group: `x=256.83`, `y=100`, `w=686.33`, `h=324`
-- Result component: `x=0`, `y=0`, `w=686.33`, `h=214`
-- Detail summary strip: `x=0`, `y=254`, `w=686.33`, `h=70`
-- Summary strip inner row: `x=40`, `y=24`, `w=606.33`, `h=22`
-- Three summary details, evenly distributed.
-- Summary strip uses a `6px` border radius.
-- The primary result action is the leftmost button; secondary return actions follow it on the right.
-- The result module must fill the complete available content area after Tabs and Footer are reserved; do not let the white module shrink to the content's intrinsic height.
-- The Result component, summary strip, and actions form one vertical alignment group centered within that full-height module.
-- The implementation must use a stable `min-height`/flex calculation based on the available workspace height, not rely only on `height: 100%`.
-
-## Template Intent
-
-Use this template after a submit, create, review, payment, transfer, or setup flow finishes.
+已完成提交、创建、审查、支付、转移或设置流程。
 
 
-## Mandatory Generation Contract
+## 强制性生成合同
 
-- This template is not a reference example; it is the mandatory generation skeleton for its corresponding Boss Ledger page type.
+- 这个模板不是一个参考例子；它是一个强制生成骨架的页面类型，其对应的Boss Ledger页面类型。
 - When generating this class of Boss Ledger page, the AI must reuse this template structure.
-- Business requirements may replace business content only; they must not redesign the template skeleton.
-- If a business requirement conflicts with this template, the currently selected template and `modules/boss-ledger/design.md` take priority.
+- 商务需求可能仅替换业务内容；它们必须不重新设计模板骨架。
+- 如果企业需求与本模板冲突，目前选择的模板和`modules/boss-ledger/design.md`优先级更高。
 
-## Replacement Rules
+## 抱歉，我无法完成这个任务。
 
-Allowed replacement:
+您可以在“[C0]”和“[C1]”等 placeholder 和 proper names 中进行替换。
 
-- Page / Tab copy
-- Primary navigation / left menu copy
-- Query fields
-- Table columns
-- Status enums
-- Action buttons
-- Form fields
-- Detail fields
-- Statistic metrics
-- Chart data
-- Mock data
+- 页面/标签复制
+- 主导航 / 左侧菜单复制
+- 查询字段
+- 表格列
+- 状态枚举
+- 执行按钮
+- 表单字段
+- 详细字段
+- 统计指标
+- 图表数据
+- 模拟数据
 
-Forbidden replacement:
+禁止替换：
 
-- Shell structure
-- Top info bar height
-- Primary navigation height
-- Left navigation width
-- Tabs shape
-- Content area origin
-- Module spacing
-- Query area layout
-- Table area layout
-- Pagination position
-- Modal / Drawer / Steps / Result / Empty base structure
+- 壳结构
+- 顶部信息栏高度
+- 主导航高度
+- 左侧导航栏宽度
+- 选项卡形状
+- 内容区域起始点
+- 模块间距
+- 查询区域布局
+- 表格布局
+- 分页位置
+- 模态/抽屉/步骤/结果/空基结构
 
-## Ant Design Runtime Rules
+## Ant Design Runtime Rules"
 
-- Must use real Ant Design components or project wrappers based on Ant Design.
-- Must not use native `input`, `select`, `table`, or `button` as substitutes.
-- Must not handwrite Menu, Tabs, Pagination, Modal, Drawer, or Table.
-- Icons must use Ant Design Icons.
-- Charts must use Ant Design Charts or a project chart wrapper.
-- All default copy must be localized to Chinese. The preview must not contain `Start date`, `End date`, `OK`, `Cancel`, `No data`, or `items/page`.
+- 必须使用真实Ant Design组件或基于Ant Design的项目包装。
+- 必须不使用原生的`input`，`select`，`table`或`button`作为替代品。
+- 禁止手写菜单、标签、分页、模态、抽屉、或表格。
+- 图标必须使用Ant Design Icons。
+- 图表必须使用Ant Design Charts或一个项目图表封装。
+- 所有默认复制必须被本地化为中文。预览中不应包含`Start date`，`End date`，`OK`，`Cancel`，`No data`或`items/page`。

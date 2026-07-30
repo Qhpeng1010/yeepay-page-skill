@@ -8,7 +8,9 @@ import { scenarios } from '../modules/boss-ledger/execution/scenarios/capability
 import { generatedPreviewApp, pageSpecHash, readJson, validatePageSpec } from './lib/boss-ledger-page-spec.mjs';
 
 const root = process.cwd();
+const fastMode = process.argv.includes('--fast');
 const requested = process.argv.find((arg) => arg.startsWith('--scenario='))?.split('=')[1];
+const requestedIds = process.argv.find((arg) => arg.startsWith('--scenarios='))?.split('=')[1]?.split(',').filter(Boolean);
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -35,6 +37,19 @@ async function clickButton(page, pattern) {
 
 async function verifyContactModal(page) {
   await page.locator('.ant-modal').waitFor();
+  await clickButton(page, /保\s*存/);
+  await page.getByText('请填写联系人姓名', { exact: true }).waitFor();
+  await page.locator('#contactName').fill('张敏');
+  await page.locator('#mobile').fill('13800138000');
+  await selectOption(page, 'channel', '线上收单');
+  await clickButton(page, /保\s*存/);
+  await page.getByText('保存成功', { exact: true }).waitFor();
+}
+
+async function verifySimplePageForm(page) {
+  await page.getByText('登记渠道联系人', { exact: true }).first().waitFor();
+  assert(await page.locator('.ant-modal').count() === 0, 'Independent simple form must not open in a Modal.');
+  assert(await page.locator('.boss-full-page-action-bar').count() === 1, 'Independent simple form requires the workspace fixed action bar.');
   await clickButton(page, /保\s*存/);
   await page.getByText('请填写联系人姓名', { exact: true }).waitFor();
   await page.locator('#contactName').fill('张敏');
@@ -71,6 +86,7 @@ async function verifyAccountWizard(page) {
   await page.locator('.ant-modal-confirm').getByText('确认提交', { exact: true }).waitFor();
   await page.locator('.ant-modal-confirm').getByRole('button', { name: /提\s*交/ }).click();
   await page.getByText('账户变更完成', { exact: true }).waitFor();
+  await page.locator('.ant-modal-confirm').waitFor({ state: 'hidden' });
   await clickButton(page, '返回列表');
   await page.getByText('已返回来源列表', { exact: true }).waitFor();
 }
@@ -88,6 +104,7 @@ async function verifyUploadWizard(page) {
   await page.locator('.ant-modal-confirm').getByRole('button', { name: /提\s*交/ }).click();
   await page.getByText('导入完成', { exact: true }).waitFor();
   await page.getByText('成功导入 2 条记录。', { exact: true }).first().waitFor();
+  await page.locator('.ant-modal-confirm').waitFor({ state: 'hidden' });
 }
 
 async function verifySimpleList(page) {
@@ -108,7 +125,7 @@ async function verifyAdvancedList(page) {
   await page.locator('.ant-drawer').getByText('新增结算规则', { exact: true }).waitFor();
   await page.getByRole('button', { name: '关闭表单', exact: true }).click();
   await page.getByRole('button', { name: '列设置', exact: true }).click();
-  await page.getByText('列设置', { exact: true }).waitFor();
+  await page.locator('.boss-column-settings').getByText('列设置', { exact: true }).waitFor();
   assert(await page.locator('[aria-label="拖拽排序"]').count() > 0, 'Column settings must expose draggable ordering controls.');
   await page.getByRole('button', { name: '列设置', exact: true }).click();
 }
@@ -135,10 +152,14 @@ async function verifyExpand(page) {
 
 async function verifyCreateAndDrawerDetail(page) {
   await clickButton(page, '新增规则');
-  await page.locator('.ant-drawer').getByText('新增结算规则', { exact: true }).waitFor();
-  await page.locator('#ruleName').fill('新增结算规则');
-  await page.locator('#merchantName').fill('北京新锐商贸有限公司');
-  await selectOption(page, 'status', '待生效');
+  const createDrawer = page.locator('.ant-drawer').filter({ hasText: '新增结算规则' });
+  await createDrawer.getByText('新增结算规则', { exact: true }).waitFor();
+  await createDrawer.locator('#ruleName').fill('新增结算规则');
+  await createDrawer.locator('#merchantName').fill('北京新锐商贸有限公司');
+  const status = createDrawer.locator('#status');
+  await status.focus();
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
   await clickButton(page, /保\s*存/);
   await page.getByText('结算规则已新增。', { exact: true }).waitFor();
   await page.getByText('R003', { exact: true }).waitFor();
@@ -149,9 +170,10 @@ async function verifyCreateAndDrawerDetail(page) {
 }
 
 async function verifyQuickModal(page) {
-  await page.locator('.ant-modal').getByText('JS20260716001', { exact: true }).waitFor();
-  await clickButton(page, /关\s*闭/);
-  await page.locator('.ant-modal-wrap').waitFor({ state: 'hidden' });
+  const modal = page.locator('.ant-modal').filter({ hasText: 'JS20260716001' });
+  await modal.getByText('JS20260716001', { exact: true }).waitFor();
+  await modal.getByRole('button', { name: /关\s*闭/ }).click();
+  await modal.waitFor({ state: 'hidden' });
 }
 
 async function verifyDrawerTable(page) {
@@ -159,7 +181,7 @@ async function verifyDrawerTable(page) {
   const drawer = page.locator('.ant-drawer');
   await drawer.getByText('分账记录详情', { exact: true }).waitFor();
   await drawer.getByText('10082983398', { exact: true }).waitFor();
-  await drawer.getByText('余额不足', { exact: true }).waitFor();
+  await drawer.getByText('余额不足', { exact: true }).first().waitFor();
   await drawer.getByRole('button', { name: '我知道了', exact: true }).click();
   await page.getByText('分账记录列表', { exact: true }).waitFor();
 }
@@ -179,6 +201,7 @@ async function verifyTabs(page) {
 
 const scenarioChecks = {
   '01-contact-create': verifyContactModal,
+  '16-contact-create-page': verifySimplePageForm,
   '02-settlement-account-change': verifyGuidedForm,
   '03-merchant-settlement-config': verifyGroupedForm,
   '04-settlement-account-wizard': verifyAccountWizard,
@@ -194,13 +217,15 @@ const scenarioChecks = {
   '14-merchant-settlement-long-detail': verifyAnchors,
   '15-settlement-account-tabs': verifyTabs
 };
-const selectedScenarios = requested ? scenarios.filter((scenario) => scenario.id === requested) : scenarios;
+const selectedScenarios = requestedIds?.length
+  ? scenarios.filter((scenario) => requestedIds.includes(scenario.id))
+  : requested ? scenarios.filter((scenario) => scenario.id === requested) : scenarios;
 if (!selectedScenarios.length) {
-  console.error(`Unknown capability scenario: ${requested}`);
+  console.error(`Unknown capability scenario: ${requested || requestedIds?.join(',')}`);
   process.exit(2);
 }
 
-async function verifyScenario(browser, scenario) {
+function verifyScenarioArtifacts(scenario) {
   const dir = changeDir(scenario);
   const specPath = resolve(dir, 'page-spec.json');
   const previewApp = resolve(dir, 'preview-app.js');
@@ -217,6 +242,11 @@ async function verifyScenario(browser, scenario) {
     const target = resolve(dir, file);
     assert(existsSync(target) && fileHash(target) === expected, `${scenario.id}: generated artifact drift in ${file}.`);
   }
+}
+
+async function verifyScenario(browser, scenario) {
+  const dir = changeDir(scenario);
+  verifyScenarioArtifacts(scenario);
   const page = await browser.newPage({ viewport: { width: 1440, height: 960 }, deviceScaleFactor: 1 });
   const browserErrors = [];
   page.on('pageerror', (error) => browserErrors.push(error.stack || error.message || JSON.stringify(error)));
@@ -234,16 +264,29 @@ async function verifyScenario(browser, scenario) {
   }
 }
 
-const browser = await chromium.launch({ headless: true });
-try {
-  for (const scenario of selectedScenarios) {
-    await verifyScenario(browser, scenario);
-    console.log(`capability-scenario: pass (${scenario.id})`);
+if (fastMode) {
+  try {
+    for (const scenario of selectedScenarios) {
+      verifyScenarioArtifacts(scenario);
+      console.log(`capability-scenario: pass (${scenario.id}, static)`);
+    }
+    console.log(`boss-ledger-capability-scenarios: pass (${selectedScenarios.length} scenarios, static)`);
+  } catch (error) {
+    console.error(`boss-ledger-capability-scenarios: failed\n- ${error.message}`);
+    process.exitCode = 1;
   }
-  console.log(`boss-ledger-capability-scenarios: pass (${selectedScenarios.length} scenarios)`);
-} catch (error) {
-  console.error(`boss-ledger-capability-scenarios: failed\n- ${error.message}`);
-  process.exitCode = 1;
-} finally {
-  await browser.close();
+} else {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    for (const scenario of selectedScenarios) {
+      await verifyScenario(browser, scenario);
+      console.log(`capability-scenario: pass (${scenario.id})`);
+    }
+    console.log(`boss-ledger-capability-scenarios: pass (${selectedScenarios.length} scenarios)`);
+  } catch (error) {
+    console.error(`boss-ledger-capability-scenarios: failed\n- ${error.message}`);
+    process.exitCode = 1;
+  } finally {
+    await browser.close();
+  }
 }

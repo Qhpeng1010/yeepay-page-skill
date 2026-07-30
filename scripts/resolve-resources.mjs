@@ -14,7 +14,8 @@ function normalize(value) {
 function scoreIntent(request, intent) {
   const matches = (intent.signals || []).filter((signal) => request.includes(normalize(signal)));
   const score = matches.reduce((total, signal) => total + normalize(signal).length, 0);
-  return { intent, score, matches };
+  const firstMatchIndex = matches.length ? Math.min(...matches.map((signal) => request.indexOf(normalize(signal)))) : Number.POSITIVE_INFINITY;
+  return { intent, score, matches, firstMatchIndex };
 }
 
 function unique(paths) {
@@ -52,7 +53,7 @@ function selectIntent(route, rawRequest) {
   const ranked = contract.intents
     .map((intent) => scoreIntent(request, intent))
     .filter((candidate) => candidate.score > 0)
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => b.score - a.score || a.firstMatchIndex - b.firstMatchIndex);
 
   if (!ranked.length) {
     return {
@@ -63,7 +64,7 @@ function selectIntent(route, rawRequest) {
     };
   }
 
-  if (ranked[1] && ranked[0].score === ranked[1].score) {
+  if (ranked[1] && ranked[0].score === ranked[1].score && ranked[0].firstMatchIndex === ranked[1].firstMatchIndex) {
     return {
       status: 'clarify',
       module: route.module,
@@ -83,6 +84,7 @@ function resolveStage(route, selection, stage) {
 
   let resources = [...(adapter.resources[stage] || [])];
   const templateConfig = adapter.template;
+  const selectedTemplateId = selected.templateId || selected.template || '';
   let selectedTemplates = [];
   if (templateConfig?.stages?.includes(stage)) {
     selectedTemplates = [
@@ -100,16 +102,16 @@ function resolveStage(route, selection, stage) {
   const businessTemplates = selectedTemplates.filter((template) => !(templateConfig?.framework || []).includes(template));
   const replacements = {
     '{module}': route.module,
-    '{template}': selected.template || '',
-    '{templates}': unique(businessTemplates).join(',')
+    '{template}': selectedTemplateId,
+    '{templates}': selectedTemplates.length ? unique(businessTemplates).join(',') : selectedTemplateId
   };
   const commands = Object.fromEntries(Object.entries(commandTemplates).map(([name, command]) => {
     const resolved = Object.entries(replacements).reduce((value, [token, replacement]) => value.replaceAll(token, replacement), command);
     return [name, resolved.trim()];
   }));
 
-  const execution = resolveExecution(rootPath(route), adapter.execution, selected);
-  if (execution && ['generate', 'review'].includes(stage)) {
+  const execution = resolveExecution(rootPath(route), adapter.execution, selected, selectedTemplateId);
+  if (execution && ['template', 'generate', 'review'].includes(stage)) {
     resources.push(...existingMarkdown(execution.resources));
   }
 
@@ -118,7 +120,8 @@ function resolveStage(route, selection, stage) {
     module: route.module,
     intent: selected.id,
     pageType: selected.pageType,
-    template: selected.template || null,
+    template: selectedTemplateId || null,
+    ruleTemplate: selectedTemplateId || null,
     implementationMode: contract.implementationMode,
     assumption: route.assumption,
     matches: selection.matches,
@@ -156,16 +159,23 @@ function rootPath(route) {
   return route;
 }
 
-function resolveExecution(_route, executionConfig, selected) {
+function resolveExecution(_route, executionConfig, selected, templateId) {
   if (!executionConfig) return null;
   const policyPath = path.join(ROOT, executionConfig.policy);
   const policy = JSON.parse(fs.readFileSync(policyPath, 'utf8'));
+  if (executionConfig.templateRegistry) {
+    const registryPath = path.join(ROOT, executionConfig.templateRegistry);
+    const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
+    if (!(registry.templates || []).some((template) => template.id === templateId)) {
+      throw new Error(`${templateId || '<empty>'}: rule template is missing from ${executionConfig.templateRegistry}`);
+    }
+  }
   const familyId = selected.executionFamily || selected.id;
   const family = (policy.families || []).find((entry) => entry.id === familyId);
   if (!family) throw new Error(`${familyId}: execution family is missing from ${executionConfig.policy}`);
   const replace = (command) => String(command || '')
     .replaceAll('{family}', familyId)
-    .replaceAll('{template}', selected.template || '');
+    .replaceAll('{template}', templateId || '');
   return {
     system: policy.system,
     policyVersion: policy.policyVersion,
@@ -176,7 +186,7 @@ function resolveExecution(_route, executionConfig, selected) {
     ruleRefs: family.ruleRefs || [],
     schema: executionConfig.schema,
     releaseManifest: executionConfig.releaseManifest,
-    resources: [executionConfig.coreContext, executionConfig.familyContexts?.[familyId]].filter(Boolean),
+    resources: [executionConfig.coreContext, executionConfig.contextIndex, executionConfig.familyContexts?.[familyId]].filter(Boolean),
     scaffoldCommand: replace(executionConfig.scaffoldCommand),
     buildCommand: replace(executionConfig.buildCommand),
     verifyCommand: replace(executionConfig.verifyCommand)
@@ -193,7 +203,7 @@ function resolveAll(route, selection) {
     route,
     intent: selection.selected.id,
     pageType: selection.selected.pageType,
-    template: selection.selected.template || null,
+    template: selection.selected.templateId || selection.selected.template || null,
     stages,
     resources: unique(Object.values(stages).flatMap((stage) => stage.resources)),
     commands: stages.generate.commands

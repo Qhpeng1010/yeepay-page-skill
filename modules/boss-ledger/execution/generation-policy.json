@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "policyVersion": "2026.07.29.5",
+  "policyVersion": "2026.07.30.1",
   "system": "boss-ledger",
   "allowedModes": ["legacy", "shadow", "page-spec-default", "page-spec-only"],
   "families": [
@@ -39,9 +39,12 @@
     },
     {
       "id": "form",
-      "intents": ["modal-form", "drawer-form", "full-page-form", "guided-form", "wizard"],
+      "intents": ["modal-form", "drawer-form", "simple-page-form", "full-page-form", "guided-form", "wizard"],
       "availability": "available",
       "mode": "shadow",
+      "intentModes": {
+        "simple-page-form": "shadow"
+      },
       "ruleRefs": ["BL-TPL-005", "BL-TPL-006", "BL-TPL-007", "BL-INT-005", "BL-INT-006", "BL-INT-007"],
       "capabilities": [
         "form.simple",
@@ -100,7 +103,7 @@
     {
       "id": "list.regular",
       "family": "list",
-      "templateIds": ["template-03-query-list-regular"],
+      "templateIds": ["list.regular"],
       "evidence": "browser-business",
       "capabilities": ["query.basic", "table.flat", "table.pagination"],
       "ruleRefs": ["BL-TPL-001", "BL-TPL-010"]
@@ -108,7 +111,7 @@
     {
       "id": "list.column-settings",
       "family": "list",
-      "templateIds": ["template-03-query-list-regular"],
+      "templateIds": ["list.regular"],
       "evidence": "browser-business",
       "capabilities": ["query.basic", "table.flat", "table.pagination", "table.columnSettings"],
       "ruleRefs": ["BL-TPL-016"]
@@ -116,7 +119,7 @@
     {
       "id": "list.drawer-detail",
       "family": "list",
-      "templateIds": ["template-03-query-list-regular"],
+      "templateIds": ["list.regular"],
       "evidence": "browser-business",
       "capabilities": ["query.basic", "table.flat", "table.pagination", "detail.drawer"],
       "ruleRefs": ["BL-TPL-013", "BL-INT-004"]
@@ -124,7 +127,7 @@
     {
       "id": "list.card-statistics",
       "family": "list",
-      "templateIds": ["template-05-query-list-card-summary"],
+      "templateIds": ["list.card-summary"],
       "evidence": "browser-business",
       "capabilities": ["query.basic", "table.flat", "table.pagination", "table.status", "table.amount", "statistics.cards"],
       "ruleRefs": ["BL-TPL-001", "BL-TPL-011", "BL-INT-001"]
@@ -132,7 +135,7 @@
     {
       "id": "form.grouped",
       "family": "form",
-      "templateIds": ["template-08-full-page-form"],
+      "templateIds": ["form.grouped-page"],
       "evidence": "browser-business",
       "capabilities": ["form.groups", "form.stickyActions"],
       "ruleRefs": ["BL-TPL-007", "BL-TPL-008"]
@@ -140,15 +143,23 @@
     {
       "id": "form.modal-simple",
       "family": "form",
-      "templateIds": ["template-06-modal-form"],
+      "templateIds": ["form.modal-simple"],
       "evidence": "browser-business",
       "capabilities": ["form.simple"],
       "ruleRefs": ["BL-TPL-005", "BL-INT-005"]
     },
     {
+      "id": "form.page-simple",
+      "family": "form",
+      "templateIds": ["form.page-simple"],
+      "evidence": "browser-business",
+      "capabilities": ["form.simple", "form.stickyActions"],
+      "ruleRefs": ["BL-TPL-005", "BL-TPL-019", "BL-INT-005", "BL-INT-006"]
+    },
+    {
       "id": "form.guided-simple",
       "family": "form",
-      "templateIds": ["template-13-guided-form"],
+      "templateIds": ["form.guided-simple"],
       "evidence": "browser-business",
       "capabilities": ["form.simple", "form.sideGuide", "form.stickyActions"],
       "ruleRefs": ["BL-TPL-006", "BL-TPL-008"]
@@ -156,7 +167,7 @@
     {
       "id": "form.steps",
       "family": "form",
-      "templateIds": ["template-10-wizard"],
+      "templateIds": ["form.staged-flow"],
       "evidence": "browser-business",
       "capabilities": ["form.steps", "form.review", "form.stickyActions"],
       "ruleRefs": ["BL-TPL-007", "BL-INT-007"]
@@ -164,7 +175,7 @@
     {
       "id": "form.steps-return-source",
       "family": "form",
-      "templateIds": ["template-10-wizard"],
+      "templateIds": ["form.staged-flow"],
       "evidence": "browser-business",
       "capabilities": ["form.steps", "form.review", "form.stickyActions", "form.returnSource"],
       "ruleRefs": ["BL-TPL-007", "BL-INT-006", "BL-INT-007"]
@@ -172,7 +183,7 @@
     {
       "id": "form.upload-review",
       "family": "form",
-      "templateIds": ["template-10-wizard"],
+      "templateIds": ["form.staged-flow"],
       "evidence": "browser-business",
       "capabilities": ["form.steps", "form.review", "form.stickyActions", "form.upload", "form.reviewTable"],
       "ruleRefs": ["BL-TPL-006", "BL-TPL-007", "BL-INT-005", "BL-INT-006"]
@@ -180,7 +191,7 @@
     {
       "id": "detail.grouped",
       "family": "detail",
-      "templateIds": ["template-09-drawer-detail"],
+      "templateIds": ["detail.record"],
       "evidence": "browser-fixture",
       "capabilities": ["detail.groups", "detail.metrics", "detail.embeddedTable"],
       "ruleRefs": ["BL-TPL-009", "BL-VIS-014"]
@@ -188,7 +199,7 @@
     {
       "id": "detail.modal-quick",
       "family": "detail",
-      "templateIds": ["template-09-drawer-detail"],
+      "templateIds": ["detail.record"],
       "evidence": "browser-business",
       "capabilities": ["detail.groups", "detail.modal"],
       "ruleRefs": ["BL-TPL-009"]
@@ -196,7 +207,7 @@
     {
       "id": "detail.drawer-table",
       "family": "detail",
-      "templateIds": ["template-09-drawer-detail"],
+      "templateIds": ["detail.record"],
       "evidence": "browser-business",
       "capabilities": ["detail.groups", "detail.embeddedTable", "detail.drawer"],
       "ruleRefs": ["BL-TPL-009", "BL-TPL-013"]
@@ -204,7 +215,7 @@
     {
       "id": "detail.page-anchors",
       "family": "detail",
-      "templateIds": ["template-09-drawer-detail"],
+      "templateIds": ["detail.record"],
       "evidence": "browser-business",
       "capabilities": ["detail.groups", "detail.anchors"],
       "ruleRefs": ["BL-TPL-009", "BL-VIS-014"]
@@ -212,7 +223,7 @@
     {
       "id": "detail.tabs-metrics",
       "family": "detail",
-      "templateIds": ["template-09-drawer-detail"],
+      "templateIds": ["detail.record"],
       "evidence": "browser-business",
       "capabilities": ["detail.groups", "detail.metrics", "detail.embeddedTable", "detail.tabs"],
       "ruleRefs": ["BL-TPL-009", "BL-VIS-014"]

@@ -29,8 +29,7 @@ function pageDesign(spec, scenario) {
 
 - System: Boss Ledger
 - Family: \`${spec.metadata.family}\`
-- Template: \`${spec.metadata.templateId}\`
-- Template: \`${spec.metadata.templateId}.md\`
+    - Rule template: \`${spec.metadata.templateId}\`
 - Runtime mode: \`${spec.metadata.executionMode}\`
 ${combinations}- Selection reason: ${spec.metadata.selectionReason}
 - Rejected candidates: ${spec.metadata.family === 'form' ? '未选择不满足字段规模或流程依赖的其他表单承载方式。' : spec.metadata.family === 'detail' ? '未选择会破坏信息边界或上下文的其他详情承载方式。' : '未选择不满足信息层级和操作边界的其他列表组合。'}
@@ -61,7 +60,7 @@ try {
     if (!existsSync(changeDir)) mkdirSync(changeDir, { recursive: true });
     writeFileSync(resolve(changeDir, 'page-spec.json'), `${JSON.stringify(spec, null, 2)}\n`);
     writeFileSync(resolve(changeDir, 'page-design.md'), pageDesign(spec, scenario));
-    run(`${scenario.id}: rules`, 'scripts/read-boss-ledger-rules.mjs', [changeRelative, `${spec.metadata.templateId}.md`]);
+    run(`${scenario.id}: rules`, 'scripts/read-boss-ledger-rules.mjs', [changeRelative, spec.metadata.templateId]);
     run(`${scenario.id}: build`, 'scripts/build-boss-ledger-page-spec.mjs', [`${changeRelative}/page-spec.json`]);
     console.log(`capability-scenario: materialized (${scenario.id})`);
   }

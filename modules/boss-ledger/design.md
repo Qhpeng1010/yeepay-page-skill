@@ -1,5 +1,7 @@
 # Boss Ledger Design Specification
 
+> **历史归档，已废弃。** 自 2026-07-29 起，本文件不再属于 Boss Ledger 的设计、生成、评审、验收或发布输入。唯一有效的视觉规范是 `director-rules/01-visual-constitution.md`；页面选择与交互分别以 `02-template-application-rules.md`、`03-interaction-acceptance-rules.md` 为准。以下内容仅保留作历史追溯。
+
 ## 1. 文件职责
 
 本文件是 Boss Ledger 唯一专属设计规范，只定义：

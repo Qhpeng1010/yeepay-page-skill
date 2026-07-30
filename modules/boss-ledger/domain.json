@@ -5,6 +5,13 @@
   "adapter": {
     "execution": {
       "policy": "modules/boss-ledger/execution/generation-policy.json",
+      "templateRegistry": "modules/boss-ledger/execution/rule-template-registry.json",
+      "theme": {
+        "tokens": "modules/boss-ledger/execution/theme/theme-tokens.json",
+        "css": "modules/boss-ledger/execution/theme/theme.css",
+        "runtime": "modules/boss-ledger/execution/theme/theme.js"
+      },
+      "contextIndex": "modules/boss-ledger/execution/context-packs/index.md",
       "schema": "modules/boss-ledger/execution/page-spec.schema.json",
       "releaseManifest": "modules/boss-ledger/execution/release-manifest.json",
       "coreContext": "modules/boss-ledger/execution/context-packs/core.md",
@@ -12,7 +19,9 @@
         "list": "modules/boss-ledger/execution/context-packs/list.md",
         "form": "modules/boss-ledger/execution/context-packs/form.md",
         "detail": "modules/boss-ledger/execution/context-packs/detail.md",
-        "result": "modules/boss-ledger/execution/context-packs/result.md"
+        "result": "modules/boss-ledger/execution/context-packs/result.md",
+        "dashboard": "modules/boss-ledger/execution/context-packs/dashboard.md",
+        "empty-state": "modules/boss-ledger/execution/context-packs/state.md"
       },
       "scaffoldCommand": "node scripts/scaffold-boss-ledger-page-spec.mjs changes/{change-id}",
       "buildCommand": "node scripts/build-boss-ledger-page-spec.mjs changes/{change-id}/page-spec.json",
@@ -20,41 +29,32 @@
     },
     "resources": {
       "requirement": ["modules/shared/product.md", "modules/boss-ledger/business-rules.md"],
-      "design": ["modules/shared/design-system.md", "modules/boss-ledger/design.md", "modules/shared/page-templates.md", "modules/shared/components.md"],
-      "template": ["modules/shared/template-routing.md"],
+      "design": ["modules/boss-ledger/director-rules/01-visual-constitution.md"],
+      "template": ["modules/boss-ledger/director-rules/02-template-application-rules.md", "modules/boss-ledger/director-rules/03-interaction-acceptance-rules.md", "modules/boss-ledger/execution/context-packs/index.md"],
       "generate": ["modules/shared/frontend.md", "modules/shared/quality.md"],
-      "review": ["modules/boss-ledger/business-rules.md", "modules/boss-ledger/design.md", "modules/shared/quality.md"]
-    },
-    "template": {
-      "directory": "modules/boss-ledger/templates",
-      "stages": ["template", "generate", "review"],
-      "framework": ["template-01-framework-shell.md"],
-      "supportingRules": [
-        {
-          "signals": ["wizard", "分步", "步骤", "新增标签页"],
-          "templates": ["template-10-wizard.md"]
-        }
-      ]
+      "review": ["modules/boss-ledger/business-rules.md", "modules/shared/quality.md"]
     },
     "commands": {
       "generate": {
-        "preflight": "node scripts/read-boss-ledger-rules.mjs changes/{change-id} {templates}",
+        "prepare": "node scripts/prepare-boss-ledger-page-spec.mjs changes/{change-id} {template}",
+        "preflight": "node scripts/read-boss-ledger-rules.mjs changes/{change-id} {template}",
         "scaffold": "node scripts/scaffold-boss-ledger-preview.mjs changes/{change-id}"
       }
     }
   },
   "intents": [
-    {"id":"query-list","pageType":"query-list","executionFamily":"list","signals":["查询列表","审核列表","配置列表","查询","列表","记录","台账"],"template":"template-03-query-list-regular.md"},
-    {"id":"inline-summary-list","pageType":"query-list-inline-summary","executionFamily":"list","signals":["轻量汇总","行内统计","不超过3个指标","2个指标","3个指标"],"template":"template-04-query-list-inline-summary.md"},
-    {"id":"card-summary-list","pageType":"query-list-card-summary","executionFamily":"list","signals":["卡片汇总","超过3个指标","多指标统计"],"template":"template-05-query-list-card-summary.md"},
-    {"id":"dashboard","pageType":"dashboard","executionFamily":"dashboard","signals":["dashboard","仪表盘","数据首页","经营概览","数据大盘"],"template":"template-02-dashboard-home.md"},
-    {"id":"modal-form","pageType":"modal-form","executionFamily":"form","signals":["modal","弹窗表单","弹窗新增","弹窗编辑"],"template":"template-06-modal-form.md"},
-    {"id":"drawer-form","pageType":"drawer-form","executionFamily":"form","signals":["drawer 表单","抽屉表单","抽屉新增","抽屉编辑"],"template":"template-07-drawer-form.md"},
-    {"id":"full-page-form","pageType":"full-page-form","executionFamily":"form","signals":["全页表单","新建页","编辑页","新增页"],"template":"template-08-full-page-form.md"},
-    {"id":"guided-form","pageType":"guided-form","executionFamily":"form","signals":["右侧说明","操作提示","说明表单","引导表单"],"template":"template-13-guided-form.md"},
-    {"id":"detail","pageType":"detail","executionFamily":"detail","signals":["详情页","抽屉详情","详情"],"template":"template-09-drawer-detail.md"},
-    {"id":"wizard","pageType":"wizard","executionFamily":"form","signals":["wizard","步骤页","分步流程","步骤条"],"template":"template-10-wizard.md"},
-    {"id":"result","pageType":"result","executionFamily":"result","signals":["result","结果页","成功页","失败页"],"template":"template-11-result.md"},
-    {"id":"empty-state","pageType":"empty-state","executionFamily":"empty-state","signals":["empty state","空状态","空页"],"template":"template-12-empty-state.md"}
+    {"id":"query-list","pageType":"query-list","executionFamily":"list","signals":["查询列表","审核列表","配置列表","查询","列表","记录","台账"],"templateId":"list.regular"},
+    {"id":"inline-summary-list","pageType":"query-list-inline-summary","executionFamily":"list","signals":["轻量汇总","行内统计","不超过3个指标","2个指标","3个指标"],"templateId":"list.inline-summary"},
+    {"id":"card-summary-list","pageType":"query-list-card-summary","executionFamily":"list","signals":["卡片汇总","超过3个指标","多指标统计"],"templateId":"list.card-summary"},
+    {"id":"dashboard","pageType":"dashboard","executionFamily":"dashboard","signals":["dashboard","仪表盘","数据首页","经营概览","数据大盘"],"templateId":"dashboard.overview"},
+    {"id":"modal-form","pageType":"modal-form","executionFamily":"form","signals":["modal","弹窗表单","弹窗新增","弹窗编辑"],"templateId":"form.modal-simple"},
+    {"id":"drawer-form","pageType":"drawer-form","executionFamily":"form","signals":["drawer 表单","抽屉表单","抽屉新增","抽屉编辑"],"templateId":"form.drawer-simple"},
+    {"id":"simple-page-form","pageType":"simple-page-form","executionFamily":"form","signals":["独立表单","独立表单页","独立页面","基础表单页","登记页","登记页面"],"templateId":"form.page-simple"},
+    {"id":"full-page-form","pageType":"full-page-form","executionFamily":"form","signals":["分组表单","分组配置","多组信息","全页分组表单"],"templateId":"form.grouped-page"},
+    {"id":"guided-form","pageType":"guided-form","executionFamily":"form","signals":["右侧说明","操作提示","说明表单","引导表单"],"templateId":"form.guided-simple"},
+    {"id":"detail","pageType":"detail","executionFamily":"detail","signals":["详情页","抽屉详情","详情"],"templateId":"detail.record"},
+    {"id":"wizard","pageType":"wizard","executionFamily":"form","signals":["wizard","步骤页","分步流程","步骤条"],"templateId":"form.staged-flow"},
+    {"id":"result","pageType":"result","executionFamily":"result","signals":["result","结果页","成功页","失败页"],"templateId":"result.workflow"},
+    {"id":"empty-state","pageType":"empty-state","executionFamily":"empty-state","signals":["empty state","空状态","空页"],"templateId":"state.embedded"}
   ]
 }

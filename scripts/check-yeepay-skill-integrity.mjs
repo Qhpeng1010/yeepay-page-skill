@@ -12,9 +12,14 @@ const requiredFiles = [
   'modules/shared/components.md',
   'modules/shared/frontend.md',
   'modules/shared/quality.md',
-  'modules/boss-ledger/design.md',
   'modules/boss-ledger/business-rules.md',
-  'modules/boss-ledger/templates/template-01-framework-shell.md',
+  'modules/boss-ledger/execution/rule-template-registry.json',
+  'modules/boss-ledger/execution/theme/theme-tokens.json',
+  'modules/boss-ledger/execution/theme/theme.css',
+  'modules/boss-ledger/execution/theme/theme.js',
+  'modules/boss-ledger/execution/context-packs/index.md',
+  'modules/boss-ledger/execution/context-packs/dashboard.md',
+  'modules/boss-ledger/execution/context-packs/state.md',
   'modules/boss-ledger/shell/preview.template.html',
   'modules/boss-ledger/shell/preview-app.template.js',
   'modules/boss-ledger/shell/business.css',
@@ -29,6 +34,9 @@ const requiredFiles = [
   'scripts/validate-boss-ledger-preview.mjs',
   'modules/boss-ledger/shell/assets/boss-logo.svg',
   'scripts/read-boss-ledger-rules.mjs',
+  'scripts/build-boss-ledger-context-packs.mjs',
+  'scripts/prepare-boss-ledger-page-spec.mjs',
+  'scripts/test-boss-ledger-fast-path.mjs',
   'scripts/refresh-and-verify-boss-ledger-change.mjs',
   'scripts/scaffold-boss-ledger-preview.mjs',
   'scripts/verify-boss-ledger-change.mjs',
@@ -122,7 +130,7 @@ for (const module of registry.modules || []) {
   if (!contract.adapter?.resources) adapterErrors.push(`${module.id}: missing adapter.resources`);
   const execution = contract.adapter?.execution;
   if (execution) {
-    [execution.policy, execution.schema, execution.releaseManifest, execution.coreContext, ...Object.values(execution.familyContexts || {})]
+    [execution.policy, execution.templateRegistry, execution.contextIndex, execution.schema, execution.releaseManifest, execution.coreContext, ...Object.values(execution.familyContexts || {})]
       .filter(Boolean)
       .forEach((file) => {
         if (!existsSync(resolve(root, file))) adapterErrors.push(`${module.id}: missing execution resource ${file}`);
@@ -167,6 +175,7 @@ const forbiddenHistoricalRefs = [
   'changes/add-merchant-audit-page',
   '20260710-boss-ledger-settlement-record-query-list/preview.html',
 ];
+const forbiddenBossLedgerDesignInput = 'modules/boss-ledger/design.md';
 function collectFiles(relativePath) {
   const absolutePath = resolve(root, relativePath);
   if (!existsSync(absolutePath)) return [];
@@ -183,12 +192,28 @@ const scannedText = collectFiles('SKILL.md')
   .map((file) => readFileSync(resolve(root, file), 'utf8'))
   .join('\n');
 const forbidden = forbiddenHistoricalRefs.filter((value) => scannedText.includes(value));
+const activeDocumentation = [
+  'SKILL.md',
+  'README.md',
+  'workflows',
+  'modules/shared',
+  'modules/boss-ledger/DOMAIN.md',
+  'modules/boss-ledger/director-rules',
+  'scripts'
+].flatMap((path) => collectFiles(path))
+  .filter((file) => /\.(?:md|mjs|js)$/.test(file))
+  .filter((file) => file !== 'scripts/check-yeepay-skill-integrity.mjs')
+  .filter((file) => !file.startsWith('modules/boss-ledger/templates/'));
+const staleBossLedgerDesignRefs = activeDocumentation.filter((file) => readFileSync(resolve(root, file), 'utf8')
+  .split(/\r?\n/)
+  .some((line) => line.includes(forbiddenBossLedgerDesignInput) && !/(历史|归档|废弃|不得作为|not.*input|legacy)/i.test(line)));
 
-if (missing.length || adapterErrors.length || forbidden.length) {
+if (missing.length || adapterErrors.length || forbidden.length || staleBossLedgerDesignRefs.length) {
   console.error('skill-integrity: failed');
   missing.forEach((file) => console.error(`- missing: ${file}`));
   adapterErrors.forEach((error) => console.error(`- adapter: ${error}`));
   forbidden.forEach((value) => console.error(`- historical dependency in operational files: ${value}`));
+  staleBossLedgerDesignRefs.forEach((file) => console.error(`- obsolete Boss Ledger design input in active documentation: ${file}`));
   process.exit(1);
 }
 

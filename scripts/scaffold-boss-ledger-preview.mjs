@@ -18,14 +18,15 @@ if (!target.startsWith(`${changesRoot}/`) || basename(target) === 'changes') {
 }
 
 if (!existsSync(resolve(target, 'rules-read.md'))) {
-  console.error('rules-read.md is missing. Run scripts/read-boss-ledger-rules.mjs with the selected content template before scaffolding.');
+  console.error('rules-read.md is missing. Run scripts/read-boss-ledger-rules.mjs with the selected rule template before scaffolding.');
   process.exit(1);
 }
 
 const templateRoot = resolve(root, 'modules/boss-ledger/shell');
+const themeRoot = resolve(root, 'modules/boss-ledger/execution/theme');
 const vendorSource = resolve(templateRoot, 'vendor');
 const rulesManifest = readFileSync(resolve(target, 'rules-read.md'), 'utf8');
-const usesWizardTemplate = /template-10-wizard\.md/.test(rulesManifest);
+const usesWizardTemplate = /Rule template: `?form\.staged-flow`?/.test(rulesManifest);
 if (!existsSync(vendorSource)) {
   console.error('Canonical vendor runtime is missing: modules/boss-ledger/shell/vendor');
   process.exit(1);
@@ -39,6 +40,8 @@ mkdirSync(target, { recursive: true });
 mkdirSync(resolve(target, 'assets'), { recursive: true });
 cpSync(resolve(templateRoot, 'preview.template.html'), resolve(target, 'preview.html'));
 cpSync(resolve(templateRoot, usesWizardTemplate ? 'wizard-preview-app.template.js' : 'preview-app.template.js'), resolve(target, 'preview-app.js'));
+cpSync(resolve(themeRoot, 'theme.css'), resolve(target, 'theme.css'));
+cpSync(resolve(themeRoot, 'theme.js'), resolve(target, 'theme.js'));
 cpSync(resolve(templateRoot, 'shell-runtime.js'), resolve(target, 'shell-runtime.js'));
 cpSync(resolve(templateRoot, 'shell.css'), resolve(target, 'shell.css'));
 cpSync(resolve(templateRoot, 'content-base.css'), resolve(target, 'content-base.css'));
@@ -56,6 +59,6 @@ if (usesWizardTemplate) {
 }
 
 console.log(`Boss Ledger preview scaffolded: ${target}`);
-console.log(`Fixed files: preview.html, shell-runtime.js, shell.css, content-base.css, vendor/${materializeVendor ? ' (materialized)' : ' (shared symlink)'}, assets/boss-logo.svg`);
-console.log(`Template mode: ${usesWizardTemplate ? 'wizard' : 'standard'}`);
+console.log(`Fixed files: preview.html, theme.css, theme.js, shell-runtime.js, shell.css, content-base.css, vendor/${materializeVendor ? ' (materialized)' : ' (shared symlink)'}, assets/boss-logo.svg`);
+console.log(`Rule template mode: ${usesWizardTemplate ? 'staged-flow' : 'standard'}`);
 console.log('Editable files: preview-app.js, business.css');

@@ -3,6 +3,7 @@
 // rule-assertion: contract.list-drawer-detail
 // rule-assertion: contract.family-structure
 // rule-assertion: contract.form-workflow
+// rule-assertion: contract.simple-page-form
 // rule-assertion: contract.detail-structure
 // rule-assertion: contract.result-boundary
 import { createHash } from 'node:crypto';
@@ -25,20 +26,41 @@ export function familyPolicy(policy, family) {
 }
 
 const TEMPLATE_INTENTS = Object.freeze({
-  'template-03-query-list-regular': 'query-list',
-  'template-04-query-list-inline-summary': 'inline-summary-list',
-  'template-05-query-list-card-summary': 'card-summary-list',
-  'template-06-modal-form': 'modal-form',
-  'template-07-drawer-form': 'drawer-form',
-  'template-08-full-page-form': 'full-page-form',
-  'template-13-guided-form': 'guided-form',
-  'template-09-drawer-detail': 'detail',
-  'template-10-wizard': 'wizard',
-  'template-11-result': 'result'
+  'list.regular': 'query-list',
+  'list.inline-summary': 'inline-summary-list',
+  'list.card-summary': 'card-summary-list',
+  'form.modal-simple': 'modal-form',
+  'form.drawer-simple': 'drawer-form',
+  'form.page-simple': 'simple-page-form',
+  'form.grouped-page': 'full-page-form',
+  'form.guided-simple': 'guided-form',
+  'detail.record': 'detail',
+  'form.staged-flow': 'wizard',
+  'result.workflow': 'result'
 });
 
+const LEGACY_TEMPLATE_ALIASES = Object.freeze({
+  'template-02-dashboard-home': 'dashboard.overview',
+  'template-03-query-list-regular': 'list.regular',
+  'template-04-query-list-inline-summary': 'list.inline-summary',
+  'template-05-query-list-card-summary': 'list.card-summary',
+  'template-06-modal-form': 'form.modal-simple',
+  'template-07-drawer-form': 'form.drawer-simple',
+  'template-08-full-page-form': 'form.grouped-page',
+  'template-09-drawer-detail': 'detail.record',
+  'template-10-wizard': 'form.staged-flow',
+  'template-11-result': 'result.workflow',
+  'template-12-empty-state': 'state.embedded',
+  'template-13-guided-form': 'form.guided-simple'
+});
+
+export function normalizeRuleTemplateId(templateId) {
+  const id = String(templateId || '').replace(/\.md$/, '');
+  return LEGACY_TEMPLATE_ALIASES[id] || id;
+}
+
 export function templateIntent(templateId) {
-  return TEMPLATE_INTENTS[String(templateId || '').replace(/\.md$/, '')] || null;
+  return TEMPLATE_INTENTS[normalizeRuleTemplateId(templateId)] || null;
 }
 
 export function expectedRuntimeMode(policy, family, templateId) {
@@ -258,13 +280,13 @@ function validateList(errors, spec, capabilities) {
   if (list.statistics?.items) issue(errors, list.statistics.items.length >= 3 && list.statistics.items.length <= 5, 'Statistics cards require 3 to 5 items.');
   const intent = templateIntent(spec.metadata?.templateId);
   if (intent === 'query-list') {
-    issue(errors, !list.summary?.items?.length && !list.statistics?.items?.length, 'template-03-query-list-regular cannot use inline summary or statistics cards.');
+    issue(errors, !list.summary?.items?.length && !list.statistics?.items?.length, 'list.regular cannot use inline summary or statistics cards.');
   }
   if (intent === 'inline-summary-list') {
-    issue(errors, Boolean(list.summary?.items?.length) && !list.statistics?.items?.length, 'template-04-query-list-inline-summary requires inline summary only.');
+    issue(errors, Boolean(list.summary?.items?.length) && !list.statistics?.items?.length, 'list.inline-summary requires inline summary only.');
   }
   if (intent === 'card-summary-list') {
-    issue(errors, Boolean(list.statistics?.items?.length) && !list.summary?.items?.length, 'template-05-query-list-card-summary requires statistics cards only.');
+    issue(errors, Boolean(list.statistics?.items?.length) && !list.summary?.items?.length, 'list.card-summary requires statistics cards only.');
   }
 }
 
@@ -288,23 +310,27 @@ function validateForm(errors, spec, capabilities) {
   issue(errors, ['page', 'drawer', 'modal'].includes(form.presentation || 'page'), 'form.presentation must be page, drawer or modal.');
   const intent = templateIntent(spec.metadata?.templateId);
   if (intent === 'modal-form') {
-    issue(errors, form.presentation === 'modal' && Array.isArray(form.fields), 'template-06-modal-form requires simple fields in a Modal presentation.');
+    issue(errors, form.presentation === 'modal' && Array.isArray(form.fields), 'form.modal-simple requires simple fields in a Modal presentation.');
   }
   if (intent === 'drawer-form') {
-    issue(errors, form.presentation === 'drawer' && Array.isArray(form.fields), 'template-07-drawer-form requires simple fields in a Drawer presentation.');
+    issue(errors, form.presentation === 'drawer' && Array.isArray(form.fields), 'form.drawer-simple requires simple fields in a Drawer presentation.');
+  }
+  if (intent === 'simple-page-form') {
+    issue(errors, form.presentation === 'page' && Array.isArray(form.fields), 'form.page-simple requires simple fields in a page presentation.');
+    issue(errors, capabilities.includes('form.stickyActions') && form.stickyActions === true, 'form.page-simple requires form.stickyActions.');
   }
   if (intent === 'full-page-form') {
-    issue(errors, form.presentation === 'page' && Array.isArray(form.groups), 'template-08-full-page-form requires grouped fields in a page presentation.');
+    issue(errors, form.presentation === 'page' && Array.isArray(form.groups), 'form.grouped-page requires grouped fields in a page presentation.');
   }
   if (intent === 'guided-form') {
-    issue(errors, form.presentation === 'page' && Array.isArray(form.fields), 'template-13-guided-form requires simple fields in a page presentation.');
-    issue(errors, capabilities.includes('form.sideGuide'), 'template-13-guided-form requires form.sideGuide.');
-    issue(errors, form.sideGuide && nonEmptyString(form.sideGuide.title) && nonEmptyString(form.sideGuide.text), 'template-13-guided-form requires sideGuide title and text.');
+    issue(errors, form.presentation === 'page' && Array.isArray(form.fields), 'form.guided-simple requires simple fields in a page presentation.');
+    issue(errors, capabilities.includes('form.sideGuide'), 'form.guided-simple requires form.sideGuide.');
+    issue(errors, form.sideGuide && nonEmptyString(form.sideGuide.title) && nonEmptyString(form.sideGuide.text), 'form.guided-simple requires sideGuide title and text.');
   } else if (form.sideGuide !== undefined) {
-    errors.push('form.sideGuide is reserved for template-13-guided-form.');
+    errors.push('form.sideGuide is reserved for form.guided-simple.');
   }
   if (intent === 'wizard') {
-    issue(errors, form.presentation === 'page' && Array.isArray(form.steps), 'template-10-wizard requires steps in a page presentation.');
+    issue(errors, form.presentation === 'page' && Array.isArray(form.steps), 'form.staged-flow requires steps in a page presentation.');
   }
   (form.groups || []).forEach((group, index) => {
     issue(errors, nonEmptyString(group.key) && nonEmptyString(group.title), `form.groups[${index}] requires key and title.`);
@@ -328,7 +354,7 @@ function validateForm(errors, spec, capabilities) {
     });
     if ((form.steps || []).some((step) => step.previewTable)) issue(errors, capabilities.includes('form.reviewTable'), 'Wizard preview tables require form.reviewTable.');
   } else if (form.wizardGuide !== undefined) {
-    errors.push('form.wizardGuide is reserved for template-10-wizard step forms.');
+    errors.push('form.wizardGuide is reserved for form.staged-flow step forms.');
   }
   fields.forEach((field, index) => validateField(errors, field, `form.fields[${index}]`));
   if (fields.some((field) => field.control === 'upload')) issue(errors, capabilities.includes('form.upload'), 'Upload fields require form.upload.');
@@ -421,14 +447,15 @@ export function validatePageSpec(spec, { root = ROOT, allowWorkflowResult = fals
   issue(errors, nonEmptyString(spec.metadata?.request), 'metadata.request is required.');
   issue(errors, nonEmptyString(spec.metadata?.selectionReason), 'metadata.selectionReason is required.');
   issue(errors, Array.isArray(spec.metadata?.assumptions) && spec.metadata.assumptions.length > 0 && spec.metadata.assumptions.every(nonEmptyString), 'metadata.assumptions must be a non-empty string array.');
-  issue(errors, /^template-(0[2-9]|1[0-3])-/.test(spec.metadata?.templateId || ''), 'metadata.templateId is invalid.');
+  const normalizedTemplateId = normalizeRuleTemplateId(spec.metadata?.templateId);
+  issue(errors, Object.hasOwn(TEMPLATE_INTENTS, normalizedTemplateId), 'metadata.templateId is invalid.');
   const familyTemplates = {
-    list: /^template-0[3-5]-/,
-    form: /^template-(0[6-8]|10|13)-/,
-    detail: /^template-09-/,
-    result: /^template-11-/
+    list: new Set(['list.regular', 'list.inline-summary', 'list.card-summary']),
+    form: new Set(['form.modal-simple', 'form.drawer-simple', 'form.page-simple', 'form.grouped-page', 'form.guided-simple', 'form.staged-flow']),
+    detail: new Set(['detail.record']),
+    result: new Set(['result.workflow'])
   };
-  if (familyTemplates[family]) issue(errors, familyTemplates[family].test(spec.metadata?.templateId || ''), `${spec.metadata?.templateId || '<empty>'} is not a ${family} template.`);
+  if (familyTemplates[family]) issue(errors, familyTemplates[family].has(normalizedTemplateId), `${spec.metadata?.templateId || '<empty>'} is not a ${family} rule template.`);
 
   const policy = loadPolicy(root);
   const selectedPolicy = familyPolicy(policy, family);
@@ -455,7 +482,7 @@ export function validatePageSpec(spec, { root = ROOT, allowWorkflowResult = fals
     if (Array.isArray(validatedCombinations) && validatedCombinations.length > 0 && Array.isArray(capabilities)) {
       const combinations = validatedCombinations.map((id) => (policy.validatedCombinations || []).find((entry) => entry.id === id)).filter(Boolean);
       const matchingTemplate = combinations.length === validatedCombinations.length
-        && combinations.every((entry) => entry.family === family && entry.templateIds?.includes(spec.metadata?.templateId));
+        && combinations.every((entry) => entry.family === family && entry.templateIds?.includes(normalizedTemplateId));
       issue(errors, matchingTemplate, 'metadata.validatedCombinations must reference verified policy combinations for the selected family and template.');
       if (matchingTemplate) {
         const coveredCapabilities = combinations.flatMap((entry) => entry.capabilities || []);

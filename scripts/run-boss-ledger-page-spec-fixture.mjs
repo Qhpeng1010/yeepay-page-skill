@@ -27,14 +27,14 @@ try {
   spec.metadata.changeId = changeId;
   writeFileSync(resolve(changeDir, 'page-spec.json'), `${JSON.stringify(spec, null, 2)}\n`);
   const shadowEvidence = spec.metadata.validatedCombinations?.length ? `- Validated combinations: ${spec.metadata.validatedCombinations.map((id) => `\`${id}\``).join('、')}\n` : '';
-  writeFileSync(resolve(changeDir, 'page-design.md'), `# Page Design: ${spec.metadata.pageName}\n\n## Routing\n\n- System: Boss Ledger\n- Family: \`${spec.metadata.family}\`\n- Template: \`${spec.metadata.templateId}\`\n- Runtime mode: \`${spec.metadata.executionMode}\`\n${shadowEvidence}- Selection reason: ${spec.metadata.selectionReason}\n- Rejected candidates: Fixture only validates the selected family boundary.\n- Capabilities: ${spec.content.capabilities.join('、')}\n\n## Assumptions\n\n${spec.metadata.assumptions.map((assumption) => `- ${assumption}`).join('\n')}\n\n## Rule References\n\n${spec.metadata.ruleRefs.map((ruleId) => `- \`${ruleId}\``).join('\n')}\n`);
+  writeFileSync(resolve(changeDir, 'page-design.md'), `# Page Design: ${spec.metadata.pageName}\n\n## Routing\n\n- System: Boss Ledger\n- Family: \`${spec.metadata.family}\`\n- Rule template: \`${spec.metadata.templateId}\`\n- Runtime mode: \`${spec.metadata.executionMode}\`\n${shadowEvidence}- Selection reason: ${spec.metadata.selectionReason}\n- Rejected candidates: Fixture only validates the selected family boundary.\n- Capabilities: ${spec.content.capabilities.join('、')}\n\n## Assumptions\n\n${spec.metadata.assumptions.map((assumption) => `- ${assumption}`).join('\n')}\n\n## Rule References\n\n${spec.metadata.ruleRefs.map((ruleId) => `- \`${ruleId}\``).join('\n')}\n`);
 
   const run = (label, script, args) => {
     const result = spawnSync(process.execPath, [resolve(root, script), ...args], { cwd: root, encoding: 'utf8', stdio: 'inherit' });
     if (result.status !== 0) throw new Error(`${label} failed.`);
   };
   const changeRelative = `changes/${changeId}`;
-  run('rules', 'scripts/read-boss-ledger-rules.mjs', [changeRelative, `${spec.metadata.templateId}.md`]);
+  run('rules', 'scripts/read-boss-ledger-rules.mjs', [changeRelative, spec.metadata.templateId]);
   run('build', 'scripts/build-boss-ledger-page-spec.mjs', [`${changeRelative}/page-spec.json`]);
   run('verify', 'scripts/verify-boss-ledger-page-spec.mjs', [...(fast ? ['--fast'] : []), `${changeRelative}/page-spec.json`]);
   console.log(`page-spec-fixture: pass (${basename(fixturePath)})`);

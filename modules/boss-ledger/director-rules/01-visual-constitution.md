@@ -47,3 +47,46 @@
 ## 视觉冲突规则
 
 **BL-VIS-017** 当 Ant Design 通用默认值与本视觉宪法冲突时，以本视觉宪法为准。已选模板中更具体且不违反本宪法的布局规则，优先于本宪法的通用规则。
+
+## 可编译主题 Token
+
+**BL-VIS-018** 下表是老板管账唯一的主题数据源。设计师只在本表维护跨页面的颜色、字体和圆角 Token；系统自动生成渲染器主题文件。业务页面、旧设计稿和 Page Spec 都不得覆盖这些 Token。
+
+| Token | 值 | 用途 |
+| --- | --- | --- |
+| `colorPrimary` | `#F36046` | 唯一主操作、选中态、重要任务链接 |
+| `colorPrimaryHover` | `#D94E36` | 主操作与链接 Hover |
+| `colorPrimaryActive` | `#D94B35` | 主操作 Active |
+| `colorLink` | `#F36046` | Ant Design 链接色 |
+| `colorLinkHover` | `#D94E36` | Ant Design 链接 Hover |
+| `colorPageBackground` | `#F4F4F4` | 工作区背景 |
+| `colorContainer` | `#FFFFFF` | 模块、导航和浮层表面 |
+| `colorTopInfoBar` | `#3A3A3A` | 顶部信息栏背景 |
+| `colorSelectedBackground` | `#FEF2F0` | 三级菜单选中背景 |
+| `colorStatisticBackground` | `#F6F6F6` | 列表统计与详情指标背景 |
+| `colorToolBackground` | `#FAFAFA` | 列设置等轻量工具背景 |
+| `colorBorder` | `#E5E6EB` | 常规控件边框 |
+| `colorDivider` | `#F0F0F0` | 模块与浮层分隔线 |
+| `colorTabDivider` | `#E6E6E6` | Tab 分隔线 |
+| `colorSiderDivider` | `#EBEBEB` | 侧栏收起控制分隔线 |
+| `colorTabInactiveBackground` | `#EEEEEE` | 非当前 Tab 背景 |
+| `colorTextPrimary` | `rgba(0,0,0,.85)` | 强调标题和主要文字 |
+| `colorTextSecondary` | `rgba(0,0,0,.65)` | 常规业务文字 |
+| `colorTextTertiary` | `rgba(0,0,0,.45)` | 次要说明与工具图标 |
+| `colorTextDisabled` | `rgba(0,0,0,.25)` | 禁用和占位文字 |
+| `colorShellText` | `#1F2329` | 固定 Shell 主文字 |
+| `colorShellSecondary` | `#4E5969` | 固定 Shell 次级文字 |
+| `colorShellMuted` | `#B8B8B8` | 固定 Shell 弱化文字与图标 |
+| `colorFooterText` | `#A8ABB2` | Footer 文字 |
+| `colorSuccess` | `#52C41A` | 成功状态 |
+| `colorWarning` | `#FAAD14` | 警告状态 |
+| `colorError` | `#FF4D4F` | 错误状态 |
+| `colorInfo` | `#1677FF` | 处理中状态 |
+| `colorDefault` | `#86909C` | 默认状态 |
+| `fontFamily` | `-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif` | 系统中文无衬线字体栈 |
+| `fontSize` | `14` | 默认业务字号（px） |
+| `borderRadius` | `4` | Ant Design 控件圆角（px） |
+| `cardBorderRadius` | `8px` | 任务模块与指标 Card 圆角 |
+| `modalBorderRadius` | `6px` | Modal 圆角 |
+| `drawerBorderRadius` | `0` | Drawer 圆角 |
+| `navigationShadow` | `0 2px 8px rgba(0,0,0,.06)` | 一级导航阴影 |

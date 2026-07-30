@@ -39,10 +39,20 @@ for (const module of registry.modules || []) {
       ? JSON.parse(fs.readFileSync(path.join(root, execution.policy), 'utf8'))
       : null;
     if (policy && policy.system !== module.id) errors.push(`${module.id}: execution policy system must match module id`);
+    [execution.templateRegistry, execution.contextIndex].filter(Boolean).forEach((resource) => {
+      if (!fs.existsSync(path.join(root, resource))) errors.push(`${module.id}: missing execution resource ${resource}`);
+    });
     for (const intent of contract.intents || []) {
       if (intent.executionFamily && !policy?.families?.some((family) => family.id === intent.executionFamily)) {
         errors.push(`${module.id}/${intent.id}: missing execution family ${intent.executionFamily}`);
       }
+    }
+  }
+  if (execution?.templateRegistry) {
+    const registry = JSON.parse(fs.readFileSync(path.join(root, execution.templateRegistry), 'utf8'));
+    const templateIds = new Set((registry.templates || []).map((template) => template.id));
+    for (const intent of contract.intents || []) {
+      if (!intent.templateId || !templateIds.has(intent.templateId)) errors.push(`${module.id}/${intent.id}: missing rule template ${intent.templateId || '<empty>'}`);
     }
   }
   for (const [stage, resources] of Object.entries(contract.adapter?.resources || {})) {
