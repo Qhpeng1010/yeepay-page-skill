@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "policyVersion": "2026.07.30.1",
+  "policyVersion": "2026.07.30.3",
   "system": "boss-ledger",
-  "allowedModes": ["legacy", "shadow", "page-spec-default", "page-spec-only"],
+  "allowedModes": ["shadow", "page-spec-default", "page-spec-only"],
   "families": [
     {
       "id": "list",
@@ -11,7 +11,7 @@
       "mode": "page-spec-default",
       "intentModes": {
         "query-list": "page-spec-default",
-        "inline-summary-list": "shadow",
+        "inline-summary-list": "page-spec-default",
         "card-summary-list": "shadow"
       },
       "ruleRefs": ["BL-TPL-001", "BL-TPL-010", "BL-TPL-013", "BL-INT-003", "BL-INT-004", "BL-INT-008", "BL-INT-010"],
@@ -39,7 +39,7 @@
     },
     {
       "id": "form",
-      "intents": ["modal-form", "drawer-form", "simple-page-form", "full-page-form", "guided-form", "wizard"],
+      "intents": ["modal-form", "simple-page-form", "full-page-form", "guided-form", "wizard"],
       "availability": "available",
       "mode": "shadow",
       "intentModes": {
@@ -78,23 +78,29 @@
       "id": "result",
       "intents": ["result"],
       "availability": "workflow-only",
-      "mode": "legacy",
+      "mode": "page-spec-only",
       "ruleRefs": ["BL-TPL-003", "BL-TPL-017", "BL-INT-006"],
       "capabilities": ["result.basic", "result.summary"]
     },
     {
       "id": "dashboard",
       "intents": ["dashboard"],
-      "availability": "pending",
-      "mode": "legacy",
-      "ruleRefs": ["BL-TPL-002", "BL-TPL-017"],
-      "capabilities": []
+      "availability": "available",
+      "mode": "page-spec-default",
+      "ruleRefs": ["BL-TPL-002", "BL-TPL-017", "BL-TPL-020", "BL-INT-001", "BL-INT-015"],
+      "capabilities": [
+        "dashboard.scope",
+        "dashboard.metrics",
+        "dashboard.distribution",
+        "dashboard.trend",
+        "dashboard.ranking"
+      ]
     },
     {
       "id": "empty-state",
       "intents": ["empty-state"],
       "availability": "pending",
-      "mode": "legacy",
+      "mode": "page-spec-only",
       "ruleRefs": ["BL-TPL-004", "BL-TPL-017", "BL-INT-008"],
       "capabilities": []
     }
@@ -123,6 +129,14 @@
       "evidence": "browser-business",
       "capabilities": ["query.basic", "table.flat", "table.pagination", "detail.drawer"],
       "ruleRefs": ["BL-TPL-013", "BL-INT-004"]
+    },
+    {
+      "id": "list.drawer-create",
+      "family": "list",
+      "templateIds": ["list.regular"],
+      "evidence": "manual-business",
+      "capabilities": ["query.basic", "table.flat", "table.pagination", "list.drawerCreate"],
+      "ruleRefs": ["BL-TPL-005", "BL-TPL-012", "BL-INT-004"]
     },
     {
       "id": "list.card-statistics",

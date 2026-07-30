@@ -23,6 +23,13 @@ function pageDesign(spec, scenario) {
   const combinations = spec.metadata.validatedCombinations?.length
     ? `- Validated combinations: ${spec.metadata.validatedCombinations.map((id) => `\`${id}\``).join('、')}\n`
     : '';
+  const rejected = spec.metadata.family === 'form'
+    ? '未选择不满足字段规模或流程依赖的其他表单承载方式。'
+    : spec.metadata.family === 'detail'
+      ? '未选择会破坏信息边界或上下文的其他详情承载方式。'
+      : spec.metadata.family === 'dashboard'
+        ? '未选择会引入逐条查询、分页或行操作的列表方案。'
+        : '未选择不满足信息层级和操作边界的其他列表组合。';
   return `# Page Design: ${spec.metadata.pageName}
 
 ## Routing
@@ -32,7 +39,7 @@ function pageDesign(spec, scenario) {
     - Rule template: \`${spec.metadata.templateId}\`
 - Runtime mode: \`${spec.metadata.executionMode}\`
 ${combinations}- Selection reason: ${spec.metadata.selectionReason}
-- Rejected candidates: ${spec.metadata.family === 'form' ? '未选择不满足字段规模或流程依赖的其他表单承载方式。' : spec.metadata.family === 'detail' ? '未选择会破坏信息边界或上下文的其他详情承载方式。' : '未选择不满足信息层级和操作边界的其他列表组合。'}
+- Rejected candidates: ${rejected}
 - Capabilities: ${spec.content.capabilities.join('、')}
 
 ## Assumptions

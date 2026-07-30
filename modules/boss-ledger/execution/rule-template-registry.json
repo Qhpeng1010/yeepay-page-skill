@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "system": "boss-ledger",
   "source": "modules/boss-ledger/director-rules/02-template-application-rules.md",
-  "templateVersion": "rules-ea570f4b09a4",
+  "templateVersion": "rules-f795b7420f74",
   "core": {
     "title": "固定运行边界",
     "ruleIds": [
@@ -82,21 +82,6 @@
       "ruleIds": [
         "BL-TPL-003",
         "BL-TPL-005",
-        "BL-VIS-012",
-        "BL-INT-005",
-        "BL-INT-006"
-      ]
-    },
-    {
-      "id": "form.drawer-simple",
-      "family": "form",
-      "title": "抽屉简单表单",
-      "selection": "从来源页面发起，7 至 10 个相互独立字段，或需要更多纵向空间且应保留来源列表上下文。",
-      "ruleIds": [
-        "BL-TPL-003",
-        "BL-TPL-005",
-        "BL-TPL-006",
-        "BL-TPL-012",
         "BL-VIS-012",
         "BL-INT-005",
         "BL-INT-006"
@@ -191,10 +176,12 @@
       "id": "dashboard.overview",
       "family": "dashboard",
       "title": "经营概览首页",
-      "selection": "主要任务是监控业务健康度、分布或趋势，而不是查询和处理逐条记录。",
+      "selection": "主要任务是监控业务健康度、分布或趋势；使用统一数据范围、3 至 5 个核心指标、分布、趋势和排行，且不包含逐条查询或处理。",
       "ruleIds": [
         "BL-TPL-002",
-        "BL-INT-001"
+        "BL-TPL-020",
+        "BL-INT-001",
+        "BL-INT-015"
       ]
     },
     {
@@ -207,19 +194,5 @@
         "BL-INT-008"
       ]
     }
-  ],
-  "legacyAliases": {
-    "template-02-dashboard-home": "dashboard.overview",
-    "template-03-query-list-regular": "list.regular",
-    "template-04-query-list-inline-summary": "list.inline-summary",
-    "template-05-query-list-card-summary": "list.card-summary",
-    "template-06-modal-form": "form.modal-simple",
-    "template-07-drawer-form": "form.drawer-simple",
-    "template-08-full-page-form": "form.grouped-page",
-    "template-09-drawer-detail": "detail.record",
-    "template-10-wizard": "form.staged-flow",
-    "template-11-result": "result.workflow",
-    "template-12-empty-state": "state.embedded",
-    "template-13-guided-form": "form.guided-simple"
-  }
+  ]
 }

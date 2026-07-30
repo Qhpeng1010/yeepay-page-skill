@@ -23,22 +23,9 @@ if (!previewArg) {
 const previewPath = isAbsolute(previewArg) ? previewArg : resolve(process.cwd(), previewArg);
 const rulesManifestPath = resolve(dirname(previewPath), 'rules-read.md');
 const rulesManifest = existsSync(rulesManifestPath) ? readFileSync(rulesManifestPath, 'utf8') : '';
-const selectedTemplateMatch = rulesManifest.match(/^- Selected business templates: (.+)$/m);
 const selectedRuleTemplateMatch = rulesManifest.match(/^- Rule template: `?([^`\n]+)`?$/m);
-// Historical Change records may name pre-rule-template Markdown files. New routing never emits them.
-const legacyTemplateIds = {
-  'template-04-query-list-inline-summary.md': 'list.inline-summary',
-  'template-05-query-list-card-summary.md': 'list.card-summary',
-  'template-06-modal-form.md': 'form.modal-simple',
-  'template-07-drawer-form.md': 'form.drawer-simple',
-  'template-08-full-page-form.md': 'form.grouped-page',
-  'template-10-wizard.md': 'form.staged-flow'
-};
-const selectedTemplates = selectedTemplateMatch
-  ? selectedTemplateMatch[1].split(',').map((template) => template.trim()).filter(Boolean)
-  : [];
-if (selectedRuleTemplateMatch) selectedTemplates.push(selectedRuleTemplateMatch[1].trim());
-const usesTemplate = (templateId) => selectedTemplates.some((template) => template === templateId || legacyTemplateIds[template] === templateId);
+const selectedTemplates = selectedRuleTemplateMatch ? [selectedRuleTemplateMatch[1].trim()] : [];
+const usesTemplate = (templateId) => selectedTemplates.includes(templateId);
 const pageSpecPath = resolve(dirname(previewPath), 'page-spec.json');
 let pageSpec = null;
 try { pageSpec = existsSync(pageSpecPath) ? JSON.parse(readFileSync(pageSpecPath, 'utf8')) : null; } catch { pageSpec = null; }
@@ -780,16 +767,19 @@ function checkSource(html) {
     pass('validate', 'No Drawer usage detected; Drawer header/footer checks skipped');
   }
 
-  if (usesTemplate('form.drawer-simple')) {
+  const hasEmbeddedDrawerForm = Boolean(pageSpec?.list?.table?.primaryAction?.form)
+    || Boolean(pageSpec?.list?.table?.rowActions?.some((action) => action.type === 'edit' && action.form));
+  if (hasEmbeddedDrawerForm) {
     const drawerHasVerticalForm = /React\.createElement\(\s*Drawer\b[\s\S]{0,8000}React\.createElement\(\s*Form\s*,\s*\{[^}]*layout\s*:\s*['"]vertical['"]/i.test(source)
-      || /<Drawer\b[\s\S]{0,8000}<Form\b[^>]*\blayout\s*=\s*['"]vertical['"]/i.test(source);
+      || /<Drawer\b[\s\S]{0,8000}<Form\b[^>]*\blayout\s*=\s*['"]vertical['"]/i.test(source)
+      || /h\(\s*Form\s*,\s*\{[^}]*layout\s*:\s*['"]vertical['"]/i.test(source);
     if (drawerHasVerticalForm) {
-      pass('validate', 'Drawer form uses vertical label-above-control alignment');
+      pass('validate', 'List-contained Drawer form uses vertical label-above-control alignment');
     } else {
-      fail('validate', 'Drawer forms must use vertical layout with labels above controls and left/top alignment');
+      fail('validate', 'List-contained Drawer forms must use vertical layout with labels above controls and left/top alignment');
     }
   } else {
-    pass('validate', 'Drawer-form template not selected; Drawer form alignment check skipped');
+    pass('validate', 'No list-contained Drawer form is declared; Drawer form alignment check skipped');
   }
 
   if (usesTemplate('form.grouped-page') || usesTemplate('form.page-simple')) {

@@ -5,7 +5,7 @@
 ## 当前策略
 
 - 页面族：`empty-state`
-- 状态：pending / legacy
+- 状态：pending / page-spec-only
 - 已开放能力：当前没有可生成能力
 
 ## 可选方案

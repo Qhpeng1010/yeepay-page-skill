@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // rule-assertion: behavior.capability-scenarios
+// rule-assertion: behavior.dashboard-scenario
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -199,6 +200,30 @@ async function verifyTabs(page) {
   await page.getByText('冻结中', { exact: true }).waitFor();
 }
 
+async function verifyDrawerCreate(page) {
+  await clickButton(page, '新增配置');
+  const drawer = page.locator('.ant-drawer').filter({ hasText: '新增商户服务配置' });
+  await drawer.getByText('新增商户服务配置', { exact: true }).waitFor();
+  assert(await drawer.locator('.ant-form-item').count() === 8, 'Long list-contained creation must render all eight fields in one Drawer.');
+  await drawer.getByRole('button', { name: '关闭表单', exact: true }).click();
+  await page.getByText('商户服务配置列表', { exact: true }).waitFor();
+}
+
+async function verifyInlineSummary(page) {
+  const summary = page.locator('.boss-result-summary-inline');
+  await summary.getByText('交易总金额', { exact: false }).waitFor();
+  await summary.getByText('交易总笔数', { exact: false }).waitFor();
+  assert(await summary.locator('span').count() === 2, 'Inline summary must render exactly two result-toolbar metrics.');
+}
+
+async function verifyDashboard(page) {
+  await page.getByText('交易总额', { exact: true }).waitFor();
+  for (const title of ['交易渠道分布', '近 7 日交易趋势', '近 7 日分账趋势', '收入来源排行']) await page.getByText(title, { exact: true }).waitFor();
+  assert(await page.locator('.boss-dashboard-metric').count() === 4, 'Dashboard must render four core metrics.');
+  assert(await page.locator('.boss-dashboard-chart').count() === 4, 'Dashboard must render distribution, trends and ranking charts.');
+  assert(await page.locator('.ant-table').count() === 0, 'Dashboard must not render a query table.');
+}
+
 const scenarioChecks = {
   '01-contact-create': verifyContactModal,
   '16-contact-create-page': verifySimplePageForm,
@@ -215,7 +240,10 @@ const scenarioChecks = {
   '12-settlement-quick-detail': verifyQuickModal,
   '13-split-record-drawer': verifyDrawerTable,
   '14-merchant-settlement-long-detail': verifyAnchors,
-  '15-settlement-account-tabs': verifyTabs
+  '15-settlement-account-tabs': verifyTabs,
+  '17-merchant-service-config-drawer-create': verifyDrawerCreate,
+  '18-transaction-inline-summary': verifyInlineSummary,
+  '19-operation-dashboard': verifyDashboard
 };
 const selectedScenarios = requestedIds?.length
   ? scenarios.filter((scenario) => requestedIds.includes(scenario.id))

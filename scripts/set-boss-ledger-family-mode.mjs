@@ -14,7 +14,7 @@ const intentArg = readArg('--intent');
 const modeArg = readArg('--mode');
 const versionArg = readArg('--policy-version');
 const checkOnly = process.argv.includes('--check');
-const allowedModes = new Set(['legacy', 'shadow', 'page-spec-default', 'page-spec-only']);
+const allowedModes = new Set(['shadow', 'page-spec-default', 'page-spec-only']);
 const policy = JSON.parse(readFileSync(policyPath, 'utf8'));
 
 if (checkOnly) {
@@ -38,8 +38,8 @@ if (!family) {
   console.error(`Unknown family: ${familyArg}`);
   process.exit(2);
 }
-if (modeArg !== 'legacy' && family.availability !== 'available') {
-  console.error(`${familyArg} is ${family.availability}; only available families may use a Page Spec mode.`);
+if (modeArg !== 'page-spec-only' && family.availability !== 'available') {
+  console.error(`${familyArg} is ${family.availability}; only its blocked Page Spec boundary may be configured.`);
   process.exit(1);
 }
 if (versionArg === policy.policyVersion) {

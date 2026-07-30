@@ -3,6 +3,7 @@
 import { readdirSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 import { readJson, validatePageSpec } from './lib/boss-ledger-page-spec.mjs';
+import { scenarios } from '../modules/boss-ledger/execution/scenarios/capability-scenarios.mjs';
 
 const root = process.cwd();
 const fixtureRoot = resolve(root, 'modules/boss-ledger/execution/fixtures');
@@ -22,9 +23,16 @@ for (const name of readdirSync(resolve(fixtureRoot, 'invalid')).filter((file) =>
   else passed += 1;
 }
 
-const merchantPilot = readJson(resolve(root, 'changes/20260729-merchant-query-speed-run/page-spec.json'));
-const settlementForm = readJson(resolve(root, 'changes/20260729-merchant-settlement-config-request/page-spec.json'));
-const splitRuleQuery = readJson(resolve(root, 'changes/20260729-split-rule-query-request/page-spec.json'));
+const scenarioSpec = (id) => {
+  const scenario = scenarios.find((candidate) => candidate.id === id);
+  if (!scenario) throw new Error(`Capability scenario is missing: ${id}`);
+  return scenario.spec;
+};
+const merchantPilot = scenarioSpec('11-settlement-rule-management');
+const settlementForm = scenarioSpec('03-merchant-settlement-config');
+const splitRuleQuery = scenarioSpec('06-split-rule-query');
+const drawerCreateList = scenarioSpec('17-merchant-service-config-drawer-create');
+const dashboard = scenarioSpec('19-operation-dashboard');
 const simplePageForm = readJson(resolve(fixtureRoot, 'valid/simple-page-form.json'));
 const directCases = [
   [
@@ -95,6 +103,21 @@ const directCases = [
     'default-list-with-shadow-summary',
     { ...merchantPilot, content: { ...merchantPilot.content, capabilities: [...merchantPilot.content.capabilities, 'summary.inline'] }, list: { ...merchantPilot.list, summary: { items: [{ key: 'count', label: '商户数', value: 4 }] } } },
     'list.regular cannot use inline summary or statistics cards.'
+  ],
+  [
+    'standalone-drawer-template-is-not-a-route',
+    { ...simplePageForm, metadata: { ...simplePageForm.metadata, templateId: 'form.drawer-simple' }, form: { ...simplePageForm.form, presentation: 'drawer' } },
+    'metadata.templateId is invalid.'
+  ],
+  [
+    'dashboard-missing-ranking',
+    { ...dashboard, dashboard: { ...dashboard.dashboard, charts: dashboard.dashboard.charts.filter((chart) => chart.role !== 'ranking') } },
+    'dashboard.charts requires at least one ranking chart.'
+  ],
+  [
+    'dashboard-cannot-carry-a-list',
+    { ...dashboard, list: drawerCreateList.list },
+    'dashboard Page Spec cannot declare list.'
   ]
 ];
 

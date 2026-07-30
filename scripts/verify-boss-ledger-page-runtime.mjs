@@ -10,7 +10,7 @@ const args = process.argv.slice(2);
 const fastMode = args.includes('--fast');
 const previewArg = args.find((arg) => !arg.startsWith('--'));
 if (!previewArg) {
-  console.error('Usage: node scripts/verify-boss-ledger-change.mjs [--fast] changes/{change-id}/preview.html');
+  console.error('Usage: node scripts/verify-boss-ledger-page-runtime.mjs [--fast] changes/{change-id}/preview.html');
   process.exit(2);
 }
 
@@ -19,10 +19,14 @@ const previewPath = resolve(root, previewArg);
 const changeDir = dirname(previewPath);
 const templateDir = resolve(root, 'modules/boss-ledger/shell');
 const pageSpecPath = resolve(changeDir, 'page-spec.json');
-const isPageSpecChange = existsSync(pageSpecPath);
 const rendererDir = resolve(root, 'modules/boss-ledger/execution/renderer');
 const themeDir = resolve(root, 'modules/boss-ledger/execution/theme');
 const failures = [];
+
+if (!existsSync(pageSpecPath)) {
+  console.error('Page Spec runtime verification requires page-spec.json. Legacy preview packages are no longer supported.');
+  process.exit(2);
+}
 
 const rulesManifestPath = resolve(changeDir, 'rules-read.md');
 if (!existsSync(rulesManifestPath)) {
@@ -101,7 +105,7 @@ function compareTree(actualDir, expectedDir, label) {
   expectedFiles.forEach((name) => sameFile(resolve(actualDir, name), resolve(expectedDir, name), `${label}/${name}`));
 }
 
-sameFile(previewPath, resolve(isPageSpecChange ? rendererDir : templateDir, isPageSpecChange ? 'page-spec-preview.template.html' : 'preview.template.html'), 'preview.html');
+sameFile(previewPath, resolve(rendererDir, 'page-spec-preview.template.html'), 'preview.html');
 sameFile(resolve(changeDir, 'shell-runtime.js'), resolve(templateDir, 'shell-runtime.js'), 'shell-runtime.js');
 sameFile(resolve(changeDir, 'shell.css'), resolve(templateDir, 'shell.css'), 'shell.css');
 sameFile(resolve(changeDir, 'content-base.css'), resolve(templateDir, 'content-base.css'), 'content-base.css');
@@ -114,29 +118,17 @@ const businessCssPath = resolve(changeDir, 'business.css');
 const appPath = resolve(changeDir, 'preview-app.js');
 if (!existsSync(businessCssPath)) failures.push('business.css is missing');
 if (!existsSync(appPath)) failures.push('preview-app.js is missing');
-if (isPageSpecChange) {
-  sameFile(resolve(changeDir, 'page-spec-runtime.js'), resolve(rendererDir, 'page-spec-runtime.js'), 'page-spec-runtime.js');
-  sameFile(businessCssPath, resolve(rendererDir, 'page-spec-business.css'), 'business.css');
-  try {
-    const spec = readJson(pageSpecPath);
-    const specErrors = validatePageSpec(spec, { root });
-    specErrors.forEach((error) => failures.push(`page-spec: ${error}`));
-    if (existsSync(appPath) && readFileSync(appPath, 'utf8') !== generatedPreviewApp(spec)) {
-      failures.push('preview-app.js is not the exact derived output of page-spec.json');
-    }
-  } catch (error) {
-    failures.push(`page-spec: ${error.message}`);
+sameFile(resolve(changeDir, 'page-spec-runtime.js'), resolve(rendererDir, 'page-spec-runtime.js'), 'page-spec-runtime.js');
+sameFile(businessCssPath, resolve(rendererDir, 'page-spec-business.css'), 'business.css');
+try {
+  const spec = readJson(pageSpecPath);
+  const specErrors = validatePageSpec(spec, { root });
+  specErrors.forEach((error) => failures.push(`page-spec: ${error}`));
+  if (existsSync(appPath) && readFileSync(appPath, 'utf8') !== generatedPreviewApp(spec)) {
+    failures.push('preview-app.js is not the exact derived output of page-spec.json');
   }
-} else {
-  if (existsSync(businessCssPath) && /\.boss-shell(?=\s|:|\{|\.|#|\[|,|$)/im.test(readFileSync(businessCssPath, 'utf8'))) {
-    failures.push('business.css overrides fixed .boss-shell selectors');
-  }
-  if (existsSync(appPath) && /(function|const|let|var)\s+BossLedgerShell\b|data-boss-shell-template-version/i.test(readFileSync(appPath, 'utf8'))) {
-    failures.push('preview-app.js redefines the fixed BossLedgerShell runtime');
-  }
-  if (existsSync(appPath) && /<footer\b|React\.createElement\(\s*["']footer["']/i.test(readFileSync(appPath, 'utf8'))) {
-    failures.push('preview-app.js renders a business footer; the platform footer is owned by BossLedgerShell');
-  }
+} catch (error) {
+  failures.push(`page-spec: ${error.message}`);
 }
 
 if (failures.length) {

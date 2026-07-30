@@ -17,9 +17,9 @@ Boss Ledger 始终使用 `modules/boss-ledger/shell/` 的固定壳层。它是�
 ## Director And Execution Boundary
 
 - `director-rules/` 是 Boss Ledger 唯一的人类可读设计决策层。
-- `execution/generation-policy.json` 声明当前页面族能力与 `legacy / shadow / page-spec-default / page-spec-only` 模式。
+- `execution/generation-policy.json` 声明当前页面族能力与 `shadow / page-spec-default / page-spec-only` 模式。
 - `execution/page-spec.schema.json` 与语义验证器阻止非法组合。
 - `execution/renderer/` 从 `page-spec.json` 确定性生成业务页面并复用 canonical Shell。
 - `execution/release-manifest.json` 绑定规则、策略、契约、渲染器与 Shell 版本。
 
-当前 `list` 默认使用 Page Spec；`form` 和 `detail` 处于 shadow；`dashboard`、独立 `result` 与 `empty-state` 保持 legacy，直至策略明确开放。
+当前 `list` 与 `dashboard` 默认使用 Page Spec；`form` 和 `detail` 处于 shadow；独立 `result` 与 `empty-state` 尚未作为独立入口开放。列表内新增或编辑属于 `list` 的受控组合，不作为脱离来源上下文的独立抽屉表单入口。

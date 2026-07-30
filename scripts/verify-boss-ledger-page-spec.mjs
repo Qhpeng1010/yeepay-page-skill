@@ -284,7 +284,7 @@ try {
   }
 
   run(root, 'canonical-and-browser', [
-    resolve(root, 'scripts/verify-boss-ledger-change.mjs'),
+    resolve(root, 'scripts/verify-boss-ledger-page-runtime.mjs'),
     ...(fast || !browser ? ['--fast'] : []),
     resolve(changeDir, 'preview.html')
   ]);

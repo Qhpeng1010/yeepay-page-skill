@@ -6,6 +6,7 @@
 // rule-assertion: contract.simple-page-form
 // rule-assertion: contract.detail-structure
 // rule-assertion: contract.result-boundary
+// rule-assertion: contract.dashboard-structure
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
@@ -30,33 +31,17 @@ const TEMPLATE_INTENTS = Object.freeze({
   'list.inline-summary': 'inline-summary-list',
   'list.card-summary': 'card-summary-list',
   'form.modal-simple': 'modal-form',
-  'form.drawer-simple': 'drawer-form',
   'form.page-simple': 'simple-page-form',
   'form.grouped-page': 'full-page-form',
   'form.guided-simple': 'guided-form',
   'detail.record': 'detail',
   'form.staged-flow': 'wizard',
-  'result.workflow': 'result'
-});
-
-const LEGACY_TEMPLATE_ALIASES = Object.freeze({
-  'template-02-dashboard-home': 'dashboard.overview',
-  'template-03-query-list-regular': 'list.regular',
-  'template-04-query-list-inline-summary': 'list.inline-summary',
-  'template-05-query-list-card-summary': 'list.card-summary',
-  'template-06-modal-form': 'form.modal-simple',
-  'template-07-drawer-form': 'form.drawer-simple',
-  'template-08-full-page-form': 'form.grouped-page',
-  'template-09-drawer-detail': 'detail.record',
-  'template-10-wizard': 'form.staged-flow',
-  'template-11-result': 'result.workflow',
-  'template-12-empty-state': 'state.embedded',
-  'template-13-guided-form': 'form.guided-simple'
+  'result.workflow': 'result',
+  'dashboard.overview': 'dashboard'
 });
 
 export function normalizeRuleTemplateId(templateId) {
-  const id = String(templateId || '').replace(/\.md$/, '');
-  return LEGACY_TEMPLATE_ALIASES[id] || id;
+  return String(templateId || '').replace(/\.md$/, '');
 }
 
 export function templateIntent(templateId) {
@@ -312,9 +297,6 @@ function validateForm(errors, spec, capabilities) {
   if (intent === 'modal-form') {
     issue(errors, form.presentation === 'modal' && Array.isArray(form.fields), 'form.modal-simple requires simple fields in a Modal presentation.');
   }
-  if (intent === 'drawer-form') {
-    issue(errors, form.presentation === 'drawer' && Array.isArray(form.fields), 'form.drawer-simple requires simple fields in a Drawer presentation.');
-  }
   if (intent === 'simple-page-form') {
     issue(errors, form.presentation === 'page' && Array.isArray(form.fields), 'form.page-simple requires simple fields in a page presentation.');
     issue(errors, capabilities.includes('form.stickyActions') && form.stickyActions === true, 'form.page-simple requires form.stickyActions.');
@@ -430,18 +412,72 @@ function validateResult(errors, spec, capabilities, options) {
   issue(errors, Array.isArray(result.actions) && result.actions.length > 0, 'result.actions are required.');
 }
 
+function validateDashboard(errors, spec, capabilities) {
+  const dashboard = spec.dashboard;
+  issue(errors, dashboard && typeof dashboard === 'object', 'dashboard is required for family=dashboard.');
+  if (!dashboard) return;
+
+  const scope = dashboard.scope;
+  issue(errors, scope && typeof scope === 'object', 'dashboard.scope is required.');
+  issue(errors, capabilities.includes('dashboard.scope'), 'Dashboard Page Spec requires dashboard.scope.');
+  issue(errors, Array.isArray(scope?.fields) && scope.fields.length > 0 && scope.fields.length <= 3, 'dashboard.scope.fields must contain 1 to 3 fields.');
+  (scope?.fields || []).forEach((field, index) => validateField(errors, field, `dashboard.scope.fields[${index}]`));
+  issue(errors, unique((scope?.fields || []).map((field) => field.key)), 'dashboard.scope field keys must be unique.');
+
+  const metrics = dashboard.metrics;
+  issue(errors, Array.isArray(metrics) && metrics.length >= 3 && metrics.length <= 5, 'dashboard.metrics must contain 3 to 5 items.');
+  issue(errors, capabilities.includes('dashboard.metrics'), 'Dashboard Page Spec requires dashboard.metrics.');
+  issue(errors, unique((metrics || []).map((metric) => metric?.key)), 'dashboard.metrics keys must be unique.');
+  (metrics || []).forEach((metric, index) => {
+    const location = `dashboard.metrics[${index}]`;
+    issue(errors, nonEmptyString(metric?.key), `${location}.key is required.`);
+    issue(errors, nonEmptyString(metric?.label), `${location}.label is required.`);
+    issue(errors, Number.isFinite(metric?.value), `${location}.value must be a finite number.`);
+  });
+
+  const charts = dashboard.charts;
+  issue(errors, Array.isArray(charts) && charts.length >= 3 && charts.length <= 4, 'dashboard.charts must contain 3 to 4 items.');
+  issue(errors, unique((charts || []).map((chart) => chart?.key)), 'dashboard.charts keys must be unique.');
+  const roleCounts = { distribution: 0, trend: 0, ranking: 0 };
+  (charts || []).forEach((chart, index) => {
+    const location = `dashboard.charts[${index}]`;
+    issue(errors, nonEmptyString(chart?.key), `${location}.key is required.`);
+    issue(errors, nonEmptyString(chart?.title), `${location}.title is required.`);
+    issue(errors, ['distribution', 'trend', 'ranking'].includes(chart?.role), `${location}.role is unsupported.`);
+    issue(errors, ['line', 'column', 'pie', 'bar'].includes(chart?.type), `${location}.type is unsupported.`);
+    issue(errors, Array.isArray(chart?.data) && chart.data.length > 0, `${location}.data is required.`);
+    if (chart?.role && Object.hasOwn(roleCounts, chart.role)) roleCounts[chart.role] += 1;
+    if (chart?.role === 'distribution') {
+      issue(errors, capabilities.includes('dashboard.distribution'), 'Distribution charts require dashboard.distribution.');
+      issue(errors, chart.type === 'pie', `${location} distribution charts must use pie.`);
+      issue(errors, nonEmptyString(chart.angleField) && nonEmptyString(chart.colorField), `${location} requires angleField and colorField.`);
+    }
+    if (chart?.role === 'trend') {
+      issue(errors, capabilities.includes('dashboard.trend'), 'Trend charts require dashboard.trend.');
+      issue(errors, ['line', 'column'].includes(chart.type), `${location} trend charts must use line or column.`);
+      issue(errors, nonEmptyString(chart.xField) && nonEmptyString(chart.yField), `${location} requires xField and yField.`);
+    }
+    if (chart?.role === 'ranking') {
+      issue(errors, capabilities.includes('dashboard.ranking'), 'Ranking charts require dashboard.ranking.');
+      issue(errors, ['bar', 'column'].includes(chart.type), `${location} ranking charts must use bar or column.`);
+      issue(errors, nonEmptyString(chart.xField) && nonEmptyString(chart.yField), `${location} requires xField and yField.`);
+    }
+  });
+  ['distribution', 'trend', 'ranking'].forEach((role) => issue(errors, roleCounts[role] >= 1, `dashboard.charts requires at least one ${role} chart.`));
+}
+
 export function validatePageSpec(spec, { root = ROOT, allowWorkflowResult = false, allowLegacy = false } = {}) {
   const errors = [];
   issue(errors, spec && typeof spec === 'object' && !Array.isArray(spec), 'Page Spec must be an object.');
   if (!spec || typeof spec !== 'object') return errors;
   issue(errors, spec.schemaVersion === 1, 'schemaVersion must be 1.');
-  const allowedTopLevel = new Set(['schemaVersion', 'metadata', 'ui', 'shell', 'content', 'list', 'form', 'detail', 'result', 'states']);
+  const allowedTopLevel = new Set(['schemaVersion', 'metadata', 'ui', 'shell', 'content', 'list', 'form', 'detail', 'result', 'dashboard', 'states']);
   Object.keys(spec).filter((key) => !allowedTopLevel.has(key)).forEach((key) => errors.push(`Unsupported top-level Page Spec key: ${key}.`));
   issue(errors, spec.ui?.system === 'boss-ledger', 'ui.system must be boss-ledger.');
   issue(errors, spec.ui?.runtime === 'react-antd-page-spec', 'ui.runtime must be react-antd-page-spec.');
   issue(errors, spec.ui?.rendererVersion === 1, 'ui.rendererVersion must be 1.');
   const family = spec.metadata?.family;
-  issue(errors, ['list', 'form', 'detail', 'result'].includes(family), 'metadata.family is unsupported.');
+  issue(errors, ['list', 'form', 'detail', 'result', 'dashboard'].includes(family), 'metadata.family is unsupported.');
   issue(errors, /^\d{8}-[a-z0-9-]+$/.test(spec.metadata?.changeId || ''), 'metadata.changeId must use YYYYMMDD-lowercase-slug.');
   issue(errors, nonEmptyString(spec.metadata?.pageName), 'metadata.pageName is required.');
   issue(errors, nonEmptyString(spec.metadata?.request), 'metadata.request is required.');
@@ -451,9 +487,10 @@ export function validatePageSpec(spec, { root = ROOT, allowWorkflowResult = fals
   issue(errors, Object.hasOwn(TEMPLATE_INTENTS, normalizedTemplateId), 'metadata.templateId is invalid.');
   const familyTemplates = {
     list: new Set(['list.regular', 'list.inline-summary', 'list.card-summary']),
-    form: new Set(['form.modal-simple', 'form.drawer-simple', 'form.page-simple', 'form.grouped-page', 'form.guided-simple', 'form.staged-flow']),
+    form: new Set(['form.modal-simple', 'form.page-simple', 'form.grouped-page', 'form.guided-simple', 'form.staged-flow']),
     detail: new Set(['detail.record']),
-    result: new Set(['result.workflow'])
+    result: new Set(['result.workflow']),
+    dashboard: new Set(['dashboard.overview'])
   };
   if (familyTemplates[family]) issue(errors, familyTemplates[family].has(normalizedTemplateId), `${spec.metadata?.templateId || '<empty>'} is not a ${family} rule template.`);
 
@@ -464,9 +501,9 @@ export function validatePageSpec(spec, { root = ROOT, allowWorkflowResult = fals
   issue(errors, Boolean(selectedPolicy), `No generation policy for family ${family || '<empty>'}.`);
   if (selectedPolicy && !allowLegacy) {
     issue(errors, selectedPolicy.availability === 'available', `${family} is ${selectedPolicy.availability}, not available for direct Page Spec generation.`);
-    issue(errors, selectedPolicy.mode !== 'legacy', `${family} is configured for legacy mode.`);
+    issue(errors, selectedPolicy.mode !== 'page-spec-only' || selectedPolicy.availability === 'available', `${family} is not available as an independent Page Spec entry.`);
   }
-  issue(errors, ['legacy', 'shadow', 'page-spec-default', 'page-spec-only'].includes(executionMode), 'metadata.executionMode is invalid.');
+  issue(errors, ['shadow', 'page-spec-default', 'page-spec-only'].includes(executionMode), 'metadata.executionMode is invalid.');
   if (expectedMode) {
     issue(errors, executionMode === expectedMode, `metadata.executionMode must equal policy mode ${expectedMode} for ${spec.metadata?.templateId || '<empty>'}.`);
   }
@@ -500,10 +537,15 @@ export function validatePageSpec(spec, { root = ROOT, allowWorkflowResult = fals
     ruleRefs.filter((rule) => !known.has(rule)).forEach((rule) => errors.push(`Unknown Director Rule ID: ${rule}.`));
   }
 
+  const familyBodies = { list: 'list', form: 'form', detail: 'detail', result: 'result', dashboard: 'dashboard' };
+  Object.entries(familyBodies).forEach(([candidateFamily, key]) => {
+    if (candidateFamily !== family && spec[key] !== undefined) errors.push(`${family} Page Spec cannot declare ${key}.`);
+  });
   if (family === 'list') validateList(errors, spec, capabilities || []);
   if (family === 'form') validateForm(errors, spec, capabilities || []);
   if (family === 'detail') validateDetail(errors, spec, capabilities || []);
   if (family === 'result') validateResult(errors, spec, capabilities || [], { allowWorkflowResult });
+  if (family === 'dashboard') validateDashboard(errors, spec, capabilities || []);
   return errors;
 }
 

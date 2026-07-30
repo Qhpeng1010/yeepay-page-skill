@@ -56,11 +56,8 @@ modules/boss-ledger/
 │   ├── theme/                  由视觉宪法生成的渲染主题
 │   ├── renderer/               固定页面渲染器
 │   └── release-manifest.json   当前规则与渲染器的发布指纹
-├── migration/                迁移归档与黄金样例说明，不参与运行
 ├── shell/                    固定后台壳层：导航、Tabs、Footer、运行时
-├── templates/                历史设计稿抽取归档，不参与运行
 ├── business-rules.md         业务字段、状态、权限和结果规则
-├── design.md                 历史设计资料，不参与运行
 └── domain.json               页面意图、规则模板和执行方式的机器路由配置
 ```
 
@@ -69,10 +66,10 @@ modules/boss-ledger/
 | 目标 | 唯一维护位置 | 不应修改的位置 |
 | --- | --- | --- |
 | 全局色彩、字体、密度、圆角、组件气质 | `director-rules/01-visual-constitution.md` | `execution/theme/` 生成物、单页预览 |
-| 页面家族、模板选择、页面组合 | `director-rules/02-template-application-rules.md` | 历史 `templates/` |
+| 页面家族、模板选择、页面组合 | `director-rules/02-template-application-rules.md` | 生成后的规则目录 |
 | 用户流程、状态、危险确认、验收 | `director-rules/03-interaction-acceptance-rules.md` | 生成后的 HTML、CSS、JavaScript |
 | 单页字段、数据、文案、默认值 | 当前 Change 的 `page-spec.json` | 跨页面导演规则 |
-| 固定导航、Tabs、Footer 等框架实现 | 先修改视觉宪法，再由研发同步 `shell/` | 单页 Page Spec 或历史模板 |
+| 固定导航、Tabs、Footer 等框架实现 | 先修改视觉宪法，再由研发同步 `shell/` | 单页 Page Spec |
 
 ### 导演规则与页面需求的区别
 
@@ -90,8 +87,7 @@ modules/boss-ledger/
 
 老板管账按当前能力策略运行：
 
-1. Page Spec 路径：对 `shadow`、`page-spec-default` 和 `page-spec-only` 能力，AI 只填写 `page-spec.json`，固定渲染器生成预览页面。
-2. Legacy 路径：只服务策略明确标记为 `legacy` 的能力；它是工程兼容实现，不是设计、模板或普通页面生成输入。
+对 `shadow`、`page-spec-default` 和 `page-spec-only` 能力，AI 只填写 `page-spec.json`，固定渲染器生成预览页面。未开放的页面族只报告能力边界，不存在替代的旧页面路径。
 
 新路径的流程如下：
 
@@ -106,7 +102,7 @@ modules/boss-ledger/
   -> 通过后交付
 ```
 
-页面不会因为规则模板存在就一定可以生成。以 `generation-policy.json` 的状态为准。旧 `templates/` 文件和迁移矩阵都不参与任何运行路径。
+页面不会因为规则模板存在就一定可以生成。以 `generation-policy.json` 的状态为准。
 
 ## 如何提出一个新页面
 
@@ -160,13 +156,13 @@ changes/YYYYMMDD-功能名称/
 └── preview.screenshot.png    仅在明确运行浏览器回归时生成的截图证据
 ```
 
-并非每个 Change 都同时具备所有文件：旧路径的 Change 会有 `preview-app.js` 和 `business.css`；新 Page Spec 路径中这些文件由系统生成，不应手工修改。
+Page Spec Change 中的 `preview-app.js` 和 `business.css` 都由系统生成，不应手工修改。
 
 ## 常见问题
 
 **为什么页面不能生成？**
 
-通常是当前规则模板对应的能力仍处于 `shadow`、`legacy`、`pending` 或 `workflow-only` 状态。系统应报告能力缺口，不应勉强拼出一个看似可用的页面。
+通常是当前规则模板对应的能力仍处于 `pending` 或 `workflow-only` 状态。系统应报告能力缺口，不应勉强拼出一个看似可用的页面。
 
 **为什么我改了导演规则，页面没有变化？**
 

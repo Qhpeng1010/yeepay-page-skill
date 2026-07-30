@@ -10,15 +10,14 @@
 | 行内汇总查询列表 | `list.inline-summary` | `list` | available / page-spec-default | 查询结果只需 1 至 2 个轻量指标，并且这些指标应服务于结果工具栏扫描。 |
 | 统计卡片查询列表 | `list.card-summary` | `list` | available / page-spec-default | 查询结果需要 3 至 5 个重要指标，且统计不承担独立业务操作。 |
 | 简短弹窗表单 | `form.modal-simple` | `form` | available / shadow | 6 个及以下相互独立字段，从来源页面发起且关闭后应保留来源上下文。 |
-| 抽屉简单表单 | `form.drawer-simple` | `form` | available / shadow | 从来源页面发起，7 至 10 个相互独立字段，或需要更多纵向空间且应保留来源列表上下文。 |
 | 独立简单表单页 | `form.page-simple` | `form` | available / shadow | 从菜单、深链接、待办或独立任务进入；字段少且相互独立，不需要业务分组、右侧说明或步骤流转。 |
 | 分组全页表单 | `form.grouped-page` | `form` | available / shadow | 字段超过 10 个，或存在多个可在同一阶段完成、但必须分别核对的业务分组。 |
 | 带说明的简单表单 | `form.guided-simple` | `form` | available / shadow | 字段较少的单阶段任务，且右侧说明能直接帮助资金、开户或服务信息核对。 |
 | 分阶段与上传复核流程 | `form.staged-flow` | `form` | available / shadow | 后续工作依赖前一步完成，或需要上传、解析、复核、提交和结果反馈的明确阶段。 |
 | 受控记录详情 | `detail.record` | `detail` | available / shadow | 只读查看一个业务对象；根据上下文连续性和信息规模选择 Modal、Drawer 或独立详情页。 |
-| 流程结果反馈 | `result.workflow` | `result` | workflow-only / legacy | 已知来源操作完成、失败、警告或处理中需要反馈和恢复动作；不能作为独立业务入口。 |
-| 经营概览首页 | `dashboard.overview` | `dashboard` | pending / legacy | 主要任务是监控业务健康度、分布或趋势，而不是查询和处理逐条记录。 |
-| 页面内状态 | `state.embedded` | `empty-state` | pending / legacy | 空数据、错误、无权限或缺少前置条件属于来源页面的状态，不单独替代原页面家族。 |
+| 流程结果反馈 | `result.workflow` | `result` | workflow-only / page-spec-only | 已知来源操作完成、失败、警告或处理中需要反馈和恢复动作；不能作为独立业务入口。 |
+| 经营概览首页 | `dashboard.overview` | `dashboard` | available / page-spec-default | 主要任务是监控业务健康度、分布或趋势；使用统一数据范围、3 至 5 个核心指标、分布、趋势和排行，且不包含逐条查询或处理。 |
+| 页面内状态 | `state.embedded` | `empty-state` | pending / page-spec-only | 空数据、错误、无权限或缺少前置条件属于来源页面的状态，不单独替代原页面家族。 |
 
 ## 选择边界
 

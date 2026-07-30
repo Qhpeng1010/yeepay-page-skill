@@ -17,21 +17,6 @@ const ruleFiles = [
   '02-template-application-rules.md',
   '03-interaction-acceptance-rules.md'
 ];
-const legacyAliases = {
-  'template-02-dashboard-home': 'dashboard.overview',
-  'template-03-query-list-regular': 'list.regular',
-  'template-04-query-list-inline-summary': 'list.inline-summary',
-  'template-05-query-list-card-summary': 'list.card-summary',
-  'template-06-modal-form': 'form.modal-simple',
-  'template-07-drawer-form': 'form.drawer-simple',
-  'template-08-full-page-form': 'form.grouped-page',
-  'template-09-drawer-detail': 'detail.record',
-  'template-10-wizard': 'form.staged-flow',
-  'template-11-result': 'result.workflow',
-  'template-12-empty-state': 'state.embedded',
-  'template-13-guided-form': 'form.guided-simple'
-};
-
 function readText(file) {
   return readFileSync(file, 'utf8');
 }
@@ -102,8 +87,7 @@ function buildRegistry(templateRules) {
     source: 'modules/boss-ledger/director-rules/02-template-application-rules.md',
     templateVersion: `rules-${sourceHash}`,
     core: { title: '固定运行边界', ruleIds: coreRuleIds },
-    templates,
-    legacyAliases
+    templates
   };
 }
 

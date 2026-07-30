@@ -3,6 +3,7 @@
   const ReactDOM = global.ReactDOM;
   const antd = global.antd;
   const icons = global.icons || global.antdIcons || global.AntDesignIcons || {};
+  const Charts = global.Charts || {};
   const h = React.createElement;
   const theme = global.BossLedgerTheme;
   if (!theme?.antTokens) throw new Error('Boss Ledger generated theme is missing. Rebuild Director artifacts before rendering.');
@@ -551,11 +552,59 @@
     })));
   }
 
+  function DashboardChart({ chart }) {
+    const ChartComponent = {
+      line: Charts.Line,
+      column: Charts.Column,
+      pie: Charts.Pie,
+      bar: Charts.Bar
+    }[chart.type];
+    const shared = {
+      data: chart.data,
+      autoFit: true,
+      height: chart.height || 260,
+      animation: false,
+      tooltip: { shared: chart.type !== 'pie' },
+      legend: chart.legend === false ? false : { position: 'bottom' }
+    };
+    let config = shared;
+    if (chart.type === 'pie') {
+      config = { ...shared, angleField: chart.angleField, colorField: chart.colorField, radius: 0.82, innerRadius: 0.58, label: false };
+    } else {
+      config = { ...shared, xField: chart.xField, yField: chart.yField, seriesField: chart.seriesField };
+    }
+    return h('section', { className: `boss-dashboard-chart boss-dashboard-chart-${chart.role}`, 'aria-label': chart.title },
+      h('h3', { className: 'boss-dashboard-chart-title' }, chart.title),
+      ChartComponent ? h(ChartComponent, config) : h(Empty, { description: '图表组件未加载' }));
+  }
+
+  function DashboardPage({ spec }) {
+    const dashboard = spec.dashboard;
+    const [form] = Form.useForm();
+    const [scope, setScope] = React.useState(dashboard.scope.initialValues || {});
+    const applyScope = (values) => {
+      setScope(values);
+      message.success('统计范围已更新');
+    };
+    return h('div', { className: 'boss-content-stack boss-dashboard-page' },
+      h('section', { className: 'boss-dashboard-scope' },
+        h(Form, { form, layout: 'horizontal', initialValues: dashboard.scope.initialValues || {}, onFinish: applyScope },
+          h('div', { className: 'boss-dashboard-scope-grid' },
+            ...(dashboard.scope.fields || []).map((field) => h(Form.Item, { key: field.key, name: field.key, label: field.label }, controlForField(field))),
+            h('div', { className: 'boss-dashboard-scope-actions' }, h(Button, { onClick: () => { form.resetFields(); setScope(dashboard.scope.initialValues || {}); } }, '重 置'), h(Button, { type: 'primary', htmlType: 'submit' }, '更 新'))))),
+      h('section', { className: 'boss-dashboard-metrics', style: { '--boss-dashboard-metric-columns': dashboard.metrics.length } },
+        ...dashboard.metrics.map((metric) => h('div', { key: metric.key, className: 'boss-dashboard-metric' }, h(Statistic, { title: metric.label, value: metric.value, precision: metric.precision, suffix: metric.unit })))),
+      h('section', { className: 'boss-dashboard-charts' },
+        ...dashboard.charts.map((chart) => h(DashboardChart, { key: chart.key, chart }))),
+      h('span', { className: 'boss-dashboard-scope-status', 'aria-live': 'polite', 'data-dashboard-scope': JSON.stringify(scope) }, dashboard.scope.statusText || '当前展示所选统计范围的数据'));
+  }
+
   function BusinessPage({ spec }) {
     if (spec.metadata.family === 'list') return h(ListPage, { spec });
     if (spec.metadata.family === 'form') return h(FormPage, { spec });
     if (spec.metadata.family === 'detail') return h(DetailPage, { spec });
     if (spec.metadata.family === 'result') return h(ResultPage, { spec });
+    if (spec.metadata.family === 'dashboard') return h(DashboardPage, { spec });
     return h(Empty, { description: '当前页面族尚未开放' });
   }
 

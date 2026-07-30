@@ -13,9 +13,9 @@
       "properties": {
         "changeId": { "type": "string", "pattern": "^[0-9]{8}-[a-z0-9-]+$" },
         "pageName": { "type": "string", "minLength": 1 },
-        "family": { "enum": ["list", "form", "detail", "result"] },
-        "templateId": { "type": "string", "pattern": "^template-(0[2-9]|1[0-3])-" },
-        "executionMode": { "enum": ["legacy", "shadow", "page-spec-default", "page-spec-only"] },
+        "family": { "enum": ["list", "form", "detail", "result", "dashboard"] },
+        "templateId": { "type": "string", "minLength": 1 },
+        "executionMode": { "enum": ["shadow", "page-spec-default", "page-spec-only"] },
         "validatedCombinations": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
         "request": { "type": "string" },
         "ruleRefs": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^BL-(VIS|TPL|INT)-[0-9]{3}$" } },
@@ -44,6 +44,7 @@
     "form": { "type": "object" },
     "detail": { "type": "object" },
     "result": { "type": "object" },
+    "dashboard": { "type": "object" },
     "states": { "type": "object" }
   }
 }

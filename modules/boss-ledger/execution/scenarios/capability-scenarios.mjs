@@ -3,7 +3,8 @@ const ruleRefs = {
   simplePageForm: ['BL-TPL-003', 'BL-TPL-005', 'BL-TPL-019', 'BL-INT-005', 'BL-INT-006'],
   wizard: ['BL-TPL-003', 'BL-TPL-007', 'BL-INT-005', 'BL-INT-006', 'BL-INT-007'],
   list: ['BL-TPL-001', 'BL-TPL-010', 'BL-INT-003', 'BL-INT-008'],
-  detail: ['BL-TPL-003', 'BL-TPL-009', 'BL-INT-004']
+  detail: ['BL-TPL-003', 'BL-TPL-009', 'BL-INT-004'],
+  dashboard: ['BL-TPL-002', 'BL-TPL-020', 'BL-INT-001', 'BL-INT-015']
 };
 
 function metadata({ changeId, pageName, family, templateId, executionMode, validatedCombinations, request, selectionReason, assumptions, refs }) {
@@ -26,7 +27,7 @@ function base({ changeId, pageName, family, templateId, executionMode, validated
     schemaVersion: 1,
     metadata: metadata({ changeId, pageName, family, templateId, executionMode, validatedCombinations, request, selectionReason, assumptions, refs }),
     ui: { system: 'boss-ledger', runtime: 'react-antd-page-spec', rendererVersion: 1 },
-    shell: { activePrimaryKey: family === 'detail' ? 'merchant' : 'workspace' },
+    shell: { activePrimaryKey: family === 'detail' ? 'merchant' : family === 'dashboard' ? 'home' : 'workspace' },
     content: { capabilities },
     ...body
   };
@@ -263,6 +264,76 @@ export const scenarios = [
         { key: 'basic', title: '基本信息', fields: [{ key: 'accountName', label: '账户名称', value: '杭州星云结算账户' }, { key: 'merchantName', label: '商户名称', value: '杭州星云商贸有限公司' }, { key: 'status', label: '账户状态', value: '正常', format: 'status', status: 'success' }, { key: 'openedAt', label: '开户时间', value: '2025-01-15 09:20:00' }] },
         { key: 'config', title: '结算配置', fields: [{ key: 'cycle', label: '结算周期', value: 'T+1' }, { key: 'method', label: '结算方式', value: '自动结算' }, { key: 'feeRate', label: '手续费率', value: '0.20%' }] },
         { key: 'flows', title: '资金流水', table: { rowKey: 'flowNo', columns: [{ key: 'flowNo', label: '流水号' }, { key: 'createdAt', label: '发生时间' }, { key: 'amount', label: '金额', format: 'amount', unit: '元' }, { key: 'status', label: '状态', format: 'status', statusMap: { incoming: { label: '入账成功', status: 'success' }, outgoing: { label: '出账成功', status: 'success' }, frozen: { label: '冻结中', status: 'processing' } } }], rows: [{ flowNo: 'LS001', createdAt: '2026-07-16 10:12:05', amount: 120000, status: 'incoming' }, { flowNo: 'LS002', createdAt: '2026-07-16 11:32:18', amount: 118800, status: 'outgoing' }, { flowNo: 'LS003', createdAt: '2026-07-16 14:20:33', amount: 21140, status: 'frozen' }] } }
+      ] } }
+    })
+  },
+  {
+    id: '17-merchant-service-config-drawer-create',
+    title: '列表内较长新增 Drawer',
+    spec: base({
+      changeId: '20260730-capability-17-merchant-service-config-drawer-create', pageName: '商户服务配置查询', family: 'list', templateId: 'list.regular', executionMode: 'page-spec-default',
+      request: '运营人员查询商户服务配置，并在保留列表上下文的前提下新建 8 字段服务配置。', selectionReason: '任务从列表内发起，关闭后应回到原查询结果；8 个相互独立字段需要更多纵向空间，使用列表内新增 Drawer。', refs: [...ruleRefs.list, 'BL-TPL-005', 'BL-TPL-012', 'BL-INT-004'],
+      capabilities: ['query.basic', 'table.flat', 'table.pagination', 'table.status', 'list.drawerCreate'],
+      body: { list: { query: { fields: [
+        { key: 'merchantName', label: '商户名称', control: 'input' },
+        { key: 'serviceStatus', label: '服务状态', control: 'select', options: [{ label: '启用', value: 'active' }, { label: '停用', value: 'disabled' }] }
+      ] }, table: { rowKey: 'configNo', sectionTitle: '商户服务配置列表', primaryAction: {
+        key: 'create', label: '新增配置', createRecord: { configNo: 'C003', serviceStatus: 'active', createdAt: '2026-07-30 10:00:00' }, form: {
+          title: '新增商户服务配置', primaryLabel: '保 存', successMessage: '商户服务配置已新增。', fields: [
+            { key: 'merchantNo', label: '商户编号', control: 'input', required: true },
+            { key: 'merchantName', label: '商户名称', control: 'input', required: true },
+            { key: 'serviceType', label: '服务类型', control: 'select', required: true, options: [{ label: '线上收单', value: 'online' }, { label: '分账服务', value: 'split' }] },
+            { key: 'businessRole', label: '业务角色', control: 'select', required: true, options: [{ label: '主商户', value: 'primary' }, { label: '服务商', value: 'provider' }] },
+            { key: 'billingMode', label: '计费方式', control: 'select', required: true, options: [{ label: '按笔计费', value: 'per-transaction' }, { label: '按月计费', value: 'monthly' }] },
+            { key: 'rate', label: '费率', control: 'number', required: true, min: 0, max: 100, precision: 2 },
+            { key: 'effectiveAt', label: '启用日期', control: 'date', required: true },
+            { key: 'remark', label: '备注', control: 'textarea', rows: 3 }
+          ]
+        }
+      }, columns: [
+        { key: 'configNo', label: '配置编号', width: 120, hideable: false }, { key: 'merchantNo', label: '商户编号', width: 140 }, { key: 'merchantName', label: '商户名称', width: 220 }, { key: 'serviceType', label: '服务类型', width: 140 }, { key: 'serviceStatus', label: '服务状态', width: 120, format: 'status', statusMap }, { key: 'createdAt', label: '创建时间', width: 180 }
+      ], rows: [
+        { configNo: 'C001', merchantNo: 'M10001', merchantName: '杭州星云商贸有限公司', serviceType: '线上收单', serviceStatus: 'active', createdAt: '2026-07-16 11:35:22' },
+        { configNo: 'C002', merchantNo: 'M10002', merchantName: '上海锦程科技有限公司', serviceType: '分账服务', serviceStatus: 'disabled', createdAt: '2026-07-15 16:20:10' }
+      ], pagination: { page: 1, pageSize: 20, total: 2 } } } }
+    })
+  },
+  {
+    id: '18-transaction-inline-summary',
+    title: '行内汇总查询列表',
+    spec: base({
+      changeId: '20260730-capability-18-transaction-inline-summary', pageName: '交易查询', family: 'list', templateId: 'list.inline-summary', executionMode: 'page-spec-default',
+      request: '财务人员查询交易记录，并在结果工具区快速核对交易总金额和交易总笔数。', selectionReason: '主要工作仍是查询记录；仅有两项轻量指标且服务于结果工具区扫描，使用行内汇总查询列表。', refs: [...ruleRefs.list, 'BL-TPL-011'],
+      capabilities: ['query.basic', 'summary.inline', 'table.flat', 'table.pagination', 'table.status', 'table.amount'],
+      body: { list: { query: { fields: [
+        { key: 'tradedAt', label: '交易日期', control: 'date-range' }, { key: 'merchantNo', label: '商户编号', control: 'input' }, { key: 'status', label: '交易状态', control: 'select', options: [{ label: '成功', value: 'success' }, { label: '失败', value: 'failed' }] }
+      ] }, summary: { items: [{ key: 'amount', label: '交易总金额', value: '920.00', suffix: ' 元' }, { key: 'count', label: '交易总笔数', value: 240, suffix: ' 笔' }] }, table: { rowKey: 'tradeNo', columns: [
+        { key: 'tradeNo', label: '交易流水号', width: 180, hideable: false }, { key: 'merchantNo', label: '商户编号', width: 140 }, { key: 'amount', label: '交易金额', width: 140, format: 'amount', unit: '元' }, { key: 'status', label: '交易状态', width: 120, format: 'status', statusMap: { success: { label: '成功', status: 'success' }, failed: { label: '失败', status: 'error' } } }, { key: 'tradedAt', label: '交易时间', width: 180 }
+      ], rows: [
+        { tradeNo: 'T001', merchantNo: 'M10001', amount: 320, status: 'success', tradedAt: '2026-07-30 09:20:00' },
+        { tradeNo: 'T002', merchantNo: 'M10002', amount: 260, status: 'success', tradedAt: '2026-07-30 10:05:00' },
+        { tradeNo: 'T003', merchantNo: 'M10003', amount: 340, status: 'failed', tradedAt: '2026-07-30 11:32:00' }
+      ], pagination: { page: 1, pageSize: 20, total: 3 } } } }
+    })
+  },
+  {
+    id: '19-operation-dashboard',
+    title: '经营概览 Dashboard',
+    spec: base({
+      changeId: '20260730-capability-19-operation-dashboard', pageName: '经营概览', family: 'dashboard', templateId: 'dashboard.overview', executionMode: 'page-spec-default',
+      request: '财务负责人在一个页面中监控当日交易、结算和渠道分布趋势，而不是逐条查询记录。', selectionReason: '主要任务是跨记录监控业务健康度、分布和趋势，使用经营概览 Dashboard。', refs: ruleRefs.dashboard,
+      capabilities: ['dashboard.scope', 'dashboard.metrics', 'dashboard.distribution', 'dashboard.trend', 'dashboard.ranking'],
+      body: { dashboard: { scope: { statusText: '当前展示所选统计范围的交易与结算数据。', initialValues: { range: 'today', branch: 'all' }, fields: [
+        { key: 'range', label: '统计周期', control: 'select', options: [{ label: '今日', value: 'today' }, { label: '近 7 日', value: 'seven-days' }, { label: '近 30 日', value: 'thirty-days' }] },
+        { key: 'branch', label: '直营网点', control: 'select', options: [{ label: '全部', value: 'all' }, { label: '华东直营网点', value: 'east' }, { label: '华南直营网点', value: 'south' }] },
+        { key: 'businessLine', label: '业务线', control: 'select', options: [{ label: '全部', value: 'all' }, { label: '线上收单', value: 'online' }, { label: '分账服务', value: 'split' }] }
+      ] }, metrics: [
+        { key: 'tradeAmount', label: '交易总额', value: 2865400, precision: 2, unit: '元' }, { key: 'tradeCount', label: '交易笔数', value: 128, unit: '笔' }, { key: 'settlementAmount', label: '结算总额', value: 2798600, precision: 2, unit: '元' }, { key: 'failedCount', label: '失败笔数', value: 3, unit: '笔' }
+      ], charts: [
+        { key: 'channelDistribution', title: '交易渠道分布', role: 'distribution', type: 'pie', angleField: 'amount', colorField: 'channel', data: [{ channel: '线上收单', amount: 1520000 }, { channel: '联营渠道', amount: 864000 }, { channel: '直营网点', amount: 480000 }] },
+        { key: 'tradeTrend', title: '近 7 日交易趋势', role: 'trend', type: 'line', xField: 'date', yField: 'amount', data: [{ date: '07-24', amount: 320000 }, { date: '07-25', amount: 410000 }, { date: '07-26', amount: 360000 }, { date: '07-27', amount: 420000 }, { date: '07-28', amount: 390000 }, { date: '07-29', amount: 440000 }, { date: '07-30', amount: 520000 }] },
+        { key: 'splitTrend', title: '近 7 日分账趋势', role: 'trend', type: 'line', xField: 'date', yField: 'amount', data: [{ date: '07-24', amount: 290000 }, { date: '07-25', amount: 350000 }, { date: '07-26', amount: 320000 }, { date: '07-27', amount: 375000 }, { date: '07-28', amount: 330000 }, { date: '07-29', amount: 385000 }, { date: '07-30', amount: 450000 }] },
+        { key: 'incomeRanking', title: '收入来源排行', role: 'ranking', type: 'bar', xField: 'amount', yField: 'source', data: [{ source: '线上收单', amount: 1280000 }, { source: '联营渠道', amount: 760000 }, { source: '直营网点', amount: 520000 }] }
       ] } }
     })
   }

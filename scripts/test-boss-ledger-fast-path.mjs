@@ -26,22 +26,22 @@ try {
   if (routed.resources.some((resource) => resource.startsWith('modules/shared/') && resource !== 'modules/shared/product.md')) {
     throw new Error('Boss Ledger generation must not load shared design, template, frontend, or quality rules.');
   }
-  if (!routed.commands?.scaffold?.includes('scaffold-boss-ledger-page-spec.mjs') || JSON.stringify(routed).includes('scaffold-boss-ledger-preview.mjs')) {
-    throw new Error('A Page Spec request exposed the legacy preview scaffold.');
+  if (!routed.commands?.scaffold?.includes('scaffold-boss-ledger-page-spec.mjs') || JSON.stringify(routed).includes('legacy')) {
+    throw new Error('A Page Spec request exposed a retired compatibility path.');
   }
   const formRouted = resolveResources('创建老板管账的登记渠道联系人基础表单页', 'generate');
   if (formRouted.execution?.mode !== 'shadow' || !formRouted.commands?.scaffold?.includes('scaffold-boss-ledger-page-spec.mjs')) {
     throw new Error('A shadow Page Spec form did not resolve to the fixed Page Spec path.');
   }
-  if (formRouted.resources.some((resource) => resource.startsWith('modules/shared/') && resource !== 'modules/shared/product.md') || JSON.stringify(formRouted).includes('scaffold-boss-ledger-preview.mjs')) {
-    throw new Error('A shadow Page Spec form loaded legacy shared presentation rules.');
+  if (formRouted.resources.some((resource) => resource.startsWith('modules/shared/') && resource !== 'modules/shared/product.md') || JSON.stringify(formRouted).includes('legacy')) {
+    throw new Error('A shadow Page Spec form loaded a retired compatibility path.');
   }
-  const legacyRouted = resolveResources('创建老板管账经营概览仪表盘', 'generate');
-  if (legacyRouted.execution?.mode !== 'legacy'
-    || legacyRouted.commands?.prepare
-    || !legacyRouted.commands?.scaffold?.includes('scaffold-boss-ledger-preview.mjs')
-    || !legacyRouted.commands?.verify?.includes('refresh-and-verify-boss-ledger-change.mjs')) {
-    throw new Error('A legacy page did not resolve to its isolated compatibility path.');
+  const pendingRouted = resolveResources('创建老板管账经营概览仪表盘', 'generate');
+  if (pendingRouted.execution?.availability !== 'pending'
+    || pendingRouted.execution?.mode !== 'page-spec-only'
+    || !pendingRouted.commands?.prepare?.includes('prepare-boss-ledger-page-spec.mjs')
+    || JSON.stringify(pendingRouted).includes('legacy')) {
+    throw new Error('A pending page exposed a retired compatibility path.');
   }
   // mkdtemp creates the private test directory; remove it so the production command owns creation.
   rmSync(changeDir, { recursive: true, force: true });

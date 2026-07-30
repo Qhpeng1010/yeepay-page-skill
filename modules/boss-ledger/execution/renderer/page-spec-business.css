@@ -5,6 +5,19 @@
 .boss-result-module { padding: 0 16px 16px; min-height: 360px; }
 .boss-form-module, .boss-detail-module { flex: 1 0 auto; padding: 16px; min-height: 480px; }
 .boss-result-page { min-height: 520px; display: flex; align-items: center; justify-content: center; }
+.boss-dashboard-page { min-height: 100%; }
+.boss-dashboard-scope { padding: 16px; background: var(--boss-container); }
+.boss-dashboard-scope-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 24px; align-items: start; --boss-dashboard-label-width: 76px; }
+.boss-dashboard-scope-grid .ant-form-item { margin-bottom: 0; }
+.boss-dashboard-scope-grid .ant-form-item-label { flex: 0 0 var(--boss-dashboard-label-width); max-width: var(--boss-dashboard-label-width); text-align: right; }
+.boss-dashboard-scope-grid .ant-form-item-label > label { width: 100%; justify-content: flex-end; }
+.boss-dashboard-scope-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.boss-dashboard-metrics { display: grid; grid-template-columns: repeat(var(--boss-dashboard-metric-columns, 4), minmax(0, 1fr)); gap: 16px; }
+.boss-dashboard-metric { min-width: 0; padding: 16px; background: var(--boss-container); border: 1px solid var(--boss-divider); border-radius: var(--boss-card-radius); }
+.boss-dashboard-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.boss-dashboard-chart { min-width: 0; min-height: 312px; padding: 16px; background: var(--boss-container); border-top: 2px solid var(--boss-divider); }
+.boss-dashboard-chart-title { margin: 0 0 8px; font-size: 16px; font-weight: 600; color: var(--boss-text); }
+.boss-dashboard-scope-status { display: block; color: var(--boss-tertiary); font-size: 12px; }
 .boss-query-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 24px; row-gap: 0; --boss-query-label-width: 104px; }
 .boss-query-grid .ant-form-item { margin-bottom: 16px; }
 .boss-query-grid .ant-form-item-label { flex: 0 0 var(--boss-query-label-width); max-width: var(--boss-query-label-width); text-align: right; }
@@ -97,9 +110,11 @@
 @media (max-width: 1080px) {
   .boss-query-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .boss-full-page-form .boss-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .boss-dashboard-scope-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .boss-dashboard-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 768px) {
-  .boss-query-grid, .boss-form-grid, .boss-result-summary, .boss-detail-metrics, .wizard-body-grid, .wizard-field-grid { grid-template-columns: minmax(0, 1fr); }
+  .boss-query-grid, .boss-form-grid, .boss-result-summary, .boss-detail-metrics, .wizard-body-grid, .wizard-field-grid, .boss-dashboard-scope-grid, .boss-dashboard-metrics, .boss-dashboard-charts { grid-template-columns: minmax(0, 1fr); }
   .boss-form-grid .boss-form-span-2 { grid-column: span 1; }
   .boss-result-toolbar { align-items: flex-start; flex-direction: column; }
   .boss-result-toolbar-right { width: 100%; flex-wrap: wrap; }
@@ -107,4 +122,6 @@
   .boss-form-side-guide { display: none; }
   .boss-detail-anchors { position: static; flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--boss-divider); padding: 0 0 8px; }
   .boss-child-table { margin-left: 0; }
+  .boss-dashboard-scope-grid .ant-form-item { margin-bottom: 16px; }
+  .boss-dashboard-scope-actions { justify-content: flex-end; }
 }

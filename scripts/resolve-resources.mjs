@@ -127,19 +127,13 @@ function resolveStage(route, selection, stage) {
     matches: selection.matches,
     resources: unique(resources),
     commands: execution && stage === 'generate'
-      ? execution.mode === 'legacy'
-        ? {
-            preflight: commands.preflight,
-            scaffold: execution.legacyScaffoldCommand,
-            verify: execution.legacyVerifyCommand
-          }
-        : {
-            prepare: commands.prepare,
-            preflight: commands.preflight,
-            scaffold: execution.scaffoldCommand,
-            build: execution.buildCommand,
-            verify: execution.verifyCommand
-          }
+      ? {
+          prepare: commands.prepare,
+          preflight: commands.preflight,
+          scaffold: execution.scaffoldCommand,
+          build: execution.buildCommand,
+          verify: execution.verifyCommand
+        }
       : commands,
     execution
   };
@@ -180,9 +174,7 @@ function resolveExecution(_route, executionConfig, selected, templateId) {
     resources: [executionConfig.coreContext, executionConfig.contextIndex, executionConfig.familyContexts?.[familyId]].filter(Boolean),
     scaffoldCommand: replace(executionConfig.scaffoldCommand),
     buildCommand: replace(executionConfig.buildCommand),
-    verifyCommand: replace(executionConfig.verifyCommand),
-    legacyScaffoldCommand: mode === 'legacy' ? replace(executionConfig.legacyScaffoldCommand) : undefined,
-    legacyVerifyCommand: mode === 'legacy' ? replace(executionConfig.legacyVerifyCommand) : undefined
+    verifyCommand: replace(executionConfig.verifyCommand)
   };
 }
 

@@ -11,14 +11,17 @@ const policy = JSON.parse(readFileSync(policyPath, 'utf8'));
 const domain = JSON.parse(readFileSync(domainPath, 'utf8'));
 const registry = JSON.parse(readFileSync(registryPath, 'utf8'));
 const failures = [];
-const legacyDesignPath = ['modules', 'boss-ledger', 'design.md'].join('/');
+const retiredDesignInputs = new Set([
+  ['modules', 'boss-ledger', 'design.md'].join('/'),
+  ['modules', 'boss-ledger', 'templates.md'].join('/')
+]);
 const directorRulePaths = [
   'modules/boss-ledger/director-rules/01-visual-constitution.md',
   'modules/boss-ledger/director-rules/02-template-application-rules.md',
   'modules/boss-ledger/director-rules/03-interaction-acceptance-rules.md'
 ];
 
-const allowedModes = new Set(['legacy', 'shadow', 'page-spec-default', 'page-spec-only']);
+const allowedModes = new Set(['shadow', 'page-spec-default', 'page-spec-only']);
 const allowedAvailability = new Set(['available', 'workflow-only', 'pending']);
 const familyIds = new Set();
 const ruleSource = [
@@ -45,12 +48,11 @@ for (const family of policy.families || []) {
   familyIds.add(family.id);
   if (!allowedModes.has(family.mode)) failures.push(`${family.id}: unsupported mode ${family.mode}`);
   if (!allowedAvailability.has(family.availability)) failures.push(`${family.id}: unsupported availability ${family.availability}`);
-  if (family.availability !== 'available' && family.mode !== 'legacy') failures.push(`${family.id}: ${family.availability} family must remain legacy`);
-  if (family.mode !== 'legacy' && family.availability !== 'available') failures.push(`${family.id}: Page Spec mode requires available status`);
+  if (family.availability !== 'available' && family.mode !== 'page-spec-only') failures.push(`${family.id}: ${family.availability} family may only expose a blocked Page Spec boundary`);
   for (const [intent, mode] of Object.entries(family.intentModes || {})) {
     if (!family.intents?.includes(intent)) failures.push(`${family.id}: intent mode references unknown intent ${intent}`);
     if (!allowedModes.has(mode)) failures.push(`${family.id}/${intent}: unsupported mode ${mode}`);
-    if (mode !== 'legacy' && family.availability !== 'available') failures.push(`${family.id}/${intent}: Page Spec mode requires available status`);
+    if (mode !== 'page-spec-only' && family.availability !== 'available') failures.push(`${family.id}/${intent}: ${family.availability} intent may only expose a blocked Page Spec boundary`);
   }
   if (!Array.isArray(family.capabilities) || new Set(family.capabilities).size !== family.capabilities.length) failures.push(`${family.id}: capabilities must be a unique array`);
   for (const rule of family.ruleRefs || []) if (!knownRules.has(rule)) failures.push(`${family.id}: unknown rule ${rule}`);
@@ -78,8 +80,8 @@ for (const combination of policy.validatedCombinations || []) {
     if (!template) failures.push(`${combination.id}: unknown rule template ${templateId}`);
     else if (template.family !== combination.family) failures.push(`${combination.id}: rule template ${templateId} belongs to ${template.family}, not ${combination.family}`);
   }
-  if (!['browser-business', 'browser-fixture'].includes(combination.evidence)) {
-    failures.push(`${combination.id}: evidence must be browser-business or browser-fixture`);
+  if (!['browser-business', 'browser-fixture', 'manual-business'].includes(combination.evidence)) {
+    failures.push(`${combination.id}: evidence must be browser-business, browser-fixture or manual-business`);
   }
   for (const capability of combination.capabilities || []) {
     if (!family.capabilities.includes(capability)) failures.push(`${combination.id}: unsupported capability ${capability}`);
@@ -110,11 +112,11 @@ if (!execution?.contextIndex || !existsSync(resolve(root, execution.contextIndex
 for (const context of Object.values(execution?.familyContexts || {})) {
   if (!existsSync(resolve(root, context))) failures.push(`missing family Context Pack: ${context}`);
 }
-if (domain.adapter?.template) failures.push('legacy adapter.template must not be configured for Boss Ledger');
+if (domain.adapter?.template) failures.push('Boss Ledger adapter.template must not be configured');
 for (const [stage, resources] of Object.entries(domain.adapter?.resources || {})) {
   for (const resource of resources || []) {
-    if (resource.startsWith('modules/boss-ledger/templates/') || resource === legacyDesignPath) {
-      failures.push(`${stage}: legacy Boss Ledger design inputs must not be active resources (${resource})`);
+    if (resource.startsWith('modules/boss-ledger/templates/') || retiredDesignInputs.has(resource)) {
+      failures.push(`${stage}: retired Boss Ledger design inputs must not be active resources (${resource})`);
     }
   }
 }
@@ -131,18 +133,12 @@ for (const [stage, expected] of Object.entries(expectedResources)) {
     failures.push(`${stage}: Boss Ledger active resources must match the director-rule execution boundary`);
   }
 }
-if (!execution?.legacyScaffoldCommand?.includes('scripts/scaffold-boss-ledger-preview.mjs')) {
-  failures.push('legacy preview scaffold must be isolated as an execution-only fallback command');
-}
-if (!execution?.legacyVerifyCommand?.includes('scripts/refresh-and-verify-boss-ledger-change.mjs')) {
-  failures.push('legacy preview verification must be isolated as an execution-only fallback command');
-}
-if (domain.adapter?.commands?.generate?.scaffold) {
-  failures.push('Boss Ledger public generation commands must not expose the legacy preview scaffold');
+if ('legacyScaffoldCommand' in (execution || {}) || 'legacyVerifyCommand' in (execution || {})) {
+  failures.push('Boss Ledger execution must not expose retired preview commands');
 }
 const readRulesSource = readFileSync(resolve(root, 'scripts/read-boss-ledger-rules.mjs'), 'utf8');
-const legacyVerifierSource = readFileSync(resolve(root, 'scripts/verify-boss-ledger-change.mjs'), 'utf8');
-for (const [label, source] of [['rules-read', readRulesSource], ['legacy-verifier', legacyVerifierSource]]) {
+const runtimeVerifierSource = readFileSync(resolve(root, 'scripts/verify-boss-ledger-page-runtime.mjs'), 'utf8');
+for (const [label, source] of [['rules-read', readRulesSource], ['page-runtime-verifier', runtimeVerifierSource]]) {
   if (source.includes('modules/shared/frontend.md') || source.includes('modules/shared/quality.md')) {
     failures.push(`${label}: Boss Ledger rule evidence must not depend on shared presentation or quality rules`);
   }

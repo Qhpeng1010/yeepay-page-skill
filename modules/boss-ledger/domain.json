@@ -25,9 +25,7 @@
       },
       "scaffoldCommand": "node scripts/scaffold-boss-ledger-page-spec.mjs changes/{change-id}",
       "buildCommand": "node scripts/build-boss-ledger-page-spec.mjs changes/{change-id}/page-spec.json",
-      "verifyCommand": "node scripts/verify-boss-ledger-page-spec.mjs changes/{change-id}/page-spec.json",
-      "legacyScaffoldCommand": "node scripts/scaffold-boss-ledger-preview.mjs changes/{change-id}",
-      "legacyVerifyCommand": "node scripts/refresh-and-verify-boss-ledger-change.mjs changes/{change-id}/preview.html {template}"
+      "verifyCommand": "node scripts/verify-boss-ledger-page-spec.mjs changes/{change-id}/page-spec.json"
     },
     "resources": {
       "requirement": ["modules/shared/product.md", "modules/boss-ledger/business-rules.md"],
@@ -49,7 +47,6 @@
     {"id":"card-summary-list","pageType":"query-list-card-summary","executionFamily":"list","signals":["卡片汇总","超过3个指标","多指标统计"],"templateId":"list.card-summary"},
     {"id":"dashboard","pageType":"dashboard","executionFamily":"dashboard","signals":["dashboard","仪表盘","数据首页","经营概览","数据大盘"],"templateId":"dashboard.overview"},
     {"id":"modal-form","pageType":"modal-form","executionFamily":"form","signals":["modal","弹窗表单","弹窗新增","弹窗编辑"],"templateId":"form.modal-simple"},
-    {"id":"drawer-form","pageType":"drawer-form","executionFamily":"form","signals":["drawer 表单","抽屉表单","抽屉新增","抽屉编辑"],"templateId":"form.drawer-simple"},
     {"id":"simple-page-form","pageType":"simple-page-form","executionFamily":"form","signals":["独立表单","独立表单页","独立页面","基础表单页","登记页","登记页面"],"templateId":"form.page-simple"},
     {"id":"full-page-form","pageType":"full-page-form","executionFamily":"form","signals":["分组表单","分组配置","多组信息","全页分组表单"],"templateId":"form.grouped-page"},
     {"id":"guided-form","pageType":"guided-form","executionFamily":"form","signals":["右侧说明","操作提示","说明表单","引导表单"],"templateId":"form.guided-simple"},

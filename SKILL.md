@@ -44,9 +44,9 @@ Markdown 是设计与业务规则的权威来源；JSON 只承担路由、策略
 ## Boss Ledger 规则
 
 - `modules/boss-ledger/director-rules/` 是唯一的设计语义权威：视觉、页面选择、交互与验收分别由三个导演规则文件管理。
-- `modules/boss-ledger/design.md` 与 `modules/boss-ledger/templates/` 仅是历史归档，不得读取或引用为运行输入。
+- Boss Ledger 不保留历史设计模板、Figma 资料或旧预览脚手架；页面只能从导演规则和 Page Spec 路径生成。
 - `generation-policy.json` 决定当前允许的页面能力与组合；Page Spec 校验器决定规格是否合法。规则模板不等于已开放能力。策略、Schema、渲染器和断言属于工程执行层，不是设计师的第二套规则书。
-- 非 `legacy` 的 Boss Ledger 页面只可使用适配器返回的 Page Spec 命令。`shadow` 的旧页面比对由工程回归处理，页面生成不得读取旧模板、共享样式规范或旧预览脚手架。
+- Boss Ledger 页面只可使用适配器返回的 Page Spec 命令。`shadow` 页面生成不得读取旧模板、共享样式规范或旧预览脚手架。
 - 单一且已开放的页面可走 `/yeepay:fast`。先运行一次适配器返回的准备命令，随后只执行当前 Change 的规格检查、构建和快速校验。
 - 默认交付预览供人工验收。只有用户明确要求时才运行浏览器自动交互回归；修改导演规则、策略、渲染器、Shell、公共校验脚本或能力样例时，才追加全系统回归。
 

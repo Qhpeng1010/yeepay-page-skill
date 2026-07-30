@@ -1,6 +1,6 @@
 # 老板管账模板与应用规则
 
-> Figma 链接和节点仅保存在 `../provenance/figma-index.md` 中作历史备注。选择、生成、修改、评审模板时一律不得读取或访问 Figma。
+> Figma 链接、节点和历史设计稿不在本工程保留。选择、生成、修改、评审模板时一律不得读取或访问 Figma。
 
 ## 页面家族地图
 
@@ -44,13 +44,15 @@
 
 **BL-TPL-016** 操作列不能被列设置隐藏。带列设置的结果 Toolbar 必须使用可用的 Ant Design Dropdown 或 Popover、Checkbox 和重置能力。
 
-**BL-TPL-017** Page Spec 的 `metadata.executionMode` 必须与策略按模板解析出的模式一致。`page-spec-default` 可直接生成；`shadow` 只能引用策略中同页面族、同模板且能力集合完全匹配的已验证组合；`legacy`、`pending` 或 `workflow-only` 的能力不能通过 Page Spec 快速路径生成。系统必须报告能力缺口或走明确配置的 legacy 路径，不能临时编造替代方案。
+**BL-TPL-017** Page Spec 的 `metadata.executionMode` 必须与策略按模板解析出的模式一致。`page-spec-default` 可直接生成；`shadow` 只能引用策略中同页面族、同模板且能力集合完全匹配的已验证组合；`page-spec-only` 只表达固定渲染路径，不代表页面族已开放。`pending` 或 `workflow-only` 的独立入口不能通过 Page Spec 快速路径生成，系统必须报告能力缺口，不能临时编造替代方案。
 
 ## 选择证据
 
 **BL-TPL-018** `page-design.md` 和 Page Spec 元数据必须记录已选页面家族、模板、能力证据、被排除的候选方案、假设和运行模式。`shadow` 页面还必须记录策略中的已验证组合 ID；没有该证据不得构建。
 
 **BL-TPL-019** 单阶段、相互独立的少字段表单可以使用独立简单表单页；它适用于菜单、深链接或独立任务入口，页面不因字段少而降级为 Modal 或 Drawer。出现多个需分别核对的业务分组时改用分组全页表单；出现前后依赖、复核或上传阶段时改用步骤流程。
+
+**BL-TPL-020** Dashboard 只服务于跨记录的经营监控。它必须使用统一的数据范围控件、3 至 5 个核心指标，并至少包含一个分布、一个趋势和一个排行视图；不能混入查询结果表格、分页、行操作或批量操作。需要逐条查询、核对或处理记录时，改用查询列表。
 
 ## 可编译逻辑模板目录
 
@@ -62,14 +64,13 @@
 | `list.inline-summary` | `list` | 行内汇总查询列表 | 查询结果只需 1 至 2 个轻量指标，并且这些指标应服务于结果工具栏扫描。 | `BL-TPL-001`、`BL-TPL-010`、`BL-TPL-011`、`BL-INT-001`、`BL-INT-003`、`BL-INT-008` |
 | `list.card-summary` | `list` | 统计卡片查询列表 | 查询结果需要 3 至 5 个重要指标，且统计不承担独立业务操作。 | `BL-TPL-001`、`BL-TPL-010`、`BL-TPL-011`、`BL-VIS-009`、`BL-INT-001`、`BL-INT-003`、`BL-INT-008` |
 | `form.modal-simple` | `form` | 简短弹窗表单 | 6 个及以下相互独立字段，从来源页面发起且关闭后应保留来源上下文。 | `BL-TPL-003`、`BL-TPL-005`、`BL-VIS-012`、`BL-INT-005`、`BL-INT-006` |
-| `form.drawer-simple` | `form` | 抽屉简单表单 | 从来源页面发起，7 至 10 个相互独立字段，或需要更多纵向空间且应保留来源列表上下文。 | `BL-TPL-003`、`BL-TPL-005`、`BL-TPL-006`、`BL-TPL-012`、`BL-VIS-012`、`BL-INT-005`、`BL-INT-006` |
 | `form.page-simple` | `form` | 独立简单表单页 | 从菜单、深链接、待办或独立任务进入；字段少且相互独立，不需要业务分组、右侧说明或步骤流转。 | `BL-TPL-003`、`BL-TPL-005`、`BL-TPL-006`、`BL-TPL-019`、`BL-VIS-012`、`BL-INT-005`、`BL-INT-006` |
 | `form.grouped-page` | `form` | 分组全页表单 | 字段超过 10 个，或存在多个可在同一阶段完成、但必须分别核对的业务分组。 | `BL-TPL-003`、`BL-TPL-005`、`BL-TPL-006`、`BL-TPL-007`、`BL-TPL-008`、`BL-VIS-012`、`BL-INT-005`、`BL-INT-006` |
 | `form.guided-simple` | `form` | 带说明的简单表单 | 字段较少的单阶段任务，且右侧说明能直接帮助资金、开户或服务信息核对。 | `BL-TPL-005`、`BL-TPL-006`、`BL-TPL-008`、`BL-VIS-015`、`BL-INT-005`、`BL-INT-006` |
 | `form.staged-flow` | `form` | 分阶段与上传复核流程 | 后续工作依赖前一步完成，或需要上传、解析、复核、提交和结果反馈的明确阶段。 | `BL-TPL-003`、`BL-TPL-006`、`BL-TPL-007`、`BL-TPL-008`、`BL-INT-005`、`BL-INT-006`、`BL-INT-007` |
 | `detail.record` | `detail` | 受控记录详情 | 只读查看一个业务对象；根据上下文连续性和信息规模选择 Modal、Drawer 或独立详情页。 | `BL-TPL-003`、`BL-TPL-009`、`BL-TPL-013`、`BL-VIS-014`、`BL-INT-004` |
 | `result.workflow` | `result` | 流程结果反馈 | 已知来源操作完成、失败、警告或处理中需要反馈和恢复动作；不能作为独立业务入口。 | `BL-TPL-003`、`BL-TPL-017`、`BL-INT-006`、`BL-INT-008` |
-| `dashboard.overview` | `dashboard` | 经营概览首页 | 主要任务是监控业务健康度、分布或趋势，而不是查询和处理逐条记录。 | `BL-TPL-002`、`BL-INT-001` |
+| `dashboard.overview` | `dashboard` | 经营概览首页 | 主要任务是监控业务健康度、分布或趋势；使用统一数据范围、3 至 5 个核心指标、分布、趋势和排行，且不包含逐条查询或处理。 | `BL-TPL-002`、`BL-TPL-020`、`BL-INT-001`、`BL-INT-015` |
 | `state.embedded` | `empty-state` | 页面内状态 | 空数据、错误、无权限或缺少前置条件属于来源页面的状态，不单独替代原页面家族。 | `BL-TPL-004`、`BL-INT-008` |
 
 ## 可编译公共规则包
