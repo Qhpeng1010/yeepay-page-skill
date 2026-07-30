@@ -1,6 +1,6 @@
 const ruleRefs = {
   form: ['BL-TPL-003', 'BL-TPL-005', 'BL-INT-005', 'BL-INT-006'],
-  simplePageForm: ['BL-TPL-003', 'BL-TPL-005', 'BL-TPL-019', 'BL-INT-005', 'BL-INT-006'],
+  simplePageForm: ['BL-TPL-003', 'BL-TPL-005', 'BL-TPL-019', 'BL-INT-005', 'BL-INT-006', 'BL-INT-016'],
   wizard: ['BL-TPL-003', 'BL-TPL-007', 'BL-INT-005', 'BL-INT-006', 'BL-INT-007'],
   list: ['BL-TPL-001', 'BL-TPL-010', 'BL-INT-003', 'BL-INT-008'],
   detail: ['BL-TPL-003', 'BL-TPL-009', 'BL-INT-004'],
@@ -83,8 +83,8 @@ export const scenarios = [
     spec: base({
       changeId: '20260730-capability-16-contact-create-page', pageName: '登记渠道联系人', family: 'form', templateId: 'form.page-simple', executionMode: 'shadow', validatedCombinations: ['form.page-simple'],
       request: '运营人员从独立菜单进入登记渠道联系人页面，校验必填项和 11 位手机号码后保存。', selectionReason: '页面从独立任务入口进入，没有需要保留的来源上下文；四个字段相互独立，使用独立简单表单页。', assumptions: ['保存成功仅显示客户端反馈。'], refs: ruleRefs.simplePageForm,
-      capabilities: ['form.simple', 'form.stickyActions'],
-      body: { form: { presentation: 'page', stickyActions: true, fields: [
+      capabilities: ['form.simple'],
+      body: { form: { presentation: 'page', fields: [
         { key: 'contactName', label: '联系人姓名', control: 'input', required: true },
         { key: 'mobile', label: '手机号码', control: 'input', required: true, pattern: '^\\d{11}$', patternMessage: '请输入 11 位手机号码' },
         { key: 'channel', label: '所属渠道', control: 'select', required: true, options: [{ label: '线上收单', value: 'online' }, { label: '联营渠道', value: 'partner' }, { label: '直营网点', value: 'direct' }] },
@@ -97,9 +97,9 @@ export const scenarios = [
     title: '普通表单加右侧说明',
     spec: base({
       changeId: '20260729-capability-02-settlement-account-change', pageName: '变更结算银行卡', family: 'form', templateId: 'form.guided-simple', executionMode: 'shadow', validatedCombinations: ['form.guided-simple'],
-      request: '商户管理员变更结算银行卡，并在桌面端查看资金操作提示。', selectionReason: '单阶段字段填写，需要明确资金影响提示，使用引导式简单表单。', assumptions: ['窄屏隐藏右侧说明而不隐藏提交动作。'], refs: [...ruleRefs.form, 'BL-TPL-008'],
-      capabilities: ['form.simple', 'form.sideGuide', 'form.stickyActions'],
-      body: { form: { presentation: 'page', stickyActions: true, sideGuide: { title: '结算账户变更', text: '此操作会影响后续自动结算，请确认账户信息无误后提交。' }, fields: [
+      request: '商户管理员变更结算银行卡，并在桌面端查看资金操作提示。', selectionReason: '单阶段资金账户填写，需要明确业务影响提示，使用带默认插图的引导式简单表单。', assumptions: ['桌面端展示默认引导插图，窄屏隐藏整个引导区而不隐藏提交动作。'], refs: [...ruleRefs.form, 'BL-TPL-008', 'BL-VIS-020', 'BL-INT-016'],
+      capabilities: ['form.simple', 'form.sideGuide'],
+      body: { form: { presentation: 'page', sideGuide: { title: '结算账户变更', text: '此操作会影响后续自动结算，请确认账户信息无误后提交。' }, fields: [
         { key: 'accountType', label: '账户类型', control: 'select', required: true, options: [{ label: '对公账户', value: 'corporate' }, { label: '对私账户', value: 'personal' }] },
         { key: 'legalCard', label: '法人结算卡', control: 'input', required: true },
         { key: 'accountName', label: '账户名称', control: 'input', required: true },
@@ -141,13 +141,13 @@ export const scenarios = [
     title: '上传、复核和完成',
     spec: base({
       changeId: '20260729-capability-05-settlement-import', pageName: '导入商户结算名单', family: 'form', templateId: 'form.staged-flow', executionMode: 'shadow', validatedCombinations: ['form.upload-review'],
-      request: '财务人员上传一个 xlsx 文件，查看解析结果后确认导入并获得结果反馈。', selectionReason: '上传、解析、复核与提交有明确前后依赖，使用上传复核步骤流程。', refs: ruleRefs.wizard,
-      capabilities: ['form.steps', 'form.review', 'form.stickyActions', 'form.upload', 'form.reviewTable'],
+      request: '财务人员上传一个 xlsx 文件，查看解析结果后确认导入并获得结果反馈。', selectionReason: '上传、解析、复核与提交有明确前后依赖，使用上传复核步骤流程。', refs: [...ruleRefs.wizard, 'BL-TPL-021', 'BL-VIS-021', 'BL-INT-017'],
+      capabilities: ['form.steps', 'form.review', 'form.stickyActions', 'form.upload', 'form.reviewTable', 'form.resultSummary', 'form.resultFeedback'],
       body: { form: { presentation: 'page', stickyActions: true, steps: [
         { key: 'upload', title: '上传文件', description: '上传一个结算名单文件', fields: [{ key: 'file', label: '结算名单', control: 'upload', required: true, accept: '.xlsx', maxCount: 1, uploadLabel: '选择 Excel 文件', requiredMessage: '请上传 xlsx 文件' }] },
         { key: 'review', title: '解析复核', description: '核对解析出的结算记录', review: true, previewTable: { rowKey: 'merchantNo', columns: [{ key: 'merchantNo', label: '商户编号' }, { key: 'merchantName', label: '商户名称' }, { key: 'account', label: '结算账户' }, { key: 'status', label: '结算状态', format: 'status', statusMap: { pending: { label: '待生效', status: 'processing' } } }], rows: [{ merchantNo: '10001', merchantName: '杭州星云商贸有限公司', account: '6222021234567890123', status: 'pending' }, { merchantNo: '10002', merchantName: '上海锦程科技有限公司', account: '6222029876543210987', status: 'pending' }] } },
         { key: 'complete', title: '确认导入', description: '确认无误后完成导入', review: true }
-      ], wizardGuide: { alt: '结算名单导入引导', title: '上传后请核对解析结果', text: '仅支持一个 xlsx 文件；确认名单与账户无误后再提交导入。' }, submit: { primaryLabel: '确认导入', confirm: { title: '确认导入', description: '确认导入 2 条商户结算记录吗？' }, success: { title: '导入完成', message: '成功导入 2 条记录。', actionLabel: '继续导入' } } } }
+      ], wizardGuide: { alt: '结算名单导入引导', title: '上传后请核对解析结果', text: '仅支持一个 xlsx 文件；确认名单与账户无误后再提交导入。' }, submit: { primaryLabel: '确认导入', confirm: { title: '确认导入', description: '确认导入 2 条商户结算记录吗？' }, success: { title: '导入完成', message: '成功导入 2 条记录。', actionLabel: '继续导入', summary: { items: [{ key: 'total', label: '提交记录', value: 2, unit: ' 条' }, { key: 'success', label: '导入成功', value: 2, unit: ' 条' }, { key: 'failed', label: '导入失败', value: 0, unit: ' 条' }, { key: 'pending', label: '待生效', value: 2, unit: ' 条' }] }, feedback: { question: '本次导入体验感觉如何？' } } } } }
     })
   },
   {
@@ -272,7 +272,7 @@ export const scenarios = [
     title: '列表内较长新增 Drawer',
     spec: base({
       changeId: '20260730-capability-17-merchant-service-config-drawer-create', pageName: '商户服务配置查询', family: 'list', templateId: 'list.regular', executionMode: 'page-spec-default',
-      request: '运营人员查询商户服务配置，并在保留列表上下文的前提下新建 8 字段服务配置。', selectionReason: '任务从列表内发起，关闭后应回到原查询结果；8 个相互独立字段需要更多纵向空间，使用列表内新增 Drawer。', refs: [...ruleRefs.list, 'BL-TPL-005', 'BL-TPL-012', 'BL-INT-004'],
+      request: '运营人员查询商户服务配置，并在保留列表上下文的前提下新建 9 字段服务配置。', selectionReason: '任务从列表内发起，关闭后应回到原查询结果；9 个相互独立字段需要更多纵向空间，使用列表内新增 Drawer。', refs: [...ruleRefs.list, 'BL-TPL-005', 'BL-TPL-012', 'BL-INT-004'],
       capabilities: ['query.basic', 'table.flat', 'table.pagination', 'table.status', 'list.drawerCreate'],
       body: { list: { query: { fields: [
         { key: 'merchantName', label: '商户名称', control: 'input' },
@@ -287,6 +287,7 @@ export const scenarios = [
             { key: 'billingMode', label: '计费方式', control: 'select', required: true, options: [{ label: '按笔计费', value: 'per-transaction' }, { label: '按月计费', value: 'monthly' }] },
             { key: 'rate', label: '费率', control: 'number', required: true, min: 0, max: 100, precision: 2 },
             { key: 'effectiveAt', label: '启用日期', control: 'date', required: true },
+            { key: 'accountManager', label: '客户经理', control: 'input' },
             { key: 'remark', label: '备注', control: 'textarea', rows: 3 }
           ]
         }

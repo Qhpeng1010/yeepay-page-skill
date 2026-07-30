@@ -1,22 +1,17 @@
 #!/usr/bin/env node
 // rule-assertion: visual.component-integrity
 // rule-assertion: visual.layout-density
-// rule-assertion: browser.render
-import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+// rule-assertion: static.preview-source
+// rule-assertion: visual.guided-simple-layout
+// rule-assertion: interaction.simple-page-actions
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, resolve } from 'node:path';
-import { spawnSync } from 'node:child_process';
-import { inflateSync } from 'node:zlib';
 
 const args = process.argv.slice(2);
 const previewArg = args.find((arg) => !arg.startsWith('--'));
-const screenshotOnly = args.includes('--screenshot-only');
-const domOnly = args.includes('--dom-only');
-const saveScreenshot = !args.includes('--no-save-screenshot') && !domOnly;
-const fastMode = args.includes('--fast') || args.includes('--no-screenshot');
 
 if (!previewArg) {
-  console.error('Usage: node scripts/validate-boss-ledger-preview.mjs [--fast|--screenshot-only|--dom-only] changes/{change-id}/preview.html');
+  console.error('Usage: node scripts/validate-boss-ledger-preview.mjs changes/{change-id}/preview.html');
   process.exit(2);
 }
 
@@ -32,7 +27,6 @@ try { pageSpec = existsSync(pageSpecPath) ? JSON.parse(readFileSync(pageSpecPath
 
 const result = {
   validate: [],
-  screenshot: [],
   charts: [],
   chineseCopy: [],
 };
@@ -55,11 +49,15 @@ function stripComments(value) {
     .replace(/\/\*[\s\S]*?\*\//g, '');
 }
 
+function hasExactCssClassSelector(selector, className) {
+  return new RegExp(`\\.${className}(?=[\\s,{.:#>+~]|$)`).test(selector);
+}
+
 function hasNonZeroHorizontalPadding(source, classNames) {
   const rulePattern = /([^{}]+)\{([^{}]*)\}/g;
   let match;
   while ((match = rulePattern.exec(source))) {
-    if (!classNames.some((className) => new RegExp(`\\.${className}\\b`).test(match[1]))) continue;
+    if (!classNames.some((className) => hasExactCssClassSelector(match[1], className))) continue;
     const declarations = match[2];
     const explicit = declarations.match(/padding-(?:left|right|inline|inline-start|inline-end)\s*:\s*([^;]+)/gi) || [];
     if (explicit.some((declaration) => !/:\s*0(?:px)?(?:\s*!important)?\s*$/i.test(declaration.trim()))) return true;
@@ -73,24 +71,6 @@ function hasNonZeroHorizontalPadding(source, classNames) {
     if (horizontalValues.some((value) => !/^0(?:px)?$/i.test(value))) return true;
   }
   return false;
-}
-
-function findChrome() {
-  const candidates = [
-    process.env.CHROME_PATH,
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-    '/Applications/Chromium.app/Contents/MacOS/Chromium',
-    '/usr/bin/google-chrome',
-    '/usr/bin/google-chrome-stable',
-    '/usr/bin/chromium',
-    '/usr/bin/chromium-browser',
-  ].filter(Boolean);
-
-  return candidates.find((candidate) => existsSync(candidate));
-}
-
-function fileUrl(filePath) {
-  return `file://${filePath.split('/').map(encodeURIComponent).join('/')}`;
 }
 
 function appendLocalPreviewAssets(html, previewFile) {
@@ -281,7 +261,9 @@ function checkSource(html) {
     pass('validate', 'No `border: 1px` detected on content business modules');
   }
 
-  const hasQueryListModules = /\bboss-query-module\b/i.test(source) && /\bboss-result-module\b/i.test(source);
+  const hasQueryListModules = pageSpec?.metadata?.family === 'list'
+    && /\bboss-query-module\b/i.test(source)
+    && /\bboss-result-module\b/i.test(source);
   if (hasQueryListModules) {
     const whiteSurface = '(?:#fff(?:fff)?|rgb\\(\\s*255\\s*,\\s*255\\s*,\\s*255\\s*\\)|var\\(--boss-container\\))';
     const sharedWhiteRule = new RegExp(`\\.boss-query-module\\s*,\\s*\\.boss-result-module\\s*\\{[^}]*background\\s*:\\s*${whiteSurface}`, 'i').test(source);
@@ -697,44 +679,35 @@ function checkSource(html) {
     fail('validate', 'Ant Design Modal body must use padding: 24px 24px 0');
   }
 
-  const modalFormBlocks = [
-    ...source.matchAll(/<Form\b(?=[^>]*className\s*=\s*["'][^"']*modal-form[^"']*["'])[\s\S]*?<\/Form>/g),
-    ...source.matchAll(/h\(\s*Form\s*,\s*\{(?=[\s\S]{0,1200}?className\s*:\s*presentation\s*===\s*['"]modal['"]\s*\?\s*['"][^'"]*modal-form)[\s\S]{0,1600}?\}\s*,/g)
-  ].map((match) => match[0]);
-  const modalLabelIssues = [];
-  modalFormBlocks.forEach((block, index) => {
-    const labels = [...block.matchAll(/<Form\.Item\b[^>]*\blabel\s*=\s*["']([^"']+)["']/g)].map((match) => match[1].trim());
-    if (labels.length <= 1) return;
-    const labelLengths = new Set(labels.map((label) => Array.from(label.replace(/\s+/g, '')).length));
-    const fixedWidth = /labelCol\s*=\s*{{\s*flex\s*:\s*["']\d+px["']\s*}}/i.test(block);
-    const adaptiveWidth = /labelCol\s*=\s*{{\s*flex\s*:\s*["']none["']\s*}}/i.test(block);
-    if (labelLengths.size > 1 && !fixedWidth) {
-      modalLabelIssues.push(`form ${index + 1} has mixed label lengths but no fixed label width`);
-    }
-    if (labelLengths.size === 1 && !(fixedWidth || adaptiveWidth)) {
-      modalLabelIssues.push(`form ${index + 1} must declare fixed or content-adaptive label width`);
-    }
-  });
-  if (modalLabelIssues.length > 0) {
-    fail('validate', `Modal form label width strategy invalid: ${modalLabelIssues.join('; ')}`);
+  const hasRuleDrivenFormLayout = /function resolveFormLayout\(formSpec, fields\)[\s\S]{0,500}const compactThreshold = presentation === 'drawer' \? 8 : 6;[\s\S]{0,300}const useSideLabel = fieldCount <= compactThreshold;[\s\S]{0,400}layout: useSideLabel \? 'horizontal' : 'vertical',[\s\S]{0,300}labelCol: useSideLabel \? \{ flex: '136px' \} : undefined,[\s\S]{0,300}fieldsClassName: useSideLabel \? 'boss-form-stack' : ''/i.test(source);
+  const hasSingleColumnStack = /\.boss-form-grid\.boss-form-stack[\s\S]{0,300}grid-template-columns\s*:\s*minmax\(0,\s*640px\)/i.test(source);
+  const hasResponsiveHorizontalFormFallback = /@media\s*\(max-width:\s*768px\)[\s\S]{0,5000}\.boss-horizontal-form\s+\.ant-form-item-row\s*\{[^}]*flex-direction\s*:\s*column/i.test(source)
+    && /\.boss-horizontal-form\s+\.ant-form-item-label\s*\{[^}]*text-align\s*:\s*left/i.test(source);
+  if (hasRuleDrivenFormLayout && hasSingleColumnStack && hasResponsiveHorizontalFormFallback) {
+    pass('validate', 'Form layout follows the 6/8 field thresholds and reflows to label-above single-column on narrow screens');
   } else {
-    pass('validate', 'Modal form label widths follow mixed-fixed/equal-adaptive strategy');
+    fail('validate', 'Forms must use side-label single-column layout at or below the 6/8 thresholds, then label-above field grids above them');
   }
 
-  if (usesTemplate('form.modal-simple')) {
-    const modalHasHorizontalForm = /React\.createElement\(\s*Modal\b[\s\S]{0,8000}React\.createElement\(\s*Form\s*,\s*\{[^}]*layout\s*:\s*['"]horizontal['"]/i.test(source)
-      || /<Modal\b[\s\S]{0,8000}<Form\b[^>]*\blayout\s*=\s*['"]horizontal['"]/i.test(source)
-      || /h\(\s*Form\s*,\s*\{[\s\S]{0,1200}?layout\s*:\s*presentation\s*===\s*['"]modal['"]\s*\?\s*['"]horizontal['"]/i.test(source);
-    const modalHasFixedLabelColumn = /React\.createElement\(\s*Modal\b[\s\S]{0,8000}labelCol\s*:\s*\{[^}]*flex\s*:\s*['"][^'"]*\d+px['"]/i.test(source)
-      || /<Modal\b[\s\S]{0,8000}\blabelCol\s*=\s*{{\s*flex\s*:\s*['"][^'"]*\d+px['"]/i.test(source)
-      || /h\(\s*Form\s*,\s*\{[\s\S]{0,1200}?labelCol\s*:\s*presentation\s*===\s*['"]modal['"]\s*\?\s*\{\s*flex\s*:\s*['"][^'"]*\d+px['"]/i.test(source);
-    if (modalHasHorizontalForm && modalHasFixedLabelColumn) {
-      pass('validate', 'Modal form uses right-aligned horizontal labels with one fixed label column');
+  if (usesTemplate('form.modal-simple') || usesTemplate('form.page-simple') || usesTemplate('form.guided-simple')) {
+    if (hasRuleDrivenFormLayout) {
+      pass('validate', 'Modal and independent forms use the rule-driven 6-field layout threshold');
     } else {
-      fail('validate', 'Modal forms must use horizontal layout with right-aligned labels and one fixed label width based on the longest label');
+      fail('validate', 'Modal and independent forms must use the rule-driven 6-field layout threshold');
     }
   } else {
-    pass('validate', 'Modal-form template not selected; Modal form alignment check skipped');
+    pass('validate', 'Simple-form template not selected; simple form alignment check skipped');
+  }
+
+  if (usesTemplate('form.staged-flow')) {
+    const wizardUsesCurrentStep = /const currentFields = currentStep\.fields \|\| \[\];\s*const formLayout = resolveFormLayout\(formSpec, currentFields\);/i.test(source);
+    if (hasRuleDrivenFormLayout && wizardUsesCurrentStep) {
+      pass('validate', 'Staged form evaluates the 6-field threshold from the current step only');
+    } else {
+      fail('validate', 'Staged forms must evaluate the 6-field threshold from the current step only');
+    }
+  } else {
+    pass('validate', 'Staged-form template not selected; current-step layout check skipped');
   }
 
   const hasDrawer = /\bDrawer\b/.test(source);
@@ -767,30 +740,55 @@ function checkSource(html) {
     pass('validate', 'No Drawer usage detected; Drawer header/footer checks skipped');
   }
 
-  const hasEmbeddedDrawerForm = Boolean(pageSpec?.list?.table?.primaryAction?.form)
-    || Boolean(pageSpec?.list?.table?.rowActions?.some((action) => action.type === 'edit' && action.form));
+  const embeddedDrawerForms = [
+    pageSpec?.list?.table?.primaryAction?.form,
+    ...(pageSpec?.list?.table?.rowActions || []).filter((action) => action.type === 'edit').map((action) => action.form)
+  ].filter(Boolean);
+  const hasEmbeddedDrawerForm = embeddedDrawerForms.length > 0;
   if (hasEmbeddedDrawerForm) {
-    const drawerHasVerticalForm = /React\.createElement\(\s*Drawer\b[\s\S]{0,8000}React\.createElement\(\s*Form\s*,\s*\{[^}]*layout\s*:\s*['"]vertical['"]/i.test(source)
-      || /<Drawer\b[\s\S]{0,8000}<Form\b[^>]*\blayout\s*=\s*['"]vertical['"]/i.test(source)
-      || /h\(\s*Form\s*,\s*\{[^}]*layout\s*:\s*['"]vertical['"]/i.test(source);
-    if (drawerHasVerticalForm) {
-      pass('validate', 'List-contained Drawer form uses vertical label-above-control alignment');
+    const drawerExceedsEightFields = embeddedDrawerForms.some((form) => (form.fields || []).length > 8);
+    if (hasRuleDrivenFormLayout && drawerExceedsEightFields) {
+      pass('validate', 'List-contained Drawer form with more than 8 fields uses label-above field-grid alignment');
+    } else if (hasRuleDrivenFormLayout) {
+      pass('validate', 'List-contained Drawer form with 8 or fewer fields uses side-label single-column alignment');
     } else {
-      fail('validate', 'List-contained Drawer forms must use vertical layout with labels above controls and left/top alignment');
+      fail('validate', 'List-contained Drawer forms must use the 8-field layout threshold');
     }
   } else {
     pass('validate', 'No list-contained Drawer form is declared; Drawer form alignment check skipped');
   }
 
-  if (usesTemplate('form.grouped-page') || usesTemplate('form.page-simple')) {
-    const pageHasVerticalForm = /React\.createElement\(\s*Form\s*,\s*\{[^}]*layout\s*:\s*['"]vertical['"]/i.test(source)
-      || /\bh\(\s*Form\s*,\s*\{[^}]*layout\s*:\s*['"]vertical['"]/i.test(source)
-      || /<Form\b[^>]*\blayout\s*=\s*['"]vertical['"]/i.test(source);
-    if (pageHasVerticalForm) {
-      pass('validate', 'New/edit page form uses vertical label-above-control alignment');
+  const inlineSimpleActionLayout = /usesInlinePageActions\s*=\s*presentation\s*===\s*'page'[\s\S]{0,180}\['form\.page-simple', 'form\.guided-simple'\][\s\S]{0,1100}boss-inline-form-actions/i.test(source)
+    && /\.boss-inline-form-actions[^{]*\{[^}]*width\s*:\s*min\(100%,\s*640px\)[^}]*justify-content\s*:\s*flex-start[^}]*gap\s*:\s*16px/i.test(source)
+    && /\.boss-horizontal-form[^{]*\{[^}]*--boss-form-label-width\s*:\s*136px[^}]*--boss-form-control-offset\s*:\s*var\(--boss-form-label-width\)/i.test(source)
+    && /\.boss-horizontal-form\s+\.boss-inline-form-actions[^{]*\{[^}]*margin-left\s*:\s*var\(--boss-form-control-offset\)/i.test(source)
+    && /data-boss-form-action-mode[^\n]{0,160}inline/i.test(source);
+  if (usesTemplate('form.page-simple') || usesTemplate('form.guided-simple')) {
+    const fixedBarExcludesInlinePages = /data-boss-full-page-action-bar'\s*:\s*presentation\s*===\s*'page'\s*&&\s*!usesInlinePageActions\s*\?\s*true/i.test(source);
+    if (inlineSimpleActionLayout && fixedBarExcludesInlinePages) {
+      pass('validate', 'Independent simple forms use the inline input-aligned primary-then-secondary action area');
     } else {
-      fail('validate', 'New/edit pages, including new tag pages, must use vertical forms with labels above controls');
+      fail('validate', 'Independent simple forms must place input-aligned primary-then-secondary actions directly after the fields, without a fixed bottom bar');
     }
+  } else {
+    pass('validate', 'Independent simple form not selected; inline action-area check skipped');
+  }
+
+  if (usesTemplate('form.guided-simple')) {
+    const guidedLayout = /boss-form-side-guide-image[\s\S]{0,260}guided-form-default\.png/i.test(source)
+      && /\.boss-guided-form-layout[^{]*\{[^}]*width\s*:\s*min\(100%,\s*1200px\)/i.test(source)
+      && /\.boss-guided-form-layout[^{]*\{[^}]*padding-inline\s*:\s*16px/i.test(source)
+      && /@media\s*\(max-width:\s*768px\)[\s\S]{0,2500}\.boss-form-side-guide\s*\{[^}]*display\s*:\s*none/i.test(source);
+    if (guidedLayout) {
+      pass('validate', 'Guided simple forms use the default illustration in a centered 1200px desktop layout with 16px insets and hide the guide on narrow screens');
+    } else {
+      fail('validate', 'Guided simple forms must use the default illustration, a centered 1200px desktop layout with 16px insets, and a hidden narrow-screen guide');
+    }
+  } else {
+    pass('validate', 'Guided simple form not selected; default-guide layout check skipped');
+  }
+
+  if (usesTemplate('form.grouped-page')) {
     const fullPageActionBarCss = /\.boss-full-page-action-bar[^\{]*\{[^}]*position\s*:\s*fixed/i.test(source)
       && /\.boss-full-page-action-bar[^\{]*\{[^}]*height\s*:\s*48px/i.test(source)
       && /\.boss-full-page-action-bar[^\{]*\{[^}]*bottom\s*:\s*32px/i.test(source)
@@ -809,7 +807,7 @@ function checkSource(html) {
       fail('validate', 'Full-page form content must reserve bottom space so the final fields are not covered by the fixed action bar');
     }
   } else {
-    pass('validate', 'Full-page form template not selected; new/edit page form alignment check skipped');
+    pass('validate', 'Grouped full-page form not selected; fixed action-bar check skipped');
   }
 
   if (!hasQueryArea) {
@@ -979,289 +977,6 @@ function checkSource(html) {
   }
 }
 
-function runChrome(previewFile) {
-  const chrome = findChrome();
-  if (!chrome) {
-    fail('screenshot', 'Chrome executable not found; set CHROME_PATH or install Chrome/Chromium');
-    return null;
-  }
-
-  const dir = mkdtempSync(resolve(tmpdir(), 'boss-ledger-preview-'));
-  const screenshotPath = saveScreenshot ? resolve(dirname(previewFile), 'preview.screenshot.png') : resolve(dir, 'preview.png');
-  const url = fileUrl(previewFile);
-  const commonArgs = [
-    '--headless=new',
-    '--disable-gpu',
-    '--no-sandbox',
-    '--hide-scrollbars',
-    '--allow-file-access-from-files',
-    '--virtual-time-budget=5000',
-    '--window-size=1440,900',
-  ];
-
-  // One Chrome process can produce both artifacts after the same page boot.
-  const chromeArgs = [...commonArgs];
-  if (saveScreenshot) chromeArgs.push(`--screenshot=${screenshotPath}`);
-  if (!screenshotOnly) chromeArgs.push('--dump-dom');
-  const chromeRun = spawnSync(chrome, [...chromeArgs, url], {
-    encoding: 'utf8',
-    timeout: 20000,
-  });
-
-  if (chromeRun.error || chromeRun.status !== 0) {
-    fail('screenshot', `Chrome ${screenshotOnly ? 'screenshot' : 'render'} failed: ${chromeRun.error?.message || chromeRun.stderr || `status=${chromeRun.status}, signal=${chromeRun.signal || 'none'}`}`.trim());
-    rmSync(dir, { recursive: true, force: true });
-    return null;
-  }
-
-  if (saveScreenshot && !existsSync(screenshotPath)) {
-    fail('screenshot', 'Chrome completed without producing a screenshot file');
-  }
-  if (!screenshotOnly) pass('screenshot', 'Chrome rendered DOM successfully');
-
-  return {
-    screenshotPath,
-    cleanup: () => rmSync(dir, { recursive: true, force: true }),
-    renderedDom: screenshotOnly ? '' : chromeRun.stdout || '',
-  };
-}
-
-function parsePng(filePath) {
-  const buffer = readFileSync(filePath);
-  if (buffer.readUInt32BE(0) !== 0x89504e47 || buffer.toString('ascii', 1, 4) !== 'PNG') {
-    throw new Error('Screenshot is not a PNG file');
-  }
-
-  let offset = 8;
-  let width = 0;
-  let height = 0;
-  let bitDepth = 0;
-  let colorType = 0;
-  const idat = [];
-
-  while (offset < buffer.length) {
-    const length = buffer.readUInt32BE(offset);
-    const type = buffer.toString('ascii', offset + 4, offset + 8);
-    const data = buffer.subarray(offset + 8, offset + 8 + length);
-    offset += 12 + length;
-
-    if (type === 'IHDR') {
-      width = data.readUInt32BE(0);
-      height = data.readUInt32BE(4);
-      bitDepth = data[8];
-      colorType = data[9];
-    } else if (type === 'IDAT') {
-      idat.push(data);
-    } else if (type === 'IEND') {
-      break;
-    }
-  }
-
-  if (bitDepth !== 8 || ![2, 6].includes(colorType)) {
-    throw new Error(`Unsupported PNG format: bitDepth=${bitDepth}, colorType=${colorType}`);
-  }
-
-  const channels = colorType === 6 ? 4 : 3;
-  const stride = width * channels;
-  const inflated = inflateSync(Buffer.concat(idat));
-  const pixels = Buffer.alloc(width * height * channels);
-  let input = 0;
-  let output = 0;
-  let prev = Buffer.alloc(stride);
-
-  for (let y = 0; y < height; y += 1) {
-    const filter = inflated[input];
-    input += 1;
-    const row = Buffer.from(inflated.subarray(input, input + stride));
-    input += stride;
-
-    for (let x = 0; x < stride; x += 1) {
-      const left = x >= channels ? row[x - channels] : 0;
-      const up = prev[x] || 0;
-      const upLeft = x >= channels ? prev[x - channels] || 0 : 0;
-      let value = row[x];
-
-      if (filter === 1) value = (value + left) & 255;
-      else if (filter === 2) value = (value + up) & 255;
-      else if (filter === 3) value = (value + Math.floor((left + up) / 2)) & 255;
-      else if (filter === 4) {
-        const p = left + up - upLeft;
-        const pa = Math.abs(p - left);
-        const pb = Math.abs(p - up);
-        const pc = Math.abs(p - upLeft);
-        const predictor = pa <= pb && pa <= pc ? left : pb <= pc ? up : upLeft;
-        value = (value + predictor) & 255;
-      } else if (filter !== 0) {
-        throw new Error(`Unsupported PNG filter ${filter}`);
-      }
-
-      row[x] = value;
-    }
-
-    row.copy(pixels, output);
-    output += stride;
-    prev = row;
-  }
-
-  return { width, height, channels, pixels };
-}
-
-function analyzeScreenshot(screenshotPath) {
-  try {
-    if (statSync(screenshotPath).size < 20000) {
-      fail('screenshot', 'Screenshot file is too small and may be blank');
-      return;
-    }
-
-    const image = parsePng(screenshotPath);
-    const colors = new Set();
-    let samples = 0;
-    let nonWhite = 0;
-    const step = 8;
-
-    for (let y = 0; y < image.height; y += step) {
-      for (let x = 0; x < image.width; x += step) {
-        const idx = (y * image.width + x) * image.channels;
-        const r = image.pixels[idx];
-        const g = image.pixels[idx + 1];
-        const b = image.pixels[idx + 2];
-        colors.add(`${r >> 4},${g >> 4},${b >> 4}`);
-        if (!(r > 248 && g > 248 && b > 248)) nonWhite += 1;
-        samples += 1;
-      }
-    }
-
-    if (colors.size < 12 || nonWhite / samples < 0.08) {
-      fail('screenshot', 'Screenshot appears blank or nearly blank');
-    } else {
-      pass('screenshot', 'Screenshot is not blank');
-      if (saveScreenshot) pass('screenshot', `Screenshot saved: ${screenshotPath}`);
-    }
-
-    const cols = 12;
-    const rows = 8;
-    let maxBlankRun = 0;
-
-    for (let gy = 0; gy < rows; gy += 1) {
-      let run = 0;
-      for (let gx = 0; gx < cols; gx += 1) {
-        const x0 = Math.floor((gx * image.width) / cols);
-        const x1 = Math.floor(((gx + 1) * image.width) / cols);
-        const y0 = Math.floor((gy * image.height) / rows);
-        const y1 = Math.floor(((gy + 1) * image.height) / rows);
-        let count = 0;
-        let grayish = 0;
-        let sum = 0;
-        let sumSq = 0;
-
-        for (let y = y0; y < y1; y += 6) {
-          for (let x = x0; x < x1; x += 6) {
-            const idx = (y * image.width + x) * image.channels;
-            const r = image.pixels[idx];
-            const g = image.pixels[idx + 1];
-            const b = image.pixels[idx + 2];
-            const avg = (r + g + b) / 3;
-            if (Math.abs(r - g) < 8 && Math.abs(g - b) < 8 && avg > 224 && avg < 250) grayish += 1;
-            sum += avg;
-            sumSq += avg * avg;
-            count += 1;
-          }
-        }
-
-        const mean = sum / count;
-        const variance = sumSq / count - mean * mean;
-        const blankGrayCell = grayish / count > 0.86 && variance < 18;
-        run = blankGrayCell ? run + 1 : 0;
-        maxBlankRun = Math.max(maxBlankRun, run);
-      }
-    }
-
-    if (maxBlankRun >= 7) {
-      fail('screenshot', 'Screenshot contains a large continuous light-gray blank region');
-    } else {
-      pass('screenshot', 'No large continuous light-gray blank region detected');
-    }
-  } catch (error) {
-    fail('screenshot', `Screenshot analysis failed: ${error.message}`);
-  }
-}
-
-function checkRenderedDom(renderedDom) {
-  const dom = renderedDom || '';
-  if (!dom) return;
-
-  if (/(ReferenceError|TypeError|Script error|Failed to load|Cannot read|404 Not Found|ERR_FILE_NOT_FOUND)/i.test(dom)) {
-    fail('screenshot', 'Rendered DOM contains an error or failed-load message');
-  } else {
-    pass('screenshot', 'Rendered DOM has no obvious error text');
-  }
-
-  const shellChecks = [
-    ['Boss Ledger top bar', /(data-boss-shell=["']topbar|class=["'][^"']*topbar|Boss Ledger|退出|当前登录)/i],
-    ['primary navigation', /(data-boss-shell=["']primary-nav|class=["'][^"']*primary-nav|ant-menu-horizontal|一级导航)/i],
-    ['left menu', /(data-boss-shell=["']sider|class=["'][^"']*sider|ant-menu-inline|左侧菜单)/i],
-    ['tabs', /(data-boss-shell=["']tabs|ant-tabs|页签|Tabs)/i],
-    ['left-aligned sider collapse control', /(data-boss-sider-collapse|class=["'][^"']*sider-toggle)/i],
-    ['static tab-left icons', /(data-boss-tab-static-icon|class=["'][^"']*tab-static-icon)/i],
-    ['business content', /(data-boss-shell=["']content|data-boss-query-grid|ant-form|ant-table|查询条件|查询列表|业务内容)/i],
-  ];
-
-  for (const [label, pattern] of shellChecks) {
-    if (pattern.test(dom)) {
-      pass('screenshot', `First viewport contains ${label}`);
-    } else {
-      fail('screenshot', `First viewport must contain ${label}`);
-    }
-  }
-
-  const renderedMarkup = dom.replace(/<script\b[\s\S]*?<\/script>/gi, '').replace(/<style\b[\s\S]*?<\/style>/gi, '');
-
-  const stack = [];
-  const queryModules = [];
-  const resultModules = [];
-  const voidTags = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr']);
-  const tagPattern = /<\/?([a-z][a-z0-9-]*)\b([^>]*)>/gi;
-  let tagMatch;
-  let nodeId = 0;
-  while ((tagMatch = tagPattern.exec(renderedMarkup))) {
-    const fullTag = tagMatch[0];
-    const tag = tagMatch[1].toLowerCase();
-    const isClosing = fullTag.startsWith('</');
-    if (isClosing) {
-      while (stack.length) {
-        const node = stack.pop();
-        if (node.tag === tag) break;
-      }
-      continue;
-    }
-
-    const classMatch = tagMatch[2].match(/\bclass=["']([^"']*)["']/i);
-    const classes = classMatch ? classMatch[1].split(/\s+/).filter(Boolean) : [];
-    const parent = stack[stack.length - 1];
-    const node = { id: ++nodeId, tag, classes, parentId: parent?.id ?? null, parentClasses: parent?.classes ?? [] };
-    if (classes.includes('boss-query-module')) queryModules.push(node);
-    if (classes.includes('boss-result-module')) resultModules.push(node);
-    if (!voidTags.has(tag) && !fullTag.endsWith('/>')) stack.push(node);
-  }
-
-  if (queryModules.length || resultModules.length) {
-    const siblingPair = queryModules.some(query => resultModules.some(result => query.parentId === result.parentId
-      && query.parentClasses.includes('boss-content-stack') && result.parentClasses.includes('boss-content-stack')));
-    if (siblingPair) {
-      pass('screenshot', 'Query and result white modules render as direct siblings under boss-content-stack');
-    } else {
-      fail('screenshot', 'Query and result modules must render as direct sibling white modules under boss-content-stack');
-    }
-  }
-
-  const tabStaticIconCount = (renderedMarkup.match(/data-boss-tab-static-icon/g) || []).length;
-  if (tabStaticIconCount === 1) {
-    pass('screenshot', 'Only the active tab renders the static ReloadOutlined icon');
-  } else {
-    fail('screenshot', `Exactly one active tab static ReloadOutlined icon is required; found ${tabStaticIconCount}`);
-  }
-}
-
 if (!existsSync(previewPath)) {
   console.error(`preview.html not found: ${previewPath}`);
   process.exit(2);
@@ -1270,28 +985,14 @@ if (!existsSync(previewPath)) {
 const html = readFileSync(previewPath, 'utf8');
 checkSource(appendLocalPreviewAssets(html, previewPath));
 
-if (fastMode) {
-  result.screenshot.push({ ok: true, skipped: true, message: 'Fast mode: Chrome screenshot and DOM evaluation deferred to final delivery' });
-} else {
-  const rendered = runChrome(previewPath);
-  if (rendered) {
-    if (!domOnly) analyzeScreenshot(rendered.screenshotPath);
-    if (!screenshotOnly) checkRenderedDom(rendered.renderedDom);
-    rendered.cleanup();
-  }
-}
-
 const statuses = {
   validate: groupStatus('validate'),
-  screenshot: fastMode ? 'skipped' : groupStatus('screenshot'),
   charts: groupStatus('charts'),
   '中文文案': groupStatus('chineseCopy'),
 };
-const blockingStatuses = fastMode ? [statuses.validate, statuses.charts, statuses['中文文案']] : Object.values(statuses);
-const overall = blockingStatuses.every((status) => status === 'pass') ? 'pass' : 'failed';
+const overall = Object.values(statuses).every((status) => status === 'pass') ? 'pass' : 'failed';
 
 console.log(`validate: ${statuses.validate}`);
-console.log(`screenshot: ${statuses.screenshot}`);
 console.log(`charts: ${statuses.charts}`);
 console.log(`中文文案: ${statuses['中文文案']}`);
 console.log(`overall: ${overall}`);

@@ -15,6 +15,7 @@
 
 1. [老板管账导演规则](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/modules/boss-ledger/director-rules/README.md:1)：设计师唯一需要维护的规则入口，包含视觉、模板应用、交互与验收三本规则的边界。
 2. [交付流程](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/workflows/delivery.md:1)：了解一个页面从需求到人工验收的执行过程。
+3. [变更记录](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/CHANGELOG.md:1)：查看规则、生成和验证链路的可追溯改动。
 
 ## 目录说明
 
@@ -136,7 +137,7 @@ node scripts/build-boss-ledger-context-packs.mjs
 node scripts/check-boss-ledger-generation-policy.mjs
 node scripts/refresh-boss-ledger-release-manifest.mjs
 node scripts/verify-boss-ledger-release-manifest.mjs
-node scripts/validate-boss-ledger-page-spec-system.mjs --fast
+node scripts/validate-boss-ledger-page-spec-system.mjs
 ```
 
 ## Change 交付目录
@@ -149,11 +150,10 @@ changes/YYYYMMDD-功能名称/
 ├── page-design.md            页面设计与规则模板选择
 ├── tasks.md                  实施任务
 ├── implementation.md         实现说明
-├── review.md                 验收结论
 ├── page-spec.json            新机制下唯一可编辑的页面规格
 ├── page-spec-checklist.md    已选规则和能力的检查清单
 ├── preview.html              可直接打开的页面预览
-└── preview.screenshot.png    仅在明确运行浏览器回归时生成的截图证据
+└── review.md                 静态预检结果与人工验收记录
 ```
 
 Page Spec Change 中的 `preview-app.js` 和 `business.css` 都由系统生成，不应手工修改。

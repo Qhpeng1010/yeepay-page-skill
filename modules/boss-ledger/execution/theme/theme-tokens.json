@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "system": "boss-ledger",
   "source": "modules/boss-ledger/director-rules/01-visual-constitution.md",
-  "themeVersion": "rules-00b437f18b2c",
+  "themeVersion": "rules-af4626a9e563",
   "tokens": {
     "colorPrimary": "#F36046",
     "colorPrimaryHover": "#D94E36",

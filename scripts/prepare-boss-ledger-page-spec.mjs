@@ -144,7 +144,7 @@ try {
   console.log('- next: write page-spec.json and page-design.md');
   console.log('- then: node scripts/check-boss-ledger-page-spec.mjs changes/{change-id}/page-spec.json');
   console.log('- then: node scripts/build-boss-ledger-page-spec.mjs changes/{change-id}/page-spec.json');
-  console.log('- then: node scripts/verify-boss-ledger-page-spec.mjs --fast changes/{change-id}/page-spec.json');
+  console.log('- then: node scripts/verify-boss-ledger-page-spec.mjs changes/{change-id}/page-spec.json');
 } catch (error) {
   console.error(`boss-ledger-fast-prepare: failed\n- ${error.message}`);
   process.exit(1);

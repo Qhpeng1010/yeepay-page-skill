@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 // rule-assertion: contract.regression
-import { readdirSync } from 'node:fs';
+// rule-assertion: visual.standalone-page-title
+// rule-assertion: visual.guided-simple-layout
+// rule-assertion: interaction.simple-page-actions
+// rule-assertion: visual.result-composition
+// rule-assertion: contract.result-composition
+import { readFileSync, readdirSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 import { readJson, validatePageSpec } from './lib/boss-ledger-page-spec.mjs';
 import { scenarios } from '../modules/boss-ledger/execution/scenarios/capability-scenarios.mjs';
@@ -33,7 +38,14 @@ const settlementForm = scenarioSpec('03-merchant-settlement-config');
 const splitRuleQuery = scenarioSpec('06-split-rule-query');
 const drawerCreateList = scenarioSpec('17-merchant-service-config-drawer-create');
 const dashboard = scenarioSpec('19-operation-dashboard');
+const contactModal = scenarioSpec('01-contact-create');
+const guidedForm = scenarioSpec('02-settlement-account-change');
+const uploadWizard = scenarioSpec('05-settlement-import');
 const simplePageForm = readJson(resolve(fixtureRoot, 'valid/simple-page-form.json'));
+const runtimeSource = readFileSync(resolve(root, 'modules/boss-ledger/execution/renderer/page-spec-runtime.js'), 'utf8');
+const businessCssSource = readFileSync(resolve(root, 'modules/boss-ledger/execution/renderer/page-spec-business.css'), 'utf8');
+const buildSource = readFileSync(resolve(root, 'scripts/build-boss-ledger-page-spec.mjs'), 'utf8');
+const previewValidatorSource = readFileSync(resolve(root, 'scripts/validate-boss-ledger-preview.mjs'), 'utf8');
 const directCases = [
   [
     'missing-assumptions',
@@ -95,6 +107,36 @@ const directCases = [
     'form.page-simple requires simple fields in a page presentation.'
   ],
   [
+    'simple-page-form-with-sticky-actions',
+    { ...simplePageForm, content: { ...simplePageForm.content, capabilities: [...simplePageForm.content.capabilities, 'form.stickyActions'] }, form: { ...simplePageForm.form, stickyActions: true } },
+    'form.page-simple uses inline actions and cannot declare form.stickyActions.'
+  ],
+  [
+    'guided-form-with-sticky-actions',
+    { ...guidedForm, content: { ...guidedForm.content, capabilities: [...guidedForm.content.capabilities, 'form.stickyActions'] }, form: { ...guidedForm.form, stickyActions: true } },
+    'form.guided-simple uses inline actions and cannot declare form.stickyActions.'
+  ],
+  [
+    'workflow-result-summary-without-capability',
+    { ...uploadWizard, content: { ...uploadWizard.content, capabilities: uploadWizard.content.capabilities.filter((capability) => capability !== 'form.resultSummary') } },
+    'form.submit.success.summary requires form.resultSummary.'
+  ],
+  [
+    'modal-form-over-six-fields',
+    {
+      ...contactModal,
+      form: {
+        ...contactModal.form,
+        fields: [...contactModal.form.fields,
+          { key: 'department', label: '所属部门', control: 'input' },
+          { key: 'agentName', label: '代理名称', control: 'input' },
+          { key: 'role', label: '业务角色', control: 'input' }
+        ]
+      }
+    },
+    'Modal forms support at most 6 fields; use a Drawer form.'
+  ],
+  [
     'non-wizard-guide',
     { ...settlementForm, form: { ...settlementForm.form, wizardGuide: { title: '不应出现', text: '分组表单不能使用 Wizard 引导区。' } } },
     'form.wizardGuide is reserved for form.staged-flow step forms.'
@@ -120,6 +162,62 @@ const directCases = [
     'dashboard Page Spec cannot declare list.'
   ]
 ];
+
+if (runtimeSource.includes("h('h2', { className: 'boss-form-title' }, spec.metadata.pageName)")) {
+  failures.push('standalone-form-page-title: independent form pages must not render a duplicate page heading.');
+} else {
+  passed += 1;
+}
+
+if (runtimeSource.includes("h('h2', { className: 'boss-detail-title' }, spec.metadata.pageName)")) {
+  failures.push('standalone-detail-page-title: independent detail pages must not render a duplicate page heading.');
+} else {
+  passed += 1;
+}
+
+if (!runtimeSource.includes("['form.page-simple', 'form.guided-simple'].includes(spec.metadata.templateId)")
+  || !runtimeSource.includes('boss-inline-form-actions')
+  || !runtimeSource.includes('function BusinessGuide')
+  || !runtimeSource.includes("src: './assets/guided-form-default.png'")) {
+  failures.push('simple-form-runtime: simple pages must use inline actions and guided forms must render the default business illustration.');
+} else {
+  passed += 1;
+}
+
+if (!businessCssSource.includes('width: min(100%, 1200px)')
+  || !businessCssSource.includes('padding-inline: 16px')
+  || !businessCssSource.includes('justify-content: flex-start')
+  || !businessCssSource.includes('gap: 16px')
+  || !businessCssSource.includes('--boss-form-label-width: 136px')
+  || !businessCssSource.includes('--boss-form-control-offset: var(--boss-form-label-width)')
+  || !businessCssSource.includes('margin-left: var(--boss-form-control-offset)')
+  || !runtimeSource.includes("labelCol: useSideLabel ? { flex: '136px' } : undefined")
+  || !businessCssSource.includes('.boss-full-page-form.boss-inline-action-page { padding-bottom: 16px; }')
+  || !buildSource.includes("resolve(changeDir, 'assets/guided-form-default.png')")) {
+  failures.push('guided-form-layout: guided forms must use the 1200px layout with 16px insets, input-aligned inline actions, and a generated default illustration asset.');
+} else {
+  passed += 1;
+}
+
+const completedPageResult = "if (completed) return h('div', { className: 'boss-content-stack' }, h('section', { className: 'boss-result-page' }, formBody));";
+if (!runtimeSource.includes('function renderWorkflowResult')
+  || !runtimeSource.includes('function ResultSummary')
+  || !runtimeSource.includes('function ResultFeedback')
+  || !runtimeSource.includes(completedPageResult)
+  || !businessCssSource.includes('.boss-result-summary-panel')
+  || !businessCssSource.includes('.boss-result-feedback')
+  || !businessCssSource.includes('grid-template-columns: repeat(2, minmax(0, 1fr))')) {
+  failures.push('workflow-result-composition: results must leave form guides, use the official Result structure, and support optional summary and feedback regions.');
+} else {
+  passed += 1;
+}
+
+if (!previewValidatorSource.includes("pageSpec?.metadata?.family === 'list'")
+  || !previewValidatorSource.includes('function hasExactCssClassSelector')) {
+  failures.push('query-list-validator-scope: list-only inset checks must use the Page Spec family and exact CSS class selectors.');
+} else {
+  passed += 1;
+}
 
 for (const [name, spec, expectedError] of directCases) {
   const errors = validatePageSpec(spec, { root });

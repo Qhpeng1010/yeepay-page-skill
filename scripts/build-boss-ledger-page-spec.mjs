@@ -94,6 +94,12 @@ try {
       resolve(changeDir, 'assets/wizard-guide.png')
     ]);
   }
+  if (spec.metadata.templateId === 'form.guided-simple') {
+    fixedCopies.push([
+      resolve(root, 'modules/boss-ledger/haipeng_A_happy_b111oss_with_a_big_beard_in_a_white_suit_front_vie_06d8a20a-8e56-4833-8592-73eeb5b35bb8 1.png'),
+      resolve(changeDir, 'assets/guided-form-default.png')
+    ]);
+  }
   fixedCopies.forEach(([source, target]) => cpSync(source, target));
 
   const vendorSource = resolve(shellRoot, 'vendor');
@@ -124,6 +130,12 @@ try {
   const shadowEvidence = spec.metadata.validatedCombinations?.length ? `- [x] 已验证组合：${spec.metadata.validatedCombinations.join('、')}\n` : '';
   const checklist = `# ${spec.metadata.pageName} Page Spec 检查清单\n\n- [x] 系统：Boss Ledger\n- [x] 页面族：${spec.metadata.family}\n- [x] 规则模板：${spec.metadata.templateId}\n- [x] 运行模式：${spec.metadata.executionMode}\n${shadowEvidence}- [x] 能力：${spec.content.capabilities.join('、')}\n- [x] 规则：${spec.metadata.ruleRefs.join('、')}\n- [x] Page Spec 契约通过\n- [x] 固定渲染器与 canonical Shell 已构建\n- [x] 派生产物已记录哈希\n`;
   writeFileSync(resolve(changeDir, 'page-spec-checklist.md'), checklist);
+
+  const reviewPath = resolve(changeDir, 'review.md');
+  if (!existsSync(reviewPath)) {
+    const review = `# ${spec.metadata.pageName} 验收记录\n\n## 静态预检\n\n- [ ] 运行 \`verify-boss-ledger-page-spec.mjs\` 并记录结果。\n\n## 人工验收\n\n- 预览：\`preview.html\`\n- [ ] 按业务需求检查信息、布局和状态。\n- [ ] 操作关键流程，确认校验、提交、返回或关闭后的结果。\n- [ ] 记录观察结果和确认状态。\n\n## 结论\n\n- 状态：待人工验收\n- 记录：\n`;
+    writeFileSync(reviewPath, review);
+  }
 
   const syntax = spawnSync(process.execPath, ['--check', appPath], { cwd: root, encoding: 'utf8' });
   if (syntax.status !== 0) throw new Error(syntax.stderr || 'Generated preview-app.js syntax check failed.');
