@@ -139,8 +139,8 @@ if ('legacyScaffoldCommand' in (execution || {}) || 'legacyVerifyCommand' in (ex
 const readRulesSource = readFileSync(resolve(root, 'scripts/read-boss-ledger-rules.mjs'), 'utf8');
 const runtimeVerifierSource = readFileSync(resolve(root, 'scripts/verify-boss-ledger-page-runtime.mjs'), 'utf8');
 for (const [label, source] of [['rules-read', readRulesSource], ['page-runtime-verifier', runtimeVerifierSource]]) {
-  if (source.includes('modules/shared/frontend.md') || source.includes('modules/shared/quality.md')) {
-    failures.push(`${label}: Boss Ledger rule evidence must not depend on shared presentation or quality rules`);
+  if (source.includes('modules/shared/frontend.md')) {
+    failures.push(`${label}: Boss Ledger rule evidence must not depend on shared presentation rules`);
   }
 }
 

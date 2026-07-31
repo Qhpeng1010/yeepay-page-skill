@@ -25,7 +25,7 @@ function validateField(errors, field, location) {
   if (!field || typeof field !== 'object') return;
   issue(errors, text(field.key), `${location}.key is required.`);
   issue(errors, text(field.label), `${location}.label is required.`);
-  issue(errors, ['input', 'select', 'number', 'date', 'date-range'].includes(field.control), `${location}.control is unsupported.`);
+  issue(errors, ['input', 'textarea', 'select', 'number', 'date', 'date-range'].includes(field.control), `${location}.control is unsupported.`);
   if (field.control === 'select') issue(errors, Array.isArray(field.options) && field.options.length > 0, `${location}.options are required for select.`);
   (field.options || []).forEach((option, index) => {
     issue(errors, text(option?.label), `${location}.options[${index}].label is required.`);
@@ -70,6 +70,35 @@ function validateList(errors, spec, capabilities) {
   if (table.tools?.includes('settings')) issue(errors, capabilities.includes('table.columnSettings'), 'settings requires table.columnSettings.');
   if ((table.rowActions || []).some((action) => action.confirm)) issue(errors, capabilities.includes('table.confirmAction'), 'Confirmed actions require table.confirmAction.');
   if (table.pagination?.total !== undefined) issue(errors, table.pagination.total === rows.length, 'Prototype pagination.total must equal rows.length.');
+  if (table.drawerDetail) {
+    issue(errors, capabilities.includes('detail.drawer'), 'drawerDetail requires detail.drawer.');
+    issue(errors, Array.isArray(table.drawerDetail.groups) && table.drawerDetail.groups.length > 0, 'drawerDetail.groups are required.');
+  }
+  if (table.primaryAction) {
+    const action = table.primaryAction;
+    const presentation = action.presentation || 'modal';
+    const createForm = action.form;
+    issue(errors, text(action.label), 'table.primaryAction.label is required.');
+    issue(errors, ['modal', 'page'].includes(presentation), 'table.primaryAction.presentation must be modal or page.');
+    issue(errors, createForm && typeof createForm === 'object', 'table.primaryAction.form is required.');
+    if (!createForm) return;
+    const createFields = presentation === 'page'
+      ? (createForm.groups || []).flatMap((group) => group.fields || [])
+      : (createForm.fields || []);
+    createFields.forEach((field, index) => validateField(errors, field, `table.primaryAction.form.fields[${index}]`));
+    issue(errors, unique(createFields.map((field) => field.key)), 'Create form field keys must be unique.');
+    issue(errors, createForm.submit && text(createForm.submit.primaryLabel), 'table.primaryAction.form.submit.primaryLabel is required.');
+    if (presentation === 'modal') {
+      issue(errors, capabilities.includes('list.modalCreate'), 'Modal create requires list.modalCreate.');
+      issue(errors, Array.isArray(createForm.fields) && createForm.fields.length > 0, 'Modal create requires form.fields.');
+    }
+    if (presentation === 'page') {
+      issue(errors, capabilities.includes('list.pageCreate'), 'Page create requires list.pageCreate.');
+      issue(errors, Array.isArray(createForm.groups) && createForm.groups.length >= 2, 'Page create requires at least two business groups.');
+      issue(errors, createFields.length > 8 || (createForm.groups || []).length >= 2, 'Page create requires more than eight fields or multiple business groups.');
+      issue(errors, createForm.stickyActions === true, 'Page create requires stickyActions=true.');
+    }
+  }
 }
 
 function fieldsForForm(form) {
@@ -149,7 +178,7 @@ export function validatePageSpec(spec, { root = ROOT, allowWorkflowResult = fals
 
 export function generatedPreviewApp(spec) {
   const serialized = JSON.stringify(spec, null, 2).replace(/<\//g, '<\\/');
-  return `// Derived from page-spec.json. Do not edit.\n// page-spec-sha256: ${pageSpecHash(spec)}\nwindow.EasyAccountPageSpecRuntime.mount(${serialized});\n`;
+  return `// Derived from page-spec.json. Do not edit.\n// page-spec-sha256: ${pageSpecHash(spec)}\ndocument.addEventListener('DOMContentLoaded', function () {\n  const spec = ${serialized};\n  const pageRoot = document.createElement('div');\n  const activeTabId = spec.shell && spec.shell.activeTabId;\n  const contentByTab = Object.assign({}, spec.shell && spec.shell.contentByTab || {});\n  if (activeTabId) contentByTab[activeTabId] = pageRoot;\n  const shell = window.EasyAccountShell.mount(Object.assign({}, window.EASY_ACCOUNT_SHELL_CONFIG || {}, spec.shell || {}, { content: '', contentByTab: contentByTab }));\n  window.EasyAccountPageSpecRuntime.mount(spec, activeTabId ? pageRoot : shell.contentSlot);\n});\n`;
 }
 
 export function assertChangeSpecPath(root, specPath) {

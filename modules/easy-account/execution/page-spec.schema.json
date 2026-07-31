@@ -14,7 +14,7 @@
         "changeId": { "type": "string", "pattern": "^[0-9]{8}-[a-z0-9-]+$" },
         "pageName": { "type": "string", "minLength": 1 },
         "family": { "enum": ["list", "form", "detail", "result"] },
-        "templateId": { "type": "string", "pattern": "^template-0[2-6]-" },
+        "templateId": { "type": "string", "pattern": "^(list\\.account-query|form\\.(modal|drawer|page)|detail\\.record|result\\.workflow)$" },
         "request": { "type": "string" },
         "ruleRefs": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^EA-(VIS|TPL|INT)-[0-9]{3}$" } },
         "assumptions": { "type": "array", "items": { "type": "string" } },

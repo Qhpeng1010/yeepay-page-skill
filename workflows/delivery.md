@@ -32,4 +32,4 @@ Boss Ledger 已完成路由后，不得再次分类、读取历史 Change、扫�
 
 ## Review
 
-只读 `review` 返回的 Markdown。Boss Ledger Page Spec 只运行 `scripts/verify-boss-ledger-page-spec.mjs` 静态预检，随后交付 `preview.html` 供用户人工验收；在 `review.md` 记录人工查看的场景、观察结果与确认状态。浏览器自动交互、截图和像素验收已停用。只有规则、策略、渲染器、Shell、公共验证脚本或能力样例变更时，才追加 `scripts/validate-boss-ledger-page-spec-system.mjs` 静态回归。`shadow` 页面必须引用当前已验证组合。
+只读 `review.resources` 返回的当前业务域 Markdown，并只运行 adapter 返回的验证命令。通用交付流程不定义跨业务域的样式自检、交互清单、截图要求或通过条件；静态预检、浏览器验收、人工确认和全系统回归均由当前业务域的导演规则与执行适配器决定。

@@ -11,7 +11,6 @@ const requiredFiles = [
   'modules/shared/page-templates.md',
   'modules/shared/components.md',
   'modules/shared/frontend.md',
-  'modules/shared/quality.md',
   'modules/boss-ledger/business-rules.md',
   'modules/boss-ledger/execution/rule-template-registry.json',
   'modules/boss-ledger/execution/theme/theme-tokens.json',
