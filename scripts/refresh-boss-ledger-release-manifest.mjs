@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 const root = process.cwd();
 const policy = JSON.parse(readFileSync(resolve(root, 'modules/boss-ledger/execution/generation-policy.json'), 'utf8'));
 const files = [
+  'AGENTS.md',
   'modules/boss-ledger/director-rules/README.md',
   'modules/boss-ledger/director-rules/01-visual-constitution.md',
   'modules/boss-ledger/director-rules/02-template-application-rules.md',
@@ -44,6 +45,12 @@ const files = [
   'scripts/verify-boss-ledger-page-spec.mjs',
   'scripts/check-boss-ledger-generation-policy.mjs',
   'scripts/resolve-resources.mjs',
+  'scripts/lib/boss-ledger-generation-entry.mjs',
+  'scripts/generate-boss-ledger-page.mjs',
+  'scripts/test-boss-ledger-generation-entry.mjs',
+  'scripts/lib/boss-ledger-wizard-recipe.mjs',
+  'scripts/compile-boss-ledger-wizard-recipe.mjs',
+  'scripts/test-boss-ledger-wizard-recipe.mjs',
   'scripts/build-boss-ledger-context-packs.mjs',
   'scripts/check-boss-ledger-rule-coverage.mjs',
   'scripts/run-boss-ledger-page-spec-fixture.mjs',

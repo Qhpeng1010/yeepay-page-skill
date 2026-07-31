@@ -19,6 +19,36 @@ function run(args) {
 }
 
 try {
+  const skillSource = readFileSync(resolve(root, 'SKILL.md'), 'utf8');
+  const agentSource = readFileSync(resolve(root, 'AGENTS.md'), 'utf8');
+  if (!skillSource.includes('不得出现 `form.*`、`list.*`、`detail.*`')) {
+    throw new Error('The business-facing delivery contract must forbid implementation template IDs.');
+  }
+  if (!skillSource.includes('页面方案只决策一次')) {
+    throw new Error('The Boss Ledger fast path must require a single page-solution decision.');
+  }
+  if (!agentSource.includes('先读取 `SKILL.md`') || !agentSource.includes('不得在此之前或之后进行项目盘点')) {
+    throw new Error('Project instructions must route explicit Boss Ledger requests before generic project exploration.');
+  }
+  if (!agentSource.includes('通用技能或工具若被环境自动加载，只能辅助执行已路由的方案')) {
+    throw new Error('Project instructions must prevent generic skills from changing the routed Boss Ledger solution.');
+  }
+  const stagedRuleRequest = '做一个老板管账的页面。可以点击新增分账规则进行配置，分账规则页面分为3步，带交互，可上一步下一步最后提交。第一步：规则名称、规则类型、规则渠道、渠道下级、生效日期。第二步：分账方、手续费、预计到账金额、预计扣账金额。第三步：预览页面。落地页展示完成，可以继续新增，也可以返回列表查看。';
+  const stagedRouted = resolveResources(stagedRuleRequest, 'generate');
+  const expectedFormResources = [
+    'modules/boss-ledger/execution/context-packs/core.md',
+    'modules/boss-ledger/execution/context-packs/index.md',
+    'modules/boss-ledger/execution/context-packs/form.md'
+  ];
+  if (stagedRouted.intent !== 'wizard' || stagedRouted.template !== 'form.staged-flow') {
+    throw new Error('A three-step rule configuration request did not resolve to the staged workflow.');
+  }
+  if (JSON.stringify(stagedRouted.resources) !== JSON.stringify(expectedFormResources)) {
+    throw new Error('A staged workflow request did not load only the Boss Ledger core, index, and form rule packs.');
+  }
+  if (stagedRouted.matches.includes('列表') || stagedRouted.execution?.family !== 'form') {
+    throw new Error('A return-to-list follow-up incorrectly overrode the staged workflow intent.');
+  }
   const routed = resolveResources('运营人员查询商户，支持高级查询、新增抽屉和详情抽屉', 'generate');
   if (routed.intent !== 'query-list' || !routed.commands?.prepare?.includes('prepare-boss-ledger-page-spec.mjs')) {
     throw new Error('A query-list request with a detail Drawer did not resolve to the fast preparation path.');
