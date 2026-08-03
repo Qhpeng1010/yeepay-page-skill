@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "policyVersion": "2026.08.02.1",
+  "policyVersion": "2026.08.03.22",
   "system": "easy-account",
   "allowedModes": ["legacy", "shadow", "page-spec-default", "page-spec-only"],
   "families": [
@@ -14,14 +14,24 @@
         "query.basic",
         "query.advanced",
         "query.viewFields",
+        "summary.inline",
+        "statistics.cards",
         "table.flat",
         "table.pagination",
         "table.status",
         "table.amount",
         "table.stackCells",
+        "table.refresh",
         "table.columnSettings",
         "table.confirmAction",
+        "table.deleteAction",
+        "table.editAction",
+        "table.batchAction",
+        "table.expandable",
+        "table.export",
+        "table.columnOrder",
         "list.modalCreate",
+        "list.drawerCreate",
         "list.pageCreate",
         "list.rowPageForm",
         "detail.drawer"
@@ -33,7 +43,7 @@
       "availability": "available",
       "mode": "shadow",
       "ruleRefs": ["EA-TPL-001", "EA-TPL-006", "EA-TPL-007", "EA-TPL-010", "EA-INT-003", "EA-INT-005"],
-      "capabilities": ["form.simple", "form.groups", "form.steps", "form.stickyActions", "form.review"]
+      "capabilities": ["form.simple", "form.groups", "form.steps", "form.stickyActions", "form.review", "form.sideGuide", "form.upload", "form.reviewTable", "form.returnSource", "form.resultSummary", "form.resultFeedback"]
     },
     {
       "id": "detail",
@@ -41,7 +51,7 @@
       "availability": "available",
       "mode": "shadow",
       "ruleRefs": ["EA-TPL-001", "EA-TPL-005", "EA-TPL-008", "EA-TPL-010", "EA-INT-004", "EA-INT-005"],
-      "capabilities": ["detail.groups", "detail.metrics", "detail.embeddedTable"]
+      "capabilities": ["detail.groups", "detail.metrics", "detail.embeddedTable", "detail.modal", "detail.drawer", "detail.anchors", "detail.tabs"]
     },
     {
       "id": "result",
@@ -49,7 +59,7 @@
       "availability": "workflow-only",
       "mode": "legacy",
       "ruleRefs": ["EA-TPL-001", "EA-TPL-008", "EA-TPL-011", "EA-INT-003"],
-      "capabilities": ["result.basic", "result.summary"]
+      "capabilities": ["result.basic", "result.summary", "result.feedback"]
     },
     {
       "id": "dashboard",
@@ -61,6 +71,14 @@
     }
   ],
   "validatedCombinations": [
+    {
+      "id": "list.workbench-recipe",
+      "family": "list",
+      "recipe": "list-workbench",
+      "evidence": "transferred-recipe-static-regression",
+      "capabilities": ["query.basic", "query.advanced", "table.flat", "table.pagination", "table.columnSettings", "table.status", "table.amount", "list.drawerCreate", "table.editAction", "detail.drawer", "table.confirmAction", "table.deleteAction"],
+      "ruleRefs": ["EA-TPL-001", "EA-TPL-003", "EA-TPL-004", "EA-TPL-005", "EA-TPL-017", "EA-INT-002", "EA-INT-004", "EA-INT-005", "EA-INT-014"]
+    },
     {
       "id": "list.account-query",
       "family": "list",
@@ -102,6 +120,42 @@
       "family": "detail",
       "capabilities": ["detail.groups"],
       "ruleRefs": ["EA-TPL-005", "EA-TPL-008", "EA-INT-004"]
+    },
+    {
+      "id": "list.account-workbench",
+      "family": "list",
+      "capabilities": ["query.advanced", "statistics.cards", "table.flat", "table.pagination", "table.status", "table.amount", "table.refresh", "table.columnSettings", "table.confirmAction", "table.deleteAction", "table.editAction", "table.batchAction", "table.export", "table.columnOrder", "list.drawerCreate", "detail.drawer"],
+      "ruleRefs": ["EA-TPL-001", "EA-TPL-003", "EA-TPL-004", "EA-TPL-005", "EA-INT-002", "EA-INT-004", "EA-INT-005"]
+    },
+    {
+      "id": "list.expandable-summary",
+      "family": "list",
+      "capabilities": ["query.basic", "summary.inline", "table.flat", "table.pagination", "table.status", "table.amount", "table.expandable", "table.columnSettings"],
+      "ruleRefs": ["EA-TPL-001", "EA-TPL-003", "EA-TPL-004", "EA-INT-002"]
+    },
+    {
+      "id": "form.guided-simple",
+      "family": "form",
+      "capabilities": ["form.simple", "form.sideGuide", "form.resultSummary", "form.resultFeedback"],
+      "ruleRefs": ["EA-TPL-001", "EA-TPL-007", "EA-TPL-010", "EA-INT-003"]
+    },
+    {
+      "id": "form.upload-review",
+      "family": "form",
+      "capabilities": ["form.steps", "form.review", "form.upload", "form.reviewTable", "form.stickyActions", "form.resultSummary", "form.resultFeedback"],
+      "ruleRefs": ["EA-TPL-001", "EA-TPL-007", "EA-INT-003", "EA-INT-010"]
+    },
+    {
+      "id": "detail.full-record",
+      "family": "detail",
+      "capabilities": ["detail.groups", "detail.metrics", "detail.embeddedTable", "detail.anchors"],
+      "ruleRefs": ["EA-TPL-001", "EA-TPL-008", "EA-INT-004"]
+    },
+    {
+      "id": "result.workflow",
+      "family": "result",
+      "capabilities": ["result.basic", "result.summary", "result.feedback"],
+      "ruleRefs": ["EA-TPL-001", "EA-TPL-008", "EA-INT-003"]
     }
   ]
 }

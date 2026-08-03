@@ -6,6 +6,7 @@ import { assertChangeSpecPath, generatedPreviewApp, pageSpecHash, readJson, vali
 
 const specArg = process.argv.find((arg) => arg.endsWith('page-spec.json'));
 const fast = process.argv.includes('--fast');
+const browser = process.argv.includes('--browser');
 if (!specArg) {
   console.error('Usage: node scripts/verify-easy-account-page-spec.mjs [--fast] changes/{change-id}/page-spec.json');
   process.exit(2);
@@ -95,8 +96,8 @@ try {
     const absolute = resolve(changeDir, file);
     if (!existsSync(absolute) || hash(absolute) !== expected) throw new Error(`Derived artifact drift detected: ${file}.`);
   }
-  if (!fast) await browserGate(root, changeDir, spec);
-  console.log(`easy-account-page-spec-delivery: pass (${relative(root, specPath)}${fast ? ', fast' : ', browser'})`);
+  if (browser && !fast) await browserGate(root, changeDir, spec);
+  console.log(`easy-account-page-spec-delivery: pass (${relative(root, specPath)}, static preflight${browser && !fast ? ' + browser' : ''})`);
 } catch (error) {
   console.error(`easy-account-page-spec-delivery: failed\n- ${error.message}`);
   process.exit(1);

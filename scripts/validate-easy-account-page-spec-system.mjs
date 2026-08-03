@@ -5,8 +5,13 @@ import { spawnSync } from 'node:child_process';
 const root = process.cwd();
 const fast = process.argv.includes('--fast');
 const pilots = [
-  'changes/20260729-page-spec-easy-account-query/page-spec.json',
-  'changes/20260729-page-spec-easy-account-onboarding/page-spec.json'
+  'changes/20260803-store-management-query/page-spec.json',
+  'changes/20260803-easy-account-grouped-form/page-spec.json',
+  'changes/20260803-easy-account-account-detail/page-spec.json',
+  'changes/20260803-easy-account-settlement-change/page-spec.json',
+  'changes/20260803-easy-account-settlement-import/page-spec.json',
+  'changes/20260803-easy-account-account-workbench/page-spec.json',
+  'changes/20260803-easy-account-settlement-batch/page-spec.json'
 ];
 const steps = [
   ['skill-integrity', 'scripts/check-yeepay-skill-integrity.mjs', []],

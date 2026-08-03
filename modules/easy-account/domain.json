@@ -14,6 +14,7 @@
         "config": "modules/easy-account/shell/shell-config.example.js"
       },
       "coreContext": "modules/easy-account/execution/context-packs/core.md",
+      "contextIndex": "modules/easy-account/execution/context-packs/index.md",
       "familyContexts": {
         "list": "modules/easy-account/execution/context-packs/list.md",
         "form": "modules/easy-account/execution/context-packs/form.md",
@@ -36,10 +37,7 @@
         "modules/easy-account/director-rules/02-template-application-rules.md",
         "modules/easy-account/director-rules/03-interaction-acceptance-rules.md"
       ],
-      "generate": [
-        "modules/easy-account/frontend.md",
-        "modules/shared/templates/html-preview.md"
-      ],
+      "generate": [],
       "review": [
         "modules/easy-account/business-rules.md",
         "modules/easy-account/director-rules/01-visual-constitution.md",
@@ -47,7 +45,12 @@
         "modules/easy-account/director-rules/03-interaction-acceptance-rules.md"
       ]
     },
-    "commands": {}
+    "commands": {
+      "generate": {
+        "prepare": "node scripts/prepare-easy-account-page-spec.mjs changes/{change-id} {template}",
+        "preflight": "node scripts/read-easy-account-rules.mjs changes/{change-id} {template}"
+      }
+    }
   },
   "intents": [
     {

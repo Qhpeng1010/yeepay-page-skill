@@ -2,7 +2,9 @@
 
 ## Route
 
-对明确为新建 Boss Ledger 页面的需求，先对用户原始需求只运行一次 `node scripts/generate-boss-ledger-page.mjs --request "<verbatim request>"`。入口可选接收 `--change "changes/<new-change-id>"`，未提供时自动分配合法且不冲突的 Change 标识。若入口返回 `generated`，直接进入人工验收交付；若返回 `fallback`，才运行一次 `node scripts/resolve-resources.mjs --request "<verbatim request>" --stage generate`。只读取返回的核心规则包、规则模板索引和一个页面族规则包；在需要需求、设计或评审资料时，才按对应阶段读取该阶段资源。已有 Change 的修改或评审不运行此入口。其他业务域仍可按其 adapter 的阶段资源执行。路由成功后只读选中模块的 `DOMAIN.md`。
+对明确为新建 Boss Ledger 页面的需求，先对用户原始需求只运行一次 `node scripts/generate-boss-ledger-page.mjs --request "<verbatim request>"`。入口可选接收 `--change "changes/<new-change-id>"`，未提供时自动分配合法且不冲突的 Change 标识。若入口返回 `generated`，直接进入人工验收交付；若返回 `fallback`，才运行一次 `node scripts/resolve-resources.mjs --request "<verbatim request>" --stage generate`。只读取返回的核心规则包、规则模板索引和一个页面族规则包；在需要需求、设计或评审资料时，才按对应阶段读取该阶段资源。已有 Change 的修改或评审不运行此入口。
+
+对明确为新建 Easy Account 查询列表的需求，先对原始需求只运行一次 `node scripts/generate-easy-account-page.mjs --request "<verbatim request>"`。入口只编译已登记的查询列表工作台配方：需求必须明确查询条件与列表字段，详情、新增、编辑和删除仅按原始需求启用。未命中时才使用 `resolve-resources.mjs --stage generate` 进入易账通的受控自然语言生成；Dashboard 和多步骤流程不通过此入口猜测生成。其他业务域仍可按其 adapter 的阶段资源执行。路由成功后只读选中模块的 `DOMAIN.md`。
 
 Boss Ledger 已完成路由后，不得再次分类、读取历史 Change、扫描其他模块或模板、使用通用 UI 技能重选页面类型，或逐段阅读完整固定渲染器。只有路由不明确或策略能力缺失时才停止快路径并澄清或报告能力边界；不得先生成列表等候选页面再反向重判。
 
@@ -31,6 +33,8 @@ Boss Ledger 已完成路由后，不得再次分类、读取历史 Change、扫�
 连续编号步骤、字段列表和预览/复核步骤齐全的 Boss Ledger 流程由统一入口自动命中分阶段流程配方。它本地解析字段并复用已验证的流程骨架，包含路由、准备、构建和静态预检；未命中时由入口明确返回常规首次生成，不能退化为自由拼接页面。
 
 查询列表并明确组合详情、新增、编辑或删除操作的需求，可命中已通过人工验收的查询列表工作台配方。配方只编译需求中明确声明的操作：详情、新增和编辑使用右侧抽屉，删除使用包含对象、影响和不可撤销说明的二次确认；查询条件超过 6 项时使用高级查询并收起次要条件；抽屉关闭后保留列表查询上下文。
+
+易账通的查询列表工作台配方使用同一类输入边界：明确条件、字段和可选行内操作才能命中。它使用易账通自己的导演规则和固定 Shell；抽屉关闭后保留筛选、分页与当前记录上下文。表单字段超过 10 项或要求复杂联动、上传、步骤流程时退出配方，不能压缩为抽屉列表操作。
 
 ## Review
 

@@ -1,9 +1,10 @@
 # Easy Account List Context
 
-- Choose `query.basic` for up to six independent query fields; `query.advanced` remains shadow until a golden case proves expansion and dependent filters.
+- Choose `query.basic` for up to six independent query fields. Use `query.advanced` when there are more than six fields, dependent filters or grouped filters; the list workbench recipe accepts explicit field lists and collapses secondary conditions after the first six.
 - Use a `12px` outer content inset and two white sibling modules: query conditions and result table. Each module has `16px` inner padding, an `8px` radius and a stable `16px` gap.
 - Query actions are right-aligned at `8px` gaps in the final grid column: reset, query, then expand/collapse. The expand/collapse label precedes its icon, which is the rightmost control; its left padding is `8px` and right padding is `0`.
 - When business categories change the query fields or query semantics, render Ant Design Tabs at the top of the query module, above the category-specific fields; keep the result module as a standard titled Table and do not repeat Tabs above it. Only when categories share one query schema may Tabs replace the list title. Switching categories returns pagination to page 1; preserve filters for a shared schema and clear incompatible fields for different schemas.
 - Table states must cover loading, empty, error and permission-denied. Amount cells include currency. Every status cell uses an Ant Design Tag with explicit text and a semantic color; never render a Badge, standalone dot or color-only status.
 - Every standard Table includes column settings as an icon-only tool with the accessible label “列设置”; it may hide business columns but never the operations column. Confirmed row actions must explain the affected account and resulting state.
+- The verified `list-workbench` recipe accepts explicit query fields, table fields and optional detail, create, edit and delete actions. It only enables actions named in the requirement: create and edit use a Drawer, detail uses a read-only Drawer, and delete explains its impact before confirmation.
 - `list.modalCreate` may add a compact create Modal when it preserves the list context; `detail.drawer` may open read-only account details when the displayed information has a clear boundary.

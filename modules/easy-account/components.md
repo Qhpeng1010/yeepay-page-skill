@@ -1,5 +1,7 @@
 # Easy Account Component Rules
 
+> 历史组件语义归档：当前组件选择以 `director-rules/01-visual-constitution.md`、页面族规则包和固定渲染器契约为准，本文不作为额外运行时规则来源。
+
 ## Boundary
 
 本文件定义 Easy Account 页面的组件语义。实现时优先使用 Easy Account 实际工程的组件库；未提供工程时，评审预览使用可访问的语义 HTML，不引用 Boss Ledger 组件封装。

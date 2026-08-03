@@ -1,5 +1,7 @@
 # 易通账 Easy Account 设计规范
 
+> 历史输入归档：本文保留用于追溯 Figma 提取来源，不是当前页面生成、修改或评审的运行时规则。设计师只维护 `director-rules/` 下的三本导演规则。
+
 > 来源：Figma 文件「易通账 Easy Account业务页面」  
 > 文件 Key：`ZWbmQGeL2RB4Ib9aYVpsl4`  
 > 提取范围：Color、Fonts、Shadows 基础规范画板，以及查询列表、详情、弹窗表单、抽屉详情、整页表单等 9 个业务页面。  

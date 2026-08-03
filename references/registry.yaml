@@ -42,26 +42,6 @@
       "contract": "modules/open-platform/domain.json"
     },
     {
-      "id": "yilaiqian-checkout-counter",
-      "name": "Yilaiqian Checkout Counter",
-      "priority": 95,
-      "aliases": [
-        "yilaiqian checkout counter",
-        "yilaiqian",
-        "易来钱",
-        "易来钱收银台",
-        "移动端缴费",
-        "缴费页面",
-        "h5 收银台",
-        "移动收银台",
-        "扫码付款",
-        "向商户付款"
-      ],
-      "exclusions": ["运营后台", "商户后台", "审核后台", "开放平台", "api 文档", "sdk"],
-      "domain": "modules/Yilaiqian Checkout Counter/DOMAIN.md",
-      "contract": "modules/Yilaiqian Checkout Counter/domain.json"
-    },
-    {
       "id": "easy-account",
       "name": "Easy Account",
       "priority": 96,

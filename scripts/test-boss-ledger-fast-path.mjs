@@ -53,6 +53,11 @@ try {
   if (routed.intent !== 'query-list' || !routed.commands?.prepare?.includes('prepare-boss-ledger-page-spec.mjs')) {
     throw new Error('A query-list request with a detail Drawer did not resolve to the fast preparation path.');
   }
+  const statisticsRequest = '创建老板管账的结算单查询列表页。列表展示结算单号、商户名称、应付金额、实打款金额和结算状态。页面顶部展示四项统计：本期结算笔数 128 笔、应付总金额 2865400.00 元、实打款总金额 2798600.00 元、打款失败 3 笔。';
+  const statisticsRouted = resolveResources(statisticsRequest, 'generate');
+  if (statisticsRouted.intent !== 'card-summary-list' || statisticsRouted.template !== 'list.card-summary') {
+    throw new Error('A list request with four top-level statistics did not resolve to the card-summary rule combination.');
+  }
   if (routed.resources.some((resource) => resource.startsWith('modules/shared/') && resource !== 'modules/shared/product.md')) {
     throw new Error('Boss Ledger generation must not load shared design, template, frontend, or quality rules.');
   }
