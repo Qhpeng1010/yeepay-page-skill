@@ -105,6 +105,23 @@ modules/boss-ledger/
 
 页面不会因为规则模板存在就一定可以生成。以 `generation-policy.json` 的状态为准。
 
+## 自由组合与稳定配方
+
+老板管账同时支持两种生成方式：
+
+- **自由组合**：需求未命中已验证配方时，根据三本导演规则和当前开放能力组合页面。它适合探索新业务场景，生成后由业务人员人工验收。
+- **稳定配方**：对已经人工验收、结构稳定且可由有限参数表达的页面，提炼为可重复生成的配方。配方只负责确定性解析和参数编译，不新增或覆盖视觉、模板和交互规则。
+
+自由组合页面不能因为“生成过一次”就自动变成配方。是否晋级由设计师决定，完整步骤见[自由组合晋级配方流程](workflows/recipe-promotion.md)。
+
+老板管账的回归资料集中在 [`modules/boss-ledger/execution/scenarios/`](modules/boss-ledger/execution/scenarios/README.md)：
+
+- [配方回归提示词](modules/boss-ledger/execution/scenarios/recipe-regression-prompts.md)：验证已登记的稳定配方和参数边界。
+- [规则组合提示词](modules/boss-ledger/execution/scenarios/rule-combination-prompts.md)：验证导演规则驱动的自由组合页面，不默认命中配方。
+- [完整人工回归提示词](modules/boss-ledger/execution/scenarios/manual-regression-prompts.md)：覆盖表单、列表、详情和结果流程。
+
+新组合应先作为自由组合完成页面和人工验收，再按流程记录固定结构、可变参数、边界和回归样例；只有回归和人工验收均通过后，才登记为稳定配方。
+
 ## 如何提出一个新页面
 
 用清楚的业务语言描述即可，无需指定代码或组件。推荐包含：
