@@ -155,7 +155,7 @@ function validateRowActions(errors, table, capabilities, columnKeys) {
     if (!action || typeof action !== 'object') return;
     issue(errors, nonEmptyString(action.key), `${location}.key is required.`);
     issue(errors, nonEmptyString(action.label), `${location}.label is required.`);
-    if (action.type) issue(errors, ['detail', 'confirm-state-change', 'edit'].includes(action.type), `${location}.type is unsupported.`);
+    if (action.type) issue(errors, ['detail', 'confirm-state-change', 'delete', 'edit'].includes(action.type), `${location}.type is unsupported.`);
     if (action.visibleWhen) {
       issue(errors, action.visibleWhen && typeof action.visibleWhen === 'object', `${location}.visibleWhen must be an object.`);
       issue(errors, columnKeys.includes(action.visibleWhen?.field), `${location}.visibleWhen.field must reference a list column.`);
@@ -168,6 +168,11 @@ function validateRowActions(errors, table, capabilities, columnKeys) {
       issue(errors, action.effect && typeof action.effect === 'object', `${location}.effect is required for state-changing actions.`);
       issue(errors, columnKeys.includes(action.effect?.field), `${location}.effect.field must reference a list column.`);
       issue(errors, action.effect && Object.hasOwn(action.effect, 'value'), `${location}.effect.value is required.`);
+    }
+    if (action.type === 'delete') {
+      issue(errors, capabilities.includes('table.deleteAction'), 'Delete row actions require table.deleteAction.');
+      issue(errors, action.confirm && typeof action.confirm === 'object', `${location}.confirm is required for delete actions.`);
+      ['title', 'description', 'impact', 'successMessage'].forEach((key) => issue(errors, nonEmptyString(action.confirm?.[key]), `${location}.confirm.${key} is required.`));
     }
     if (action.type === 'edit') {
       issue(errors, capabilities.includes('table.editAction'), 'Edit row actions require table.editAction.');

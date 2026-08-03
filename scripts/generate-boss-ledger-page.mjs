@@ -63,7 +63,10 @@ function print(result, json) {
 }
 
 function generate(result, request, change) {
-  const command = [resolve(root, 'scripts/compile-boss-ledger-wizard-recipe.mjs'), '--request', request, '--change', change];
+  const compiler = result.recipe === 'list-workbench'
+    ? 'scripts/compile-boss-ledger-list-workbench-recipe.mjs'
+    : 'scripts/compile-boss-ledger-wizard-recipe.mjs';
+  const command = [resolve(root, compiler), '--request', request, '--change', change];
   const executed = spawnSync(process.execPath, command, { cwd: root, encoding: 'utf8', timeout: 30_000 });
   if (executed.error?.code === 'ETIMEDOUT') throw new Error('快速生成超过 30 秒。');
   if (executed.error || executed.status !== 0) throw new Error(executed.stderr || executed.stdout || '快速生成失败。');

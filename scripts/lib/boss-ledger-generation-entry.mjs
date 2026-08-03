@@ -1,4 +1,5 @@
 import { resolveResources } from '../resolve-resources.mjs';
+import { parseListWorkbenchRequest } from './boss-ledger-list-workbench-recipe.mjs';
 import { parseStructuredWizardRequest } from './boss-ledger-wizard-recipe.mjs';
 
 function fallback(route, reason) {
@@ -39,6 +40,25 @@ export function classifyBossLedgerGeneration(rawRequest) {
     };
   }
   if (route.intent !== 'wizard') {
+    if (route.intent === 'query-list') {
+      try {
+        const parsed = parseListWorkbenchRequest(request);
+        return {
+          status: 'fast',
+          recipe: 'list-workbench',
+          pageName: parsed.pageName,
+          route: {
+            module: route.module,
+            intent: route.intent,
+            template: route.template,
+            resources: route.resources
+          },
+          reason: '需求明确了列表查询和可选行内操作，命中列表工作台参数化配方。'
+        };
+      } catch (error) {
+        return fallback(route, `列表工作台未满足配方输入边界：${error.message}`);
+      }
+    }
     return fallback(route, '未命中已验证的参数化配方。');
   }
 

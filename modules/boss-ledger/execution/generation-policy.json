@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "policyVersion": "2026.08.03.18",
+  "policyVersion": "2026.08.03.19",
   "system": "boss-ledger",
   "allowedModes": ["shadow", "page-spec-default", "page-spec-only"],
   "families": [
@@ -27,6 +27,7 @@
         "table.refresh",
         "table.columnSettings",
         "table.confirmAction",
+        "table.deleteAction",
         "detail.drawer",
         "detail.drawerTable",
         "table.editAction",
@@ -139,6 +140,14 @@
       "evidence": "manual-business",
       "capabilities": ["query.basic", "table.flat", "table.pagination", "list.drawerCreate"],
       "ruleRefs": ["BL-TPL-005", "BL-TPL-012", "BL-INT-004"]
+    },
+    {
+      "id": "list.workbench-drawer-crud",
+      "family": "list",
+      "templateIds": ["list.regular"],
+      "evidence": "manual-business",
+      "capabilities": ["query.basic", "query.advanced", "table.flat", "table.pagination", "table.status", "table.amount", "detail.drawer", "list.drawerCreate", "table.editAction", "table.confirmAction", "table.deleteAction"],
+      "ruleRefs": ["BL-TPL-001", "BL-TPL-012", "BL-TPL-013", "BL-INT-002", "BL-INT-004", "BL-INT-010"]
     },
     {
       "id": "list.card-statistics",

@@ -328,6 +328,7 @@
       setSelectedKeys([]);
     };
     const updateRows = (keys, effect) => setRows((current) => current.map((row) => keys.includes(row[tableSpec.rowKey]) ? { ...row, [effect.field]: effect.value } : row));
+    const removeRows = (keys) => setRows((current) => current.filter((row) => !keys.includes(row[tableSpec.rowKey])));
     const confirmAction = (action, affectedRows, onOk) => {
       const confirm = action.confirm;
       if (!confirm) return onOk();
@@ -389,6 +390,10 @@
               else if (action.type === 'edit') setWorkflow({ kind: 'edit', action, row });
               else if (action.type === 'confirm-state-change') confirmAction(action, [row], () => {
                 updateRows([row[tableSpec.rowKey]], action.effect);
+                message.success(action.confirm.successMessage);
+              });
+              else if (action.type === 'delete') confirmAction(action, [row], () => {
+                removeRows([row[tableSpec.rowKey]]);
                 message.success(action.confirm.successMessage);
               });
               else if (action.confirm) confirmAction(action, [row], () => message.success(`${action.label}成功`));

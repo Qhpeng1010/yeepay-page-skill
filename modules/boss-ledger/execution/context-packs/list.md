@@ -6,7 +6,7 @@
 
 - 页面族：`list`
 - 状态：available / page-spec-default
-- 已开放能力：`query.basic`、`query.advanced`、`summary.inline`、`statistics.cards`、`table.flat`、`table.pagination`、`table.status`、`table.amount`、`table.refresh`、`table.columnSettings`、`table.confirmAction`、`detail.drawer`、`detail.drawerTable`、`table.editAction`、`table.batchAction`、`table.expandable`、`table.export`、`table.columnOrder`、`list.drawerCreate`
+- 已开放能力：`query.basic`、`query.advanced`、`summary.inline`、`statistics.cards`、`table.flat`、`table.pagination`、`table.status`、`table.amount`、`table.refresh`、`table.columnSettings`、`table.confirmAction`、`table.deleteAction`、`detail.drawer`、`detail.drawerTable`、`table.editAction`、`table.batchAction`、`table.expandable`、`table.export`、`table.columnOrder`、`list.drawerCreate`
 
 ## 可选方案
 
