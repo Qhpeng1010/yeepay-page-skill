@@ -5,8 +5,10 @@
 当用户明确要求创建新的“老板管账”页面时，先读取 `SKILL.md`，再对原始需求只运行一次统一生成入口：
 
 ```text
-node scripts/generate-boss-ledger-page.mjs --request "<原始需求>" --change "changes/<新的-change-id>"
+node scripts/generate-boss-ledger-page.mjs --request "<原始需求>"
 ```
+
+`--change` 可省略；统一入口会按上海日期和业务语义自动生成合法的 `YYYYMMDD-lowercase-slug`，目录冲突时自动追加序号。
 
 入口返回 `generated` 时，快速交付已完成，只报告预览和人工验收状态；不得继续用 AI 重写页面规格。入口返回 `fallback` 时，才对同一原始需求运行一次 `resolve-resources.mjs --stage generate`，只读取返回的 `core.md`、`index.md` 和一个页面族规则包，再按返回命令走受控自然语言生成。入口返回 `blocked` 时，报告能力缺口并停止。不得在此之前或之后进行项目盘点、扫描全部模块或模板、读取历史 Change、读取完整固定渲染器，或使用通用 UI / 后台生成技能重新选择业务页面方案。
 

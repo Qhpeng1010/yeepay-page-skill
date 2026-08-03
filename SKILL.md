@@ -24,8 +24,10 @@ description: 根据已路由的 Markdown 规则生成、设计、更新、实现
 1. 对明确为新建 Boss Ledger 页面的需求，首次只运行一次统一生成入口：
 
    ```text
-   node scripts/generate-boss-ledger-page.mjs --request "<原始需求>" --change "changes/<新的-change-id>"
+   node scripts/generate-boss-ledger-page.mjs --request "<原始需求>"
    ```
+
+   `--change` 可省略；统一入口会自动分配合法且不冲突的 Change 标识。
 
    返回 `generated` 时，直接交付生成的预览和人工验收状态；返回 `fallback` 时，才对同一份原始需求运行一次 `node scripts/resolve-resources.mjs --request "<原始需求>" --stage generate`。返回 `blocked` 时，报告能力缺口并停止。已有 Change 的修改或评审不运行该入口，而是按当前 Change 的阶段路由处理。不得用 `--stage all` 预先加载所有规则。
 2. 使用快速入口或回退路由的结果作为唯一请求上下文：若为 `clarify`，先询问问题；否则只读取选中系统的 `DOMAIN.md` 和当前阶段返回的 Markdown 资源。

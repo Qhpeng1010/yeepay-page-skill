@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "policyVersion": "2026.07.30.17",
+  "policyVersion": "2026.08.03.18",
   "system": "boss-ledger",
   "allowedModes": ["shadow", "page-spec-default", "page-spec-only"],
   "families": [

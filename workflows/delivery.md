@@ -2,7 +2,7 @@
 
 ## Route
 
-对明确为新建 Boss Ledger 页面的需求，先对用户原始需求只运行一次 `node scripts/generate-boss-ledger-page.mjs --request "<verbatim request>" --change "changes/<new-change-id>"`。若入口返回 `generated`，直接进入人工验收交付；若返回 `fallback`，才运行一次 `node scripts/resolve-resources.mjs --request "<verbatim request>" --stage generate`。只读取返回的核心规则包、规则模板索引和一个页面族规则包；在需要需求、设计或评审资料时，才按对应阶段读取该阶段资源。已有 Change 的修改或评审不运行此入口。其他业务域仍可按其 adapter 的阶段资源执行。路由成功后只读选中模块的 `DOMAIN.md`。
+对明确为新建 Boss Ledger 页面的需求，先对用户原始需求只运行一次 `node scripts/generate-boss-ledger-page.mjs --request "<verbatim request>"`。入口可选接收 `--change "changes/<new-change-id>"`，未提供时自动分配合法且不冲突的 Change 标识。若入口返回 `generated`，直接进入人工验收交付；若返回 `fallback`，才运行一次 `node scripts/resolve-resources.mjs --request "<verbatim request>" --stage generate`。只读取返回的核心规则包、规则模板索引和一个页面族规则包；在需要需求、设计或评审资料时，才按对应阶段读取该阶段资源。已有 Change 的修改或评审不运行此入口。其他业务域仍可按其 adapter 的阶段资源执行。路由成功后只读选中模块的 `DOMAIN.md`。
 
 Boss Ledger 已完成路由后，不得再次分类、读取历史 Change、扫描其他模块或模板、使用通用 UI 技能重选页面类型，或逐段阅读完整固定渲染器。只有路由不明确或策略能力缺失时才停止快路径并澄清或报告能力边界；不得先生成列表等候选页面再反向重判。
 

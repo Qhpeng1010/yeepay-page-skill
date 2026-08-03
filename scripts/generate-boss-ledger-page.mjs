@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { classifyBossLedgerGeneration } from './lib/boss-ledger-generation-entry.mjs';
@@ -10,6 +11,43 @@ const args = process.argv.slice(2);
 function arg(name) {
   const index = args.indexOf(name);
   return index >= 0 ? args[index + 1] : '';
+}
+
+function todayShanghai() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(new Date());
+  return ['year', 'month', 'day'].map((type) => parts.find((part) => part.type === type)?.value).join('');
+}
+
+function slugFromRequest(request) {
+  const knownSlugs = [
+    [/退款审核规则/, 'refund-review-rule'],
+    [/分账规则/, 'split-rule'],
+    [/结算账户/, 'settlement-account'],
+    [/渠道联系人/, 'channel-contact'],
+    [/商户结算/, 'merchant-settlement'],
+    [/导入.*名单/, 'settlement-import']
+  ];
+  return knownSlugs.find(([pattern]) => pattern.test(request))?.[1] || 'boss-ledger-page';
+}
+
+function isValidChangeArg(value) {
+  return /^changes\/\d{8}-[a-z0-9-]+$/.test(value || '');
+}
+
+function allocateChange(request, requestedChange) {
+  const requested = String(requestedChange || '').trim();
+  if (isValidChangeArg(requested) && !existsSync(resolve(root, requested))) return requested;
+
+  const base = `changes/${todayShanghai()}-${slugFromRequest(request)}`;
+  let candidate = base;
+  let suffix = 2;
+  while (existsSync(resolve(root, candidate))) candidate = `${base}-${suffix++}`;
+  return candidate;
 }
 
 function print(result, json) {
@@ -39,14 +77,15 @@ function generate(result, request, change) {
 
 function main() {
   const request = arg('--request');
-  const change = arg('--change');
+  const requestedChange = arg('--change');
   const json = args.includes('--json');
   if (!request) throw new Error('Usage: node scripts/generate-boss-ledger-page.mjs --request "<业务需求>" [--change changes/<change-id>] [--json]');
 
   const decision = classifyBossLedgerGeneration(request);
   if (decision.status === 'fast') {
-    if (!change) throw new Error('命中快速配方时必须提供一个新的 changes/<change-id>。');
-    print(generate(decision, request, change), json);
+    const change = allocateChange(request, requestedChange);
+    const generated = generate({ ...decision, requestedChange }, request, change);
+    print(generated, json);
     return;
   }
   print(decision, json);
