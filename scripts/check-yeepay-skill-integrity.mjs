@@ -44,6 +44,7 @@ const requiredFiles = [
   'scripts/validate-progressive-structure.mjs',
   'references/registry.yaml',
   'workflows/delivery.md',
+  'workflows/recipe-promotion.md',
   'modules/boss-ledger/director-rules/README.md',
   'modules/boss-ledger/director-rules/01-visual-constitution.md',
   'modules/boss-ledger/director-rules/02-template-application-rules.md',

@@ -22,7 +22,7 @@
     "modules/boss-ledger/execution/theme/theme.js": "14c3b45dba2de257bb367bcf2e2bf452331865e268186745498a796994c7eef4",
     "modules/boss-ledger/execution/page-spec.schema.json": "81c55c515aad9dd19db57cc13ccfb7199e9cfdea6d782195a704ac7ea5cd476f",
     "modules/boss-ledger/execution/rule-assertions.json": "937eac5865240f6b29b5f759245e29e79c606e6f587e1dd5898a06f040267b58",
-    "modules/boss-ledger/execution/scenarios/README.md": "528ce5ed9fd220458ae358d4c9a9b46e3c58a89b71b37ebacf022c68ddc83aab",
+    "modules/boss-ledger/execution/scenarios/README.md": "d8017aa92f17cb6fcd1117069f89888efb2bd0d0a15eab83e25052ac35aa03f0",
     "modules/boss-ledger/execution/scenarios/recipe-regression-prompts.md": "848bed39c519b4c321e26816bd3fc6ce36687a05caca7c32e0234a7e69de9e8e",
     "modules/boss-ledger/execution/scenarios/rule-combination-prompts.md": "fbffdb3f4fd1359854a85d02bfb3244f043afd39ae28b4e44d2439e36c428a1f",
     "modules/boss-ledger/execution/context-packs/core.md": "7a4e5a76852889fadc999f2323bd8247eedc042a0c36afb65088cf0ca0476680",
