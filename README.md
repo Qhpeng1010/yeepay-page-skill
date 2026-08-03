@@ -30,7 +30,7 @@ Yeepay-skill/
 │   ├── easy-account/         易账通后台
 │   ├── open-platform/        易宝开放平台
 │   ├── Yilaiqian Checkout Counter/  易来钱收银台
-│   └── shared/               多业务域通用规则和文档模板
+│   └── shared/               跨业务域路由、需求与预览文档模板
 ├── workflows/                路由后执行的页面交付步骤
 ├── scripts/                  路由、构建、校验和发布检查工具
 ├── changes/                  每次页面需求的独立交付目录

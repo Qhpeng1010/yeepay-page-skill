@@ -22,12 +22,19 @@ try {
   if (!existsSync(resolve(changeDir, 'rules-read.md'))) throw new Error('rules-read.md is missing.');
   mkdirSync(resolve(changeDir, 'assets'), { recursive: true });
   const rendererRoot = resolve(root, 'modules/easy-account/execution/renderer');
+  const shellRoot = resolve(root, 'modules/easy-account/shell');
   const fixedCopies = [
     [resolve(rendererRoot, 'page-spec-preview.template.html'), resolve(changeDir, 'preview.html')],
     [resolve(rendererRoot, 'page-spec-runtime.js'), resolve(changeDir, 'page-spec-runtime.js')],
-    [resolve(rendererRoot, 'page-spec-business.css'), resolve(changeDir, 'business.css')]
+    [resolve(rendererRoot, 'page-spec-business.css'), resolve(changeDir, 'business.css')],
+    [resolve(shellRoot, 'shell.css'), resolve(changeDir, 'shell.css')],
+    [resolve(shellRoot, 'content-base.css'), resolve(changeDir, 'content-base.css')],
+    [resolve(shellRoot, 'shell-config.example.js'), resolve(changeDir, 'shell-config.example.js')],
+    [resolve(shellRoot, 'shell-runtime.js'), resolve(changeDir, 'shell-runtime.js')]
   ];
   fixedCopies.forEach(([source, target]) => cpSync(source, target));
+  cpSync(resolve(shellRoot, 'assets'), resolve(changeDir, 'assets'), { recursive: true });
+  cpSync(resolve(shellRoot, 'vendor'), resolve(changeDir, 'vendor'), { recursive: true });
   const appPath = resolve(changeDir, 'preview-app.js');
   writeFileSync(appPath, generatedPreviewApp(spec));
   const policy = readJson(resolve(root, 'modules/easy-account/execution/generation-policy.json'));

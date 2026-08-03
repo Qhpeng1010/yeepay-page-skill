@@ -16,8 +16,8 @@
       "requirement": ["modules/shared/product.md", "modules/Yilaiqian Checkout Counter/business-rules.md"],
       "design": ["modules/shared/design-system.md", "modules/shared/page-templates.md", "modules/shared/components.md", "modules/Yilaiqian Checkout Counter/DESIGN(2).md", "modules/Yilaiqian Checkout Counter/components.md"],
       "template": ["modules/shared/template-routing.md", "modules/Yilaiqian Checkout Counter/DESIGN(2).md"],
-      "generate": ["modules/shared/theme-routing.md", "modules/shared/design-system.md", "modules/shared/page-templates.md", "modules/shared/components.md", "modules/Yilaiqian Checkout Counter/business-rules.md", "modules/Yilaiqian Checkout Counter/DESIGN(2).md", "modules/Yilaiqian Checkout Counter/components.md", "modules/shared/frontend.md", "modules/shared/quality.md", "modules/shared/templates/html-preview.md"],
-      "review": ["modules/Yilaiqian Checkout Counter/business-rules.md", "modules/Yilaiqian Checkout Counter/DESIGN(2).md", "modules/Yilaiqian Checkout Counter/components.md", "modules/shared/quality.md"]
+      "generate": ["modules/shared/theme-routing.md", "modules/shared/design-system.md", "modules/shared/page-templates.md", "modules/shared/components.md", "modules/Yilaiqian Checkout Counter/business-rules.md", "modules/Yilaiqian Checkout Counter/DESIGN(2).md", "modules/Yilaiqian Checkout Counter/components.md", "modules/shared/frontend.md", "modules/shared/templates/html-preview.md"],
+      "review": ["modules/Yilaiqian Checkout Counter/business-rules.md", "modules/Yilaiqian Checkout Counter/DESIGN(2).md", "modules/Yilaiqian Checkout Counter/components.md"]
     },
     "commands": {}
   },

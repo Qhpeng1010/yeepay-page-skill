@@ -19,8 +19,8 @@
       "requirement": ["modules/shared/product.md"],
       "design": ["modules/shared/design-system.md", "modules/open-platform/theme.md", "modules/shared/page-templates.md", "modules/shared/components.md"],
       "template": [],
-      "generate": ["modules/shared/frontend.md", "modules/shared/quality.md", "modules/shared/templates/html-preview.md"],
-      "review": ["modules/open-platform/theme.md", "modules/shared/quality.md"]
+      "generate": ["modules/shared/frontend.md", "modules/shared/templates/html-preview.md"],
+      "review": ["modules/open-platform/theme.md"]
     },
     "commands": {}
   },

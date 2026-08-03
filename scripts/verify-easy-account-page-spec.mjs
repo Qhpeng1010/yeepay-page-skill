@@ -2,7 +2,6 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
-import { chromium } from 'playwright';
 import { assertChangeSpecPath, generatedPreviewApp, pageSpecHash, readJson, validatePageSpec } from './lib/easy-account-page-spec.mjs';
 
 const specArg = process.argv.find((arg) => arg.endsWith('page-spec.json'));
@@ -15,6 +14,8 @@ function hash(file) { return createHash('sha256').update(readFileSync(file)).dig
 async function verifyList(page, changeDir) {
   await page.waitForSelector('.ea-table');
   if (await page.locator('.ea-table tbody tr').count() !== 3) throw new Error('Expected three initial account rows.');
+  if (await page.locator('.ea-table .ea-status-tag').count() === 0) throw new Error('Status columns must render Ant Design Tags.');
+  if (await page.locator('.ea-table .ant-badge-status').count() !== 0) throw new Error('Status columns must not render Ant Design Badges.');
   await page.screenshot({ path: resolve(changeDir, 'preview.screenshot.png'), fullPage: true });
   await page.locator('#field-accountName').fill('ERROR');
   await page.getByRole('button', { name: '查询', exact: true }).click();
@@ -68,6 +69,7 @@ async function verifyGroupedForm(page, changeDir) {
 }
 
 async function browserGate(root, changeDir, spec) {
+  const { chromium } = await import('playwright');
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 960 }, deviceScaleFactor: 1 });
