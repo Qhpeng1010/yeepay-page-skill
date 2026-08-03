@@ -45,7 +45,7 @@
     "scripts/build-boss-ledger-page-spec.mjs": "7ddcde392b6ce5ef99457504a6de65e00f4b85d66c544c0e9ebb5c1246750ef4",
     "scripts/scaffold-boss-ledger-page-spec.mjs": "c7010007cb3f8a7bf705dbff57dc69410c31c3f62b8114082eee7f57f48ee305",
     "scripts/verify-boss-ledger-page-spec.mjs": "496d607158a30c6bf23181355930d6cbaddeb39cb9c8d3b65c0de139d7b28cc3",
-    "scripts/check-boss-ledger-generation-policy.mjs": "f3aeb04cd26953bf89daa5672854447d3251a228a4deef10fba45ab9170aa1c5",
+    "scripts/check-boss-ledger-generation-policy.mjs": "ec705a986cb21579518448050eec9e826c3cf735dbf2ca3f39d9215ebfd0f422",
     "scripts/resolve-resources.mjs": "7c80dcbec3d644d5d9171fad836a15b738699577aca95028dda680d262671a61",
     "scripts/lib/boss-ledger-generation-entry.mjs": "b2229f9c4d4f9ef9312841060881f4e6a2295719f516df9e3aa461064ad7716d",
     "scripts/lib/boss-ledger-list-workbench-recipe.mjs": "30cdc7f2067d9b68db05dd02657fe21856d10a47985603edfa2380c9579ed24b",
