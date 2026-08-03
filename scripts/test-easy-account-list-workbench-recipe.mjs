@@ -49,6 +49,10 @@ try {
   if (!existsSync(resolve(changeDir, 'preview.html')) || !existsSync(resolve(changeDir, 'review.md'))) throw new Error('List workbench compiler did not produce preview and review artifacts.');
   const spec = JSON.parse(readFileSync(resolve(changeDir, 'page-spec.json'), 'utf8'));
   if (!spec.content.capabilities.includes('table.deleteAction') || !spec.list.table.rowActions.some((action) => action.type === 'delete')) throw new Error('Generated Page Spec does not expose the delete action.');
+  const runtime = readFileSync(resolve(changeDir, 'page-spec-runtime.js'), 'utf8');
+  if (!runtime.includes('function normalizeInitialValues') || !runtime.includes('const initialValues = normalizeInitialValues(formFields(action.form), row)')) {
+    throw new Error('Edit drawers must normalize date values before rendering Ant Design DatePicker controls.');
+  }
   const review = readFileSync(resolve(changeDir, 'review.md'), 'utf8');
   if (!review.includes('静态预检已通过') || review.includes('浏览器自动验收')) throw new Error('List workbench review record crossed the manual-acceptance boundary.');
   console.log('easy-account-list-workbench-recipe: pass');

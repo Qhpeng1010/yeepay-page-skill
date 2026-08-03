@@ -142,6 +142,39 @@
     return { minor: `${matched[1]}${digits || '0'}`, currency: currency || 'CNY' };
   }
 
+  function formFields(formSpec = {}) {
+    if (Array.isArray(formSpec.fields)) return formSpec.fields;
+    if (Array.isArray(formSpec.groups)) return formSpec.groups.flatMap((group) => group.fields || []);
+    if (Array.isArray(formSpec.steps)) return formSpec.steps.flatMap((step) => step.fields || []);
+    return [];
+  }
+
+  function dateValue(value, field) {
+    if (!value || (typeof value === 'object' && typeof value.isValid === 'function')) return value;
+    const createDayjs = window.dayjs;
+    if (typeof createDayjs !== 'function') return undefined;
+    const parsed = createDayjs(String(value), field.format || 'YYYY-MM-DD');
+    return typeof parsed?.isValid === 'function' && parsed.isValid() ? parsed : undefined;
+  }
+
+  function normalizeInitialValues(fields, source) {
+    const values = { ...(source || {}) };
+    (fields || []).forEach((field) => {
+      const value = values[field.key];
+      if (value === undefined || value === null || value === '') return;
+      if (field.control === 'date') values[field.key] = dateValue(value, field);
+      if (field.control === 'date-range') {
+        const range = Array.isArray(value) ? value : String(value).split(/\s+(?:至|-)\s+/);
+        const normalized = range.map((item) => dateValue(item, field)).filter(Boolean);
+        values[field.key] = normalized.length === 2 ? normalized : undefined;
+      }
+      if (['select', 'radio'].includes(field.control) && value && typeof value === 'object') {
+        values[field.key] = value.value ?? value.text ?? undefined;
+      }
+    });
+    return values;
+  }
+
   function normalizeRecord(values, defaults, table) {
     const record = { ...(defaults || {}), ...(values || {}) };
     Object.keys(record).forEach((key) => {
@@ -386,9 +419,10 @@
         return;
       }
       if (action.type === 'edit') {
-        createForm.setFieldsValue(row);
+        const initialValues = normalizeInitialValues(formFields(action.form), row);
+        createForm.setFieldsValue(initialValues);
         setDirty(false);
-        setContextAction({ kind: 'edit', action, row, form: action.form || {} });
+        setContextAction({ kind: 'edit', action, row, form: action.form || {}, initialValues });
         return;
       }
       if (action.type === 'confirm-state-change') {
@@ -541,6 +575,7 @@
 
     const contextFormSpec = contextAction?.form || {};
     const contextFields = contextFormSpec.fields || (contextFormSpec.groups || []).flatMap((group) => group.fields || []);
+    const contextInitialValues = normalizeInitialValues(contextFields, contextAction?.initialValues || contextAction?.row || contextFormSpec.initialValues);
     const contextDrawer = contextAction ? h(Drawer, {
       open: true,
       title: contextFormSpec.title || contextAction.action?.label,
@@ -555,7 +590,7 @@
     }, h(Form, {
       form: createForm,
       layout: 'vertical',
-      initialValues: contextAction.row || contextFormSpec.initialValues || {},
+      initialValues: contextInitialValues,
       onValuesChange: () => setDirty(true),
       onFinish: (values) => contextAction.kind === 'edit' ? updateRecord(contextAction.row, values, contextAction.action) : createRecord(values),
       onFinishFailed: onCreateFailed,
@@ -564,6 +599,7 @@
 
     const pageFormConfig = view === 'row-page-form' ? rowPageAction?.form : createConfig;
     const pageFormSubmit = pageFormConfig?.submit || {};
+    const pageFormInitialValues = normalizeInitialValues(formFields(pageFormConfig), pageFormConfig?.initialValues);
     const pageFormVisible = (view === 'create' && primaryAction?.presentation === 'page') || view === 'row-page-form';
     if (pageFormVisible && pageFormConfig) {
       return h('div', { className: 'ea-page-content ea-page-form' },
@@ -584,7 +620,7 @@
           colon: false,
           labelCol: { flex: '148px' },
           wrapperCol: { flex: '620px' },
-          initialValues: pageFormConfig.initialValues || {},
+          initialValues: pageFormInitialValues,
           onValuesChange: () => setDirty(true),
           onFinish: view === 'row-page-form' ? submitRowPageAction : createRecord,
           onFinishFailed: onCreateFailed,
@@ -762,7 +798,7 @@
       h('section', { className: 'ea-module ea-page-form-heading-module' }, h('div', { className: 'ea-page-form-heading' }, h('h1', null, spec.metadata.pageName))),
       h('section', { className: 'ea-module ea-wizard-module' },
         h(Steps, { current: step, items: steps.map((item) => ({ title: item.title, description: item.description })), className: 'ea-wizard-steps' }),
-        h(Form, { form, layout: 'vertical', className: 'ea-page-form-main', initialValues: formSpec.initialValues || {} },
+        h(Form, { form, layout: 'vertical', className: 'ea-page-form-main', initialValues: normalizeInitialValues(formFields(formSpec), formSpec.initialValues) },
           current.review
             ? previewTable
               ? h(Table, { className: 'ea-wizard-review-table', rowKey: previewTable.rowKey, columns: previewColumns, dataSource: previewTable.rows || [], pagination: false, size: 'small', scroll: { x: previewTable.scrollX } })
@@ -829,7 +865,7 @@
       : h(Form, {
         form,
         layout: 'vertical',
-        initialValues: formSpec.initialValues || {},
+        initialValues: normalizeInitialValues(formFields(formSpec), formSpec.initialValues),
         onValuesChange: () => setDirty(true),
         onFinish: finish,
         onFinishFailed: onFailed,
