@@ -21,15 +21,17 @@
     Modal,
     Pagination,
     Popover,
+    Radio,
     Select,
     Space,
     Table,
     Tag,
     Tabs,
     Tooltip,
+    Upload,
     message
   } = antd;
-  const { ArrowLeftOutlined, CloseOutlined, DownOutlined, SettingOutlined, UpOutlined } = icons;
+  const { ArrowLeftOutlined, CloseOutlined, DownOutlined, SettingOutlined, UpOutlined, UploadOutlined } = icons;
 
   function amount(value) {
     const data = value && typeof value === 'object' ? value : { minor: String(value || '0'), currency: 'CNY' };
@@ -52,10 +54,28 @@
     return h(Tag, { color: colors[item.tone] || 'default', className: 'ea-status-tag' }, item.text || '-');
   }
 
+  function stackCell(column, row) {
+    return h('div', { className: 'ea-stacked-cell' }, ...(column.lines || []).map((line, index) => {
+      const value = row[line.source] ?? '-';
+      const content = line.prefix ? `${line.prefix}${value}` : String(value);
+      return index === 0
+        ? h('strong', { key: line.source, title: content }, content)
+        : h('span', { key: line.source, title: content }, content);
+    }));
+  }
+
   function control(field, id) {
     const placeholder = field.placeholder || (field.control === 'select' ? `请选择${field.label}` : `请输入${field.label}`);
     const common = { id, placeholder, disabled: field.disabled, maxLength: field.maxLength };
     if (field.control === 'select') return h(Select, { ...common, allowClear: true, options: field.options || [] });
+    if (field.control === 'radio') return h(Radio.Group, { id, disabled: field.disabled, options: field.options || [] });
+    if (field.control === 'upload') return h(Upload, {
+      id,
+      accept: field.accept || 'image/*',
+      beforeUpload: () => false,
+      maxCount: field.maxCount || 1,
+      listType: field.listType || 'picture'
+    }, h(Button, { icon: UploadOutlined ? h(UploadOutlined) : null, className: 'ea-upload-trigger' }, field.buttonLabel || '上传文件'));
     if (field.control === 'date') return h(DatePicker, { ...common, format: field.format || 'YYYY-MM-DD', style: { width: '100%' } });
     if (field.control === 'date-range') return h(DatePicker.RangePicker, { ...common, format: field.format || 'YYYY-MM-DD', style: { width: '100%' } });
     if (field.control === 'textarea') return h(Input.TextArea, { ...common, rows: field.rows || 3, showCount: Boolean(field.maxLength) });
@@ -113,7 +133,8 @@
 
   function ListPage({ spec }) {
     const table = spec.list.table;
-    const fields = spec.list.query.fields || [];
+    const baseFields = spec.list.query.fields || [];
+    const views = table.views || [];
     const primaryAction = table.primaryAction;
     const createConfig = primaryAction?.form;
     const createSubmit = createConfig?.submit || createConfig || {};
@@ -131,18 +152,20 @@
     const [detailRow, setDetailRow] = React.useState(null);
     const [createOpen, setCreateOpen] = React.useState(false);
     const [view, setView] = React.useState('list');
-    const views = table.views || [];
     const [activeView, setActiveView] = React.useState(views[0]?.key);
+    const [rowPageAction, setRowPageAction] = React.useState(null);
     const [dirty, setDirty] = React.useState(false);
     const [creating, setCreating] = React.useState(false);
+    const selectedView = views.find((item) => item.key === activeView);
+    const fields = selectedView?.queryFields || baseFields;
+    const queryTabs = views.some((item) => Array.isArray(item.queryFields));
     const collapseThreshold = spec.list.query.collapseThreshold || 3;
     const supportsCollapse = fields.length > collapseThreshold;
     const visibleFields = collapsed ? fields.slice(0, collapseThreshold) : fields;
     const viewRows = React.useMemo(() => {
-      const selected = views.find((item) => item.key === activeView);
-      const viewFilter = selected?.filter || {};
+      const viewFilter = selectedView?.filter || {};
       return allRows.filter((row) => Object.entries(viewFilter).every(([key, value]) => String(row[key]) === String(value)));
-    }, [allRows, activeView, views]);
+    }, [allRows, selectedView]);
     const matchedRows = React.useMemo(() => viewRows.filter((row) => matches(row, fields, filters)), [viewRows, fields, filters]);
     const pageSize = table.pagination.pageSize;
     const pagedRows = matchedRows.slice((page - 1) * pageSize, page * pageSize);
@@ -152,7 +175,6 @@
       setFailure('');
       setDenied(false);
       setPage(1);
-      setActiveView(views[0]?.key);
       window.setTimeout(() => {
         const valuesList = Object.values(values || {}).map((value) => String(value || '').trim().toUpperCase());
         if (valuesList.includes('ERROR')) {
@@ -178,11 +200,24 @@
       setPage(1);
     };
 
+    const changeView = (key) => {
+      if (queryTabs) {
+        queryForm.resetFields();
+        setFilters({});
+        setFailure('');
+        setDenied(false);
+        setCollapsed(false);
+      }
+      setActiveView(key);
+      setPage(1);
+    };
+
     const closeCreate = () => {
       createForm.resetFields();
       setDirty(false);
       setCreating(false);
       setCreateOpen(false);
+      setRowPageAction(null);
       setView('list');
     };
 
@@ -226,6 +261,19 @@
       }, 320);
     };
 
+    const submitRowPageAction = () => {
+      const submit = rowPageAction?.form?.submit || {};
+      setCreating(true);
+      window.setTimeout(() => {
+        setCreating(false);
+        setDirty(false);
+        setRowPageAction(null);
+        setView('list');
+        createForm.resetFields();
+        message.success(submit.successMessage || '提交成功');
+      }, 320);
+    };
+
     const onCreateFailed = ({ errorFields }) => {
       const first = errorFields?.[0]?.name?.[0];
       if (!first) return;
@@ -237,6 +285,21 @@
       setDirty(false);
       if ((primaryAction?.presentation || 'modal') === 'page') setView('create');
       else setCreateOpen(true);
+    };
+
+    const handleRowAction = (action, row) => {
+      if (action.type === 'detail') {
+        setDetailRow(row);
+        return;
+      }
+      if (action.type === 'page-form') {
+        createForm.resetFields();
+        setDirty(false);
+        setRowPageAction({ ...action, row });
+        setView('row-page-form');
+        return;
+      }
+      message.info(`${action.label}已触发`);
     };
 
     const columnSettings = h('div', { className: 'ea-column-settings' },
@@ -261,7 +324,7 @@
             key: action.key,
             type: 'link',
             size: 'small',
-            onClick: () => action.type === 'detail' ? setDetailRow(row) : message.info(`${action.label}已触发`)
+            onClick: () => handleRowAction(action, row)
           }, action.label)))
         };
         return {
@@ -269,8 +332,14 @@
           dataIndex: column.key,
           title: column.label,
           width: column.width,
-          ellipsis: true,
-          render: column.format === 'amount' ? amount : column.format === 'status' ? status : undefined
+          ellipsis: column.format !== 'stack',
+          render: column.format === 'amount'
+            ? amount
+            : column.format === 'status'
+              ? status
+              : column.format === 'stack'
+                ? (_, row) => stackCell(column, row)
+                : undefined
         };
       });
 
@@ -331,7 +400,10 @@
       rules: formRules(field)
     }, control(field, `form-${field.key}`)))))) : null;
 
-    if (view === 'create' && primaryAction?.presentation === 'page') {
+    const pageFormConfig = view === 'row-page-form' ? rowPageAction?.form : createConfig;
+    const pageFormSubmit = pageFormConfig?.submit || {};
+    const pageFormVisible = (view === 'create' && primaryAction?.presentation === 'page') || view === 'row-page-form';
+    if (pageFormVisible && pageFormConfig) {
       return h('div', { className: 'ea-page-content ea-page-form' },
         h('div', { className: 'ea-page-form-heading' },
           h(Button, {
@@ -340,8 +412,8 @@
             icon: h(ArrowLeftOutlined),
             disabled: creating,
             onClick: requestLeaveCreate
-          }, createConfig.backLabel || '返回'),
-          h('h1', null, createConfig.title)),
+          }, pageFormConfig.backLabel || '返回'),
+          h('h1', null, pageFormConfig.title)),
         h(Form, {
           form: createForm,
           name: 'project-create',
@@ -350,14 +422,14 @@
           colon: false,
           labelCol: { flex: '148px' },
           wrapperCol: { flex: '620px' },
-          initialValues: createConfig.initialValues || {},
+          initialValues: pageFormConfig.initialValues || {},
           onValuesChange: () => setDirty(true),
-          onFinish: createRecord,
+          onFinish: view === 'row-page-form' ? submitRowPageAction : createRecord,
           onFinishFailed: onCreateFailed,
           scrollToFirstError: true
         },
         h('div', { className: 'ea-page-form-groups' },
-          ...(createConfig.groups || []).map((group) => h('section', { key: group.key, className: 'ea-module ea-page-form-group', 'aria-labelledby': `group-${group.key}` },
+          ...(pageFormConfig.groups || []).map((group) => h('section', { key: group.key, className: 'ea-module ea-page-form-group', 'aria-labelledby': `group-${group.key}` },
             h('h2', { id: `group-${group.key}` }, group.title),
             group.description ? h('p', { className: 'ea-page-form-group-description' }, group.description) : null,
             ...(group.fields || []).map((field) => h(Form.Item, {
@@ -369,12 +441,21 @@
             }, control(field, `form-${field.key}`)))))),
         h('div', { className: 'ea-page-form-sticky-actions' },
           h('div', { className: 'ea-page-form-action-inner' },
-            h(Button, { disabled: creating, onClick: requestLeaveCreate }, createSubmit.secondaryLabel || '取消'),
-            h(Button, { type: 'primary', loading: creating, htmlType: 'submit' }, createSubmit.primaryLabel)))));
+            h(Button, { disabled: creating, onClick: requestLeaveCreate }, pageFormSubmit.secondaryLabel || '取消'),
+            h(Button, { type: 'primary', loading: creating, htmlType: 'submit' }, pageFormSubmit.primaryLabel)))));
     }
 
     return h('div', { className: 'ea-page-content ea-list-page' },
       h('section', { className: 'ea-module ea-query-module', 'aria-label': '查询条件' },
+        queryTabs ? h(Tabs, {
+          className: 'ea-query-tabs',
+          activeKey: activeView,
+          items: views.map((item) => ({
+            key: item.key,
+            label: item.count === undefined ? item.label : `${item.label}(${item.count})`
+          })),
+          onChange: changeView
+        }) : null,
         h(Form, { form: queryForm, layout: 'vertical', onFinish: runQuery },
           h('div', { className: 'ea-query-grid' },
             ...visibleFields.map((field) => h(Form.Item, { key: field.key, label: field.label, name: field.key }, control(field, `field-${field.key}`))),
@@ -389,26 +470,23 @@
         )),
       h('section', { className: 'ea-module ea-result-module', 'aria-label': table.sectionTitle || '列表结果' },
         h('div', { className: 'ea-result-toolbar' },
-          views.length ? h(Tabs, {
+          views.length && !queryTabs ? h(Tabs, {
             activeKey: activeView,
             items: views.map((item) => ({
               key: item.key,
               label: item.count === undefined ? item.label : `${item.label}(${item.count})`
             })),
-            onChange: (key) => {
-              setActiveView(key);
-              setPage(1);
-            }
+            onChange: changeView
           }) : h('h2', null, table.sectionTitle || '列表'),
           denied ? null : h('div', { className: 'ea-result-actions' },
             primaryAction ? h(Button, { type: 'primary', onClick: openCreate }, primaryAction.label) : null,
-            table.tools?.includes('settings') ? h(Popover, {
+            h(Popover, {
               open: settingsOpen,
               onOpenChange: setSettingsOpen,
               trigger: 'click',
               content: columnSettings,
               placement: 'bottomRight'
-            }, h(Tooltip, { title: '列设置' }, h(Button, { 'aria-label': '列设置', icon: h(SettingOutlined) }))) : null)),
+            }, h(Tooltip, { title: '列设置' }, h(Button, { 'aria-label': '列设置', icon: h(SettingOutlined) }))))),
         h(Table, {
           className: 'ea-table',
           rowKey: table.rowKey,

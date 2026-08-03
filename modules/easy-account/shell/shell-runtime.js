@@ -70,8 +70,8 @@
           ? config.collapsed
           : window.matchMedia("(max-width: 1023px)").matches,
       selectedMenuId: String(
-        config.menu?.flatMap((item) => item.children || []).find((child) => child.active)?.id ||
-          config.activeTabId ||
+        config.activeTabId ||
+          config.menu?.flatMap((item) => item.children || []).find((child) => child.active)?.id ||
           "",
       ),
       openMenuKeys: (config.menu || [])

@@ -25,8 +25,8 @@ function validateField(errors, field, location) {
   if (!field || typeof field !== 'object') return;
   issue(errors, text(field.key), `${location}.key is required.`);
   issue(errors, text(field.label), `${location}.label is required.`);
-  issue(errors, ['input', 'textarea', 'select', 'number', 'date', 'date-range'].includes(field.control), `${location}.control is unsupported.`);
-  if (field.control === 'select') issue(errors, Array.isArray(field.options) && field.options.length > 0, `${location}.options are required for select.`);
+  issue(errors, ['input', 'textarea', 'select', 'radio', 'upload', 'number', 'date', 'date-range'].includes(field.control), `${location}.control is unsupported.`);
+  if (['select', 'radio'].includes(field.control)) issue(errors, Array.isArray(field.options) && field.options.length > 0, `${location}.options are required for ${field.control}.`);
   (field.options || []).forEach((option, index) => {
     issue(errors, text(option?.label), `${location}.options[${index}].label is required.`);
     issue(errors, option && Object.hasOwn(option, 'value'), `${location}.options[${index}].value is required.`);
@@ -44,6 +44,13 @@ function validateList(errors, spec, capabilities) {
   const hasAdvanced = capabilities.includes('query.advanced');
   issue(errors, Number(hasBasic) + Number(hasAdvanced) === 1, 'List requires exactly one query mode.');
   if (hasBasic) issue(errors, (fields || []).length <= 6, 'query.basic supports at most 6 fields.');
+  const viewQueryFields = (list.table?.views || []).filter((view) => view.queryFields !== undefined);
+  if (viewQueryFields.length) issue(errors, capabilities.includes('query.viewFields'), 'View-specific query fields require query.viewFields.');
+  viewQueryFields.forEach((view, viewIndex) => {
+    issue(errors, Array.isArray(view.queryFields) && view.queryFields.length > 0, `list.table.views[${viewIndex}].queryFields must be a non-empty array.`);
+    (view.queryFields || []).forEach((field, fieldIndex) => validateField(errors, field, `list.table.views[${viewIndex}].queryFields[${fieldIndex}]`));
+    issue(errors, unique((view.queryFields || []).map((field) => field.key)), `list.table.views[${viewIndex}].queryFields keys must be unique.`);
+  });
   const table = list.table;
   issue(errors, table && typeof table === 'object', 'list.table is required.');
   if (!table) return;
@@ -60,8 +67,24 @@ function validateList(errors, spec, capabilities) {
     issue(errors, text(column.label), `list.table.columns[${index}].label is required.`);
     if (column.format === 'status') issue(errors, capabilities.includes('table.status'), 'Status columns require table.status.');
     if (column.format === 'amount') issue(errors, capabilities.includes('table.amount'), 'Amount columns require table.amount.');
+    if (column.format === 'stack') {
+      issue(errors, capabilities.includes('table.stackCells'), 'Stacked columns require table.stackCells.');
+      issue(errors, Array.isArray(column.lines) && column.lines.length > 1, `list.table.columns[${index}].lines must include at least two fields.`);
+      (column.lines || []).forEach((line, lineIndex) => issue(errors, text(line?.source), `list.table.columns[${index}].lines[${lineIndex}].source is required.`));
+    }
     if (column.actions) issue(errors, Array.isArray(column.actions), `list.table.columns[${index}].actions must be an array.`);
-    (column.actions || []).forEach((action, actionIndex) => issue(errors, text(action.key) && text(action.label), `list.table.columns[${index}].actions[${actionIndex}] requires key and label.`));
+    (column.actions || []).forEach((action, actionIndex) => {
+      const location = `list.table.columns[${index}].actions[${actionIndex}]`;
+      issue(errors, text(action.key) && text(action.label), `${location} requires key and label.`);
+      if (action.type === 'page-form') {
+        issue(errors, capabilities.includes('list.rowPageForm'), `${location} requires list.rowPageForm.`);
+        issue(errors, action.form && Array.isArray(action.form.groups) && action.form.groups.length > 0, `${location}.form.groups are required.`);
+        const actionFields = (action.form?.groups || []).flatMap((group) => group.fields || []);
+        actionFields.forEach((field, fieldIndex) => validateField(errors, field, `${location}.form.fields[${fieldIndex}]`));
+        issue(errors, unique(actionFields.map((field) => field.key)), `${location}.form field keys must be unique.`);
+        issue(errors, action.form?.submit && text(action.form.submit.primaryLabel), `${location}.form.submit.primaryLabel is required.`);
+      }
+    });
   });
   const rows = table.rows || [];
   const ids = rows.map((row) => row?.[table.rowKey]);
@@ -134,7 +157,7 @@ function validateDetail(errors, spec, capabilities) {
   });
 }
 
-export function validatePageSpec(spec, { root = ROOT, allowWorkflowResult = false } = {}) {
+export function validatePageSpec(spec, { root = ROOT, allowWorkflowResult = false, allowShellPages = true } = {}) {
   const errors = [];
   issue(errors, spec && typeof spec === 'object' && !Array.isArray(spec), 'Page Spec must be an object.');
   if (!spec || typeof spec !== 'object') return errors;
@@ -173,12 +196,40 @@ export function validatePageSpec(spec, { root = ROOT, allowWorkflowResult = fals
     issue(errors, allowWorkflowResult, 'Result is workflow-only and cannot be built as a direct entry.');
     issue(errors, spec.result && typeof spec.result === 'object', 'result is required for family=result.');
   }
+  if (spec.shell?.pages !== undefined) {
+    const pages = spec.shell.pages;
+    issue(errors, allowShellPages, 'Nested shell pages are not supported.');
+    issue(errors, Array.isArray(pages) && pages.length > 0, 'shell.pages must be a non-empty array.');
+    if (Array.isArray(pages)) {
+      issue(errors, unique(pages.map((page) => page?.tabId)), 'shell.pages tabId values must be unique.');
+      pages.forEach((page, index) => {
+        issue(errors, text(page?.tabId), `shell.pages[${index}].tabId is required.`);
+        issue(errors, page?.spec && typeof page.spec === 'object', `shell.pages[${index}].spec is required.`);
+        if (page?.spec && typeof page.spec === 'object') {
+          validatePageSpec(page.spec, { root, allowWorkflowResult, allowShellPages: false })
+            .forEach((error) => errors.push(`shell.pages[${index}].spec: ${error}`));
+          issue(errors, page.spec.metadata?.changeId === spec.metadata?.changeId, `shell.pages[${index}].spec must share the parent changeId.`);
+        }
+      });
+    }
+  }
   return errors;
+}
+
+export function resolveShellActiveTabId(shell = {}, shellConfig = {}) {
+  if (typeof shell.activeTabId === 'string' && shell.activeTabId.trim()) return shell.activeTabId;
+  const groups = Array.isArray(shellConfig.menu) ? shellConfig.menu : [];
+  const primaryGroup = groups.find((group) => group?.label === shell.primaryNav);
+  const matchedItem = (primaryGroup?.children || []).find((item) => item?.label === shell.sideNav)
+    || groups.flatMap((group) => group?.children || []).find((item) => item?.label === shell.sideNav);
+  if (matchedItem?.id) return String(matchedItem.id);
+  if (shellConfig.activeTabId) return String(shellConfig.activeTabId);
+  return shellConfig.tabs?.[0]?.id ? String(shellConfig.tabs[0].id) : '';
 }
 
 export function generatedPreviewApp(spec) {
   const serialized = JSON.stringify(spec, null, 2).replace(/<\//g, '<\\/');
-  return `// Derived from page-spec.json. Do not edit.\n// page-spec-sha256: ${pageSpecHash(spec)}\ndocument.addEventListener('DOMContentLoaded', function () {\n  const spec = ${serialized};\n  const pageRoot = document.createElement('div');\n  const activeTabId = spec.shell && spec.shell.activeTabId;\n  const contentByTab = Object.assign({}, spec.shell && spec.shell.contentByTab || {});\n  if (activeTabId) contentByTab[activeTabId] = pageRoot;\n  const shell = window.EasyAccountShell.mount(Object.assign({}, window.EASY_ACCOUNT_SHELL_CONFIG || {}, spec.shell || {}, { content: '', contentByTab: contentByTab }));\n  window.EasyAccountPageSpecRuntime.mount(spec, activeTabId ? pageRoot : shell.contentSlot);\n});\n`;
+  return `// Derived from page-spec.json. Do not edit.\n// page-spec-sha256: ${pageSpecHash(spec)}\ndocument.addEventListener('DOMContentLoaded', function () {\n  const spec = ${serialized};\n  const shellConfig = Object.assign({}, window.EASY_ACCOUNT_SHELL_CONFIG || {}, spec.shell || {});\n  const activeTabId = (${resolveShellActiveTabId.toString()})(spec.shell || {}, shellConfig);\n  const pageEntries = [{ tabId: activeTabId, spec: spec }].concat((spec.shell && spec.shell.pages || []).map(function (page) { return { tabId: page.tabId, spec: page.spec }; }));\n  const contentByTab = Object.assign({}, spec.shell && spec.shell.contentByTab || {});\n  const tabs = (shellConfig.tabs || []).map(function (tab) { return Object.assign({}, tab); });\n  pageEntries.forEach(function (page) {\n    page.root = document.createElement('div');\n    if (page.tabId) {\n      contentByTab[page.tabId] = page.root;\n      if (!tabs.some(function (tab) { return tab.id === page.tabId; })) {\n        tabs.push({ id: page.tabId, label: page.spec.metadata.pageName, closable: true });\n      }\n    }\n  });\n  const shell = window.EasyAccountShell.mount(Object.assign({}, shellConfig, { tabs: tabs, activeTabId: activeTabId, content: '', contentByTab: contentByTab }));\n  pageEntries.forEach(function (page) {\n    window.EasyAccountPageSpecRuntime.mount(page.spec, page.tabId ? page.root : shell.contentSlot);\n  });\n});\n`;
 }
 
 export function assertChangeSpecPath(root, specPath) {

@@ -11,6 +11,7 @@ const pilots = [
 const steps = [
   ['skill-integrity', 'scripts/check-yeepay-skill-integrity.mjs', []],
   ['progressive-structure', 'scripts/validate-progressive-structure.mjs', []],
+  ['shell-routing-regression', 'scripts/test-easy-account-shell-routing.mjs', []],
   ['contract-regression', 'scripts/test-easy-account-page-spec-contract.mjs', []],
   ...pilots.flatMap((pilot) => [
     [`${pilot}-contract`, 'scripts/check-easy-account-page-spec.mjs', [pilot]],

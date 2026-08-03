@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "policyVersion": "2026.07.30.2",
+  "policyVersion": "2026.08.02.1",
   "system": "easy-account",
   "allowedModes": ["legacy", "shadow", "page-spec-default", "page-spec-only"],
   "families": [
@@ -13,14 +13,17 @@
       "capabilities": [
         "query.basic",
         "query.advanced",
+        "query.viewFields",
         "table.flat",
         "table.pagination",
         "table.status",
         "table.amount",
+        "table.stackCells",
         "table.columnSettings",
         "table.confirmAction",
         "list.modalCreate",
         "list.pageCreate",
+        "list.rowPageForm",
         "detail.drawer"
       ]
     },
@@ -81,6 +84,12 @@
       "family": "list",
       "capabilities": ["query.basic", "table.flat", "table.pagination", "table.status", "table.amount", "table.columnSettings", "list.pageCreate", "detail.drawer"],
       "ruleRefs": ["EA-VIS-012", "EA-TPL-003", "EA-TPL-004", "EA-TPL-005", "EA-TPL-007", "EA-TPL-013", "EA-INT-002", "EA-INT-003", "EA-INT-009", "EA-INT-010"]
+    },
+    {
+      "id": "list.account-subject-workflow",
+      "family": "list",
+      "capabilities": ["query.advanced", "query.viewFields", "table.flat", "table.pagination", "table.status", "table.stackCells", "list.rowPageForm"],
+      "ruleRefs": ["EA-TPL-003", "EA-TPL-004", "EA-TPL-007", "EA-INT-002", "EA-INT-003", "EA-INT-004"]
     },
     {
       "id": "form.grouped",
