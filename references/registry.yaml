@@ -5,6 +5,7 @@
       "id": "boss-ledger",
       "name": "Boss Ledger",
       "priority": 100,
+      "routeAliases": ["boss ledger", "boss", "老板管账", "运营后台", "商户后台", "审核后台", "管理后台"],
       "aliases": [
         "boss ledger",
         "boss",
@@ -26,6 +27,7 @@
       "id": "open-platform",
       "name": "易宝开放平台",
       "priority": 90,
+      "routeAliases": ["yop", "open platform", "开放平台", "开发者中心"],
       "aliases": [
         "yop",
         "open platform",
@@ -45,6 +47,7 @@
       "id": "easy-account",
       "name": "Easy Account",
       "priority": 96,
+      "routeAliases": ["easy account", "easyaccount", "easy-account", "易账通", "easy account 后台", "易账通后台"],
       "aliases": [
         "easy account",
         "easyaccount",

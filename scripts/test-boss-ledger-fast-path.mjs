@@ -49,7 +49,7 @@ try {
   if (stagedRouted.matches.includes('列表') || stagedRouted.execution?.family !== 'form') {
     throw new Error('A return-to-list follow-up incorrectly overrode the staged workflow intent.');
   }
-  const routed = resolveResources('运营人员查询商户，支持高级查询、新增抽屉和详情抽屉', 'generate');
+  const routed = resolveResources('创建老板管账的运营人员查询商户，支持高级查询、新增抽屉和详情抽屉', 'generate');
   if (routed.intent !== 'query-list' || !routed.commands?.prepare?.includes('prepare-boss-ledger-page-spec.mjs')) {
     throw new Error('A query-list request with a detail Drawer did not resolve to the fast preparation path.');
   }

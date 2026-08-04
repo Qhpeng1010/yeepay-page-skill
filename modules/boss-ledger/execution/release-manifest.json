@@ -8,7 +8,7 @@
   "rendererVersion": 1,
   "shellVersion": 1,
   "hashes": {
-    "AGENTS.md": "a2d67e8bd697340a68ce6691344264f844924f8fbd00380f9cd480fe6617ea18",
+    "AGENTS.md": "c974b7f8c4218f0179a172e93c8dc1cc140ddfe1ded20eaa5a752a0ebc5b4367",
     "modules/boss-ledger/director-rules/README.md": "4684b5774c887d10f18748a34188eba03230f42a5fa51a1e6322fb2726aa1878",
     "modules/boss-ledger/director-rules/01-visual-constitution.md": "af4626a9e56342dedbc5acd39d8292d40b4eee048cc17104bf13885d39c29de5",
     "modules/boss-ledger/director-rules/02-template-application-rules.md": "411335a3cc0ee4161714e74c1e3f606683aaedb276eca7a47482720ee1718dcd",
@@ -65,10 +65,12 @@
     "scripts/validate-boss-ledger-preview.mjs": "b90c8bc7acd30fd345920ca32511be2e04a3e673d9939f024d93ed5d5f5fcbd6",
     "scripts/verify-boss-ledger-page-runtime.mjs": "95de9c6993516bc7a5a9afd8348db822f1a8dfe2e2819505ac48085caad9bc21",
     "scripts/validate-boss-ledger-page-spec-system.mjs": "58c33c2a97f262f5b0f2b90d772126819943bfb2295c4f8f65eb650da6c62be1",
-    "scripts/test-boss-ledger-fast-path.mjs": "c0655515f67291e032bfa192d62383eec69e2b3fafdd939c79d220ca01d0cd97",
+    "scripts/test-boss-ledger-fast-path.mjs": "f9c18fc698fc7ab0d2e1a1d95e9d7078badea86a0d366874cb0abd2b3de8610b",
     "scripts/read-boss-ledger-rules.mjs": "c987c50d2e9afa5fa248b5176757db48e68cfde70a45ff86a1c8a54195916edb",
     "scripts/materialize-boss-ledger-capability-scenarios.mjs": "f83f416283bb666b3e7c7bdf96db61543b041a116e572f5b9b73e631dace1003",
     "scripts/verify-boss-ledger-capability-scenarios.mjs": "86f6499077abbfb9aec184ba8863fb08e2883eebf8605225366a8c5a3deb9137",
-    "modules/boss-ledger/execution/scenarios/capability-scenarios.mjs": "63f9e0561ceb8253016c1585aa95935ce41d439cec8729474c8d9c7731ac5af3"
+    "modules/boss-ledger/execution/scenarios/capability-scenarios.mjs": "63f9e0561ceb8253016c1585aa95935ce41d439cec8729474c8d9c7731ac5af3",
+    "references/registry.yaml": "a8a0a86a48b3a7fea4062ccac60b33c87cacd2d69ce9ca29aa861d285386e162",
+    "scripts/route-business.mjs": "ac6faa7d3fd2b53a50b0de27255e8f8c61f16e1b66ecc070f91f666246121802"
   }
 }

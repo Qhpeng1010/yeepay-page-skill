@@ -23,7 +23,7 @@ function requestFingerprint(request, registryStat) {
 }
 
 function scoreModule(request, module) {
-  const matches = (module.aliases || []).filter((alias) => request.includes(normalize(alias)));
+  const matches = (module.routeAliases || module.aliases || []).filter((alias) => request.includes(normalize(alias)));
   const exclusions = (module.exclusions || []).filter((alias) => request.includes(normalize(alias)));
   const score = matches.reduce((total, alias) => total + Math.max(3, normalize(alias).length), 0)
     - exclusions.reduce((total, alias) => total + Math.max(5, normalize(alias).length), 0);
@@ -48,17 +48,25 @@ export function routeBusiness(rawRequest) {
     .filter((candidate) => candidate.score > 0)
     .sort((a, b) => b.score - a.score || b.module.priority - a.module.priority);
 
-  if (!ranked.length) {
-    const fallback = registry.modules.find((module) => module.id === 'boss-ledger');
+  if (ranked.length > 1) {
     const result = {
-      status: 'routed',
-      module: fallback.id,
-      name: fallback.name,
-      confidence: 'default',
-      assumption: '需求未指定平台，按 Boss Ledger 处理。',
-      matches: [],
-      domain: fallback.domain,
-      contract: fallback.contract
+      status: 'clarify',
+      question: `需求同时提到 ${ranked.map(({ module }) => module.name).join('、')}，请确认页面所属服务。`,
+      candidates: ranked.slice(0, 3).map(({ module, matches }) => ({ id: module.id, name: module.name, matches }))
+    };
+    fs.mkdirSync(CACHE_DIR, { recursive: true });
+    cache[fingerprint] = result;
+    fs.writeFileSync(CACHE_PATH, `${JSON.stringify(cache, null, 2)}\n`);
+    return { ...result, cache: 'miss', fingerprint };
+  }
+
+  if (!ranked.length) {
+    const result = {
+      status: 'clarify',
+      question: '请先确认所属服务：老板管账、易账通，还是易宝开放平台？',
+      candidates: [...registry.modules]
+        .sort((a, b) => b.priority - a.priority)
+        .map((module) => ({ id: module.id, name: module.name }))
     };
     fs.mkdirSync(CACHE_DIR, { recursive: true });
     cache[fingerprint] = result;

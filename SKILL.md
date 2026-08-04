@@ -21,7 +21,8 @@ description: 根据已路由的 Markdown 规则生成、设计、更新、实现
 
 ## 路由与资源边界
 
-1. 对明确为新建 Boss Ledger 页面的需求，首次只运行一次统一生成入口：
+1. 首轮必须先确认业务所属服务。需求明确包含老板管账、易账通、易宝开放平台等服务标识时才进入对应域；只有页面类型或业务动作（例如“列表”“表单”“查询”）而未指明服务时，先询问“请先确认所属服务：老板管账、易账通，还是易宝开放平台？”，不得按默认服务猜测。
+2. 对明确为新建 Boss Ledger 页面的需求，首次只运行一次统一生成入口：
 
    ```text
    node scripts/generate-boss-ledger-page.mjs --request "<原始需求>"
@@ -30,17 +31,17 @@ description: 根据已路由的 Markdown 规则生成、设计、更新、实现
    `--change` 可省略；统一入口会自动分配合法且不冲突的 Change 标识。
 
    返回 `generated` 时，直接交付生成的预览和人工验收状态；返回 `fallback` 时，才对同一份原始需求运行一次 `node scripts/resolve-resources.mjs --request "<原始需求>" --stage generate`。返回 `blocked` 时，报告能力缺口并停止。已有 Change 的修改或评审不运行该入口，而是按当前 Change 的阶段路由处理。不得用 `--stage all` 预先加载所有规则。
-2. 对明确为新建 Easy Account 查询列表的需求，同样先运行一次：
+3. 对明确为新建 Easy Account 查询列表的需求，同样先运行一次：
 
    ```text
    node scripts/generate-easy-account-page.mjs --request "<原始需求>"
    ```
 
    当前入口只匹配已登记的查询列表工作台配方。返回 `generated` 时直接交付；返回 `fallback` 时才按同一原始需求执行一次受控路由。Dashboard、步骤流程和其他未登记配方不得由该入口猜测或拼装。
-3. 使用快速入口或回退路由的结果作为唯一请求上下文：若为 `clarify`，先询问问题；否则只读取选中系统的 `DOMAIN.md` 和当前阶段返回的 Markdown 资源。
-4. 不得扫描全部模块、模板或历史 Change；不得对同一需求重复路由、重复分类或先生成一个候选页面再反向重判。
-5. `domain.json` 的 adapter 决定资源、执行命令、能力状态和运行模式。不得按系统名称手工混入其他系统的规则、Shell、资产、运行时或校验器。
-6. 必须在 Change 中记录路由、意图、页面类型、执行模式、策略版本、Rule ID、假设和所用资源。
+4. 使用快速入口或回退路由的结果作为唯一请求上下文：若为 `clarify`，先询问问题；否则只读取选中系统的 `DOMAIN.md` 和当前阶段返回的 Markdown 资源。
+5. 不得扫描全部模块、模板或历史 Change；不得对同一需求重复路由、重复分类或先生成一个候选页面再反向重判。
+6. `domain.json` 的 adapter 决定资源、执行命令、能力状态和运行模式。不得按系统名称手工混入其他系统的规则、Shell、资产、运行时或校验器。
+7. 必须在 Change 中记录路由、意图、页面类型、执行模式、策略版本、Rule ID、假设和所用资源。
 
 Markdown 是设计与业务规则的权威来源；JSON 只承担路由、策略、规格和执行合约，不能替代 Markdown 规则。
 

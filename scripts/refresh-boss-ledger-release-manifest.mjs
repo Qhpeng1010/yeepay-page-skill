@@ -67,7 +67,9 @@ const files = [
   'scripts/read-boss-ledger-rules.mjs',
   'scripts/materialize-boss-ledger-capability-scenarios.mjs',
   'scripts/verify-boss-ledger-capability-scenarios.mjs',
-  'modules/boss-ledger/execution/scenarios/capability-scenarios.mjs'
+  'modules/boss-ledger/execution/scenarios/capability-scenarios.mjs',
+  'references/registry.yaml',
+  'scripts/route-business.mjs'
 ];
 const hashes = Object.fromEntries(files.map((file) => [file, createHash('sha256').update(readFileSync(resolve(root, file))).digest('hex')]));
 const manifest = {
