@@ -12,7 +12,11 @@ const STATUS_MAP = {
 };
 
 function normalize(value) {
-  return String(value || '').replace(/\r?\n/g, '、').replace(/\s+/g, ' ').trim();
+  return String(value || '')
+    .replace(/\\[rn]/g, '、')
+    .replace(/\r?\n/g, '、')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function fieldsFrom(value) {
@@ -45,8 +49,16 @@ function parseListSummary(request) {
       expression: /(?:在)?结果工具栏左侧(?:展示|显示|提供)\s*([一二两12])\s*(?:项|个)?\s*(?:简单|轻量|行内)?(?:统计|指标|汇总)\s*[：:]\s*([^。；]+)/
     },
     {
+      // One or two metrics are always rendered as the toolbar summary, even
+      // when a request describes them generically as a page-top statistic.
+      kind: 'inline',
+      expression: /(?:(?:在)?(?:(?:页面|列表)?顶部|(?:列表)?结果(?:区|模块)?|查询结果(?:区|模块))\s*)?(?:展示|显示|提供)\s*([一二两12])\s*(?:项|个)?\s*(?:简单|轻量|行内)?(?:统计|指标|汇总)\s*[：:]\s*([^。；]+)/
+    },
+    {
+      // Three to five metrics use statistic cards. The location is optional
+      // because structured requests commonly use a bare "展示 4 项统计" header.
       kind: 'cards',
-      expression: /(?:在)?(?:(?:列表)?结果(?:区|模块)?|页面顶部)(?:展示|显示|提供)?\s*([三四五345])\s*(?:项|个)?\s*(?:重要)?(?:统计|指标|汇总)\s*[：:]\s*([^。；]+)/
+      expression: /(?:(?:在)?(?:(?:页面|列表)?顶部|(?:列表)?结果(?:区|模块)?|查询结果(?:区|模块))\s*)?(?:展示|显示|提供)\s*([三四五345])\s*(?:项|个)?\s*(?:重要)?(?:统计|指标|汇总)\s*[：:]\s*([^。；]+)/
     }
   ];
   for (const { kind, expression } of patterns) {
@@ -148,7 +160,7 @@ export function parseListWorkbenchRequest(rawRequest) {
   const columnSection = sectionValue(
     request,
     tableHeaderPattern,
-    /(?:页面顶部|在(?:列表)?结果(?:区|模块)?|结果工具栏|操作)\s*(?:展示|显示|提供|[:：])/
+    /(?:页面顶部|在(?:列表)?结果(?:区|模块)?|结果工具栏|操作)\s*(?:展示|显示|提供|[:：])|(?:展示|显示|提供)\s*[一二两三四五1-5]\s*(?:项|个)?\s*(?:简单|轻量|行内|重要)?(?:统计|指标|汇总)\s*[:：]/
   );
   const queryMatch = request.match(/(?:支持|可以|可)?(?:按|根据)([^。；]+?)(?:查询|筛选)/)
     || request.match(/(?:查询|筛选)条件(?:包括|为|有|：|:)\s*([^。；]+)/)

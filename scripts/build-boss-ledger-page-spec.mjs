@@ -9,6 +9,7 @@ import {
   expectedRuntimeMode,
   generatedPreviewApp,
   loadPolicy,
+  normalizeListSummaryPresentation,
   pageSpecHash,
   readJson,
   validatePageSpec
@@ -58,12 +59,32 @@ function validatePageDesign(changeDir, spec, policy) {
   spec.metadata.ruleRefs.forEach((ruleId) => { if (!design.includes(ruleId)) throw new Error(`page-design.md does not reference selected rule: ${ruleId}`); });
 }
 
+function synchronizePageDesignForListSummary(changeDir, spec) {
+  const designPath = resolve(changeDir, 'page-design.md');
+  if (!existsSync(designPath)) return;
+  const design = readFileSync(designPath, 'utf8');
+  const templateId = spec.metadata.templateId.replace(/\.md$/, '');
+  const next = design
+    .replace(/(^- (?:Rule template|Template): )`[^`]+`$/m, `$1\`${templateId}\``)
+    .replace(/(^- Runtime mode: )`[^`]+`$/m, `$1\`${spec.metadata.executionMode}\``)
+    .replace(/(^- Selection reason: ).*$/m, `$1${spec.metadata.selectionReason}`)
+    .replace(/(^- Capabilities: ).*$/m, `$1${spec.content.capabilities.join('、')}`);
+  if (next !== design) writeFileSync(designPath, next);
+}
+
 try {
   const root = process.cwd();
   const specPath = assertChangeSpecPath(root, specArg);
   const changeDir = dirname(specPath);
   const changeRelative = relative(root, changeDir);
-  const spec = readJson(specPath);
+  const sourceSpec = readJson(specPath);
+  const normalized = normalizeListSummaryPresentation(sourceSpec, { root });
+  const spec = normalized.spec;
+  if (normalized.changed) {
+    writeFileSync(specPath, `${JSON.stringify(spec, null, 2)}\n`);
+    synchronizePageDesignForListSummary(changeDir, spec);
+    console.log(`- normalized list summary to ${normalized.kind} presentation.`);
+  }
   const errors = validatePageSpec(spec, { root });
   if (errors.length) throw new Error(errors.join('\n'));
   const policy = loadPolicy(root);

@@ -54,6 +54,91 @@ export function expectedRuntimeMode(policy, family, templateId) {
   return selected?.intentModes?.[templateIntent(templateId)] || selected?.mode || null;
 }
 
+const LIST_SUMMARY_PRESENTATIONS = Object.freeze({
+  inline: {
+    templateId: 'list.inline-summary',
+    capability: 'summary.inline',
+    selectionReason: '主要任务是查询和处理一组记录；结果工具栏左侧使用 1 至 2 项轻量统计辅助扫描。'
+  },
+  cards: {
+    templateId: 'list.card-summary',
+    capability: 'statistics.cards',
+    selectionReason: '主要任务是查询和处理一组记录；结果区使用 3 至 5 项重要统计卡片辅助整体扫描。'
+  }
+});
+
+function inlineSummaryItems(items) {
+  return items.map(({ unit, precision, ...item }) => ({
+    ...item,
+    ...(item.suffix === undefined && unit ? { suffix: unit } : {})
+  }));
+}
+
+function statisticCardItems(items) {
+  return items.map(({ suffix, ...item }) => ({
+    ...item,
+    ...(item.unit === undefined && suffix ? { unit: String(suffix).trim() } : {})
+  }));
+}
+
+/**
+ * Canonicalize a list summary by its declared item count. This keeps existing
+ * Change edits aligned with the same 1-2 / 3-5 rule used by the fast recipe.
+ */
+export function normalizeListSummaryPresentation(spec, { root = ROOT } = {}) {
+  if (!spec || spec.metadata?.family !== 'list' || !spec.list || spec.list.summary?.items?.length && spec.list.statistics?.items?.length) {
+    return { spec, changed: false };
+  }
+  const inlineItems = spec.list.summary?.items;
+  const statisticItems = spec.list.statistics?.items;
+  const inlineCount = Array.isArray(inlineItems) ? inlineItems.length : 0;
+  const statisticCount = Array.isArray(statisticItems) ? statisticItems.length : 0;
+  const targetKind = (inlineCount >= 1 && inlineCount <= 2) || (statisticCount >= 1 && statisticCount <= 2)
+    ? 'inline'
+    : (inlineCount >= 3 && inlineCount <= 5) || (statisticCount >= 3 && statisticCount <= 5)
+      ? 'cards'
+      : null;
+  if (!targetKind) return { spec, changed: false };
+
+  const presentation = LIST_SUMMARY_PRESENTATIONS[targetKind];
+  const expectedMode = expectedRuntimeMode(loadPolicy(root), 'list', presentation.templateId);
+  const hasTargetStructure = targetKind === 'inline'
+    ? inlineCount >= 1 && inlineCount <= 2
+    : statisticCount >= 3 && statisticCount <= 5;
+  const currentCapabilities = spec.content?.capabilities;
+  const capabilitiesNeedUpdate = Array.isArray(currentCapabilities)
+    && (!currentCapabilities.includes(presentation.capability)
+      || currentCapabilities.some((capability) => capability === (targetKind === 'inline' ? 'statistics.cards' : 'summary.inline')));
+  const metadataNeedsUpdate = normalizeRuleTemplateId(spec.metadata?.templateId) !== presentation.templateId
+    || (expectedMode && spec.metadata?.executionMode !== expectedMode)
+    || (Array.isArray(spec.metadata?.ruleRefs) && !spec.metadata.ruleRefs.includes('BL-TPL-011'));
+  if (hasTargetStructure && !capabilitiesNeedUpdate && !metadataNeedsUpdate) return { spec, changed: false };
+
+  const normalized = JSON.parse(JSON.stringify(spec));
+  if (targetKind === 'inline') {
+    if (statisticCount) normalized.list.summary = { items: inlineSummaryItems(statisticItems) };
+    delete normalized.list.statistics;
+  } else {
+    if (inlineCount) normalized.list.statistics = { items: statisticCardItems(inlineItems) };
+    delete normalized.list.summary;
+  }
+
+  normalized.metadata.templateId = presentation.templateId;
+  normalized.metadata.selectionReason = presentation.selectionReason;
+  if (expectedMode) normalized.metadata.executionMode = expectedMode;
+  if (normalized.metadata.executionMode !== 'shadow') delete normalized.metadata.validatedCombinations;
+  if (Array.isArray(normalized.content?.capabilities)) {
+    normalized.content.capabilities = [
+      ...normalized.content.capabilities.filter((capability) => !['summary.inline', 'statistics.cards'].includes(capability)),
+      presentation.capability
+    ];
+  }
+  if (Array.isArray(normalized.metadata.ruleRefs) && !normalized.metadata.ruleRefs.includes('BL-TPL-011')) {
+    normalized.metadata.ruleRefs.push('BL-TPL-011');
+  }
+  return { spec: normalized, changed: true, kind: targetKind };
+}
+
 function issue(errors, condition, message) {
   if (!condition) errors.push(message);
 }

@@ -7,7 +7,7 @@
 // rule-assertion: contract.result-composition
 import { readFileSync, readdirSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
-import { readJson, validatePageSpec } from './lib/boss-ledger-page-spec.mjs';
+import { normalizeListSummaryPresentation, readJson, validatePageSpec } from './lib/boss-ledger-page-spec.mjs';
 import { scenarios } from '../modules/boss-ledger/execution/scenarios/capability-scenarios.mjs';
 
 const root = process.cwd();
@@ -37,6 +37,7 @@ const merchantPilot = scenarioSpec('11-settlement-rule-management');
 const settlementForm = scenarioSpec('03-merchant-settlement-config');
 const splitRuleQuery = scenarioSpec('06-split-rule-query');
 const drawerCreateList = scenarioSpec('17-merchant-service-config-drawer-create');
+const cardSummaryList = scenarioSpec('08-settlement-bill-statistics');
 const dashboard = scenarioSpec('19-operation-dashboard');
 const contactModal = scenarioSpec('01-contact-create');
 const guidedForm = scenarioSpec('02-settlement-account-change');
@@ -47,6 +48,42 @@ const businessCssSource = readFileSync(resolve(root, 'modules/boss-ledger/execut
 const contentBaseCssSource = readFileSync(resolve(root, 'modules/boss-ledger/shell/content-base.css'), 'utf8');
 const buildSource = readFileSync(resolve(root, 'scripts/build-boss-ledger-page-spec.mjs'), 'utf8');
 const previewValidatorSource = readFileSync(resolve(root, 'scripts/validate-boss-ledger-preview.mjs'), 'utf8');
+const twoItemCardSummary = {
+  ...merchantPilot,
+  metadata: {
+    ...merchantPilot.metadata,
+    templateId: 'list.card-summary',
+    selectionReason: '主要任务是查询和处理一组记录；结果区使用 3 至 5 项重要统计卡片辅助整体扫描。'
+  },
+  content: { ...merchantPilot.content, capabilities: [...merchantPilot.content.capabilities, 'statistics.cards'] },
+  list: {
+    ...merchantPilot.list,
+    statistics: {
+      items: [
+        { key: 'total', label: '商品总数量', value: 12, unit: '条' },
+        { key: 'shipped', label: '已发货数量', value: 8, unit: '条' }
+      ]
+    }
+  }
+};
+const normalizedTwoItemCardSummary = normalizeListSummaryPresentation(twoItemCardSummary, { root });
+if (!normalizedTwoItemCardSummary.changed
+  || normalizedTwoItemCardSummary.kind !== 'inline'
+  || normalizedTwoItemCardSummary.spec.metadata.templateId !== 'list.inline-summary'
+  || normalizedTwoItemCardSummary.spec.list.summary?.items.length !== 2
+  || normalizedTwoItemCardSummary.spec.list.statistics
+  || !normalizedTwoItemCardSummary.spec.content.capabilities.includes('summary.inline')
+  || normalizedTwoItemCardSummary.spec.content.capabilities.includes('statistics.cards')
+  || validatePageSpec(normalizedTwoItemCardSummary.spec, { root }).length) {
+  failures.push('list-summary-reconciliation: a two-item card summary must normalize into a valid inline summary list.');
+} else {
+  passed += 1;
+}
+if (normalizeListSummaryPresentation(cardSummaryList, { root }).changed) {
+  failures.push('list-summary-reconciliation: a valid three-to-five-item card summary must remain unchanged.');
+} else {
+  passed += 1;
+}
 const directCases = [
   [
     'missing-assumptions',
