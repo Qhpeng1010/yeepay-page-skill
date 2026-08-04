@@ -63,7 +63,7 @@
     "scripts/check-boss-ledger-rule-coverage.mjs": "337ea1268f9b2f37cf6667a93b374339e9c9083bb69bf340dea4d8b138c73f0b",
     "scripts/run-boss-ledger-page-spec-fixture.mjs": "48689313296e0e655982c9528d9e840c5485d9cddec2f8e0b54f3bd4216a5f9a",
     "scripts/validate-boss-ledger-preview.mjs": "b90c8bc7acd30fd345920ca32511be2e04a3e673d9939f024d93ed5d5f5fcbd6",
-    "scripts/verify-boss-ledger-page-runtime.mjs": "95de9c6993516bc7a5a9afd8348db822f1a8dfe2e2819505ac48085caad9bc21",
+    "scripts/verify-boss-ledger-page-runtime.mjs": "741f5ee6f244fba3cfa5988eea00a178f74cc5d6221ff28c9e9c3cda06603c09",
     "scripts/validate-boss-ledger-page-spec-system.mjs": "58c33c2a97f262f5b0f2b90d772126819943bfb2295c4f8f65eb650da6c62be1",
     "scripts/test-boss-ledger-fast-path.mjs": "f9c18fc698fc7ab0d2e1a1d95e9d7078badea86a0d366874cb0abd2b3de8610b",
     "scripts/read-boss-ledger-rules.mjs": "c987c50d2e9afa5fa248b5176757db48e68cfde70a45ff86a1c8a54195916edb",

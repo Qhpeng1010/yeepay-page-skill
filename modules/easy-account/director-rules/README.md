@@ -8,7 +8,7 @@
 2. `02-template-application-rules.md`：业务场景应选择哪个页面家族、页面方案和组合。
 3. `03-interaction-acceptance-rules.md`：用户如何完成任务，以及如何证明页面正确。
 
-旧 `templates/` 页面模板、`design.md`、`components.md` 和历史 Change 是本目录形成时的输入材料，不是与本目录竞争的规则来源，也不得作为页面生成、修改或评审的运行时输入。
+历史页面模板、旧设计说明和历史 Change 只是本目录形成时的输入材料，不是与本目录竞争的规则来源，也不得作为页面生成、修改或评审的运行时输入。
 
 ## 设计师维护范围
 

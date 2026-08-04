@@ -111,7 +111,7 @@ modules/boss-ledger/
 
 查询列表工作台稳定配方已开放：可按业务需求组合查询、详情抽屉、新增抽屉、编辑抽屉和删除二次确认。编辑抽屉会将已有记录中的日期、日期区间和状态值转换为官方表单控件可识别的初始值，避免编辑已有数据时发生运行时错误。Dashboard 与多步骤快速配方暂缓。
 
-易账通规则入口为 [`modules/easy-account/director-rules/`](modules/easy-account/director-rules/README.md)。历史 `design.md`、`components.md` 和 `frontend.md` 仅作追溯材料，不作为页面生成的运行时输入。
+易账通规则入口为 [`modules/easy-account/director-rules/`](modules/easy-account/director-rules/README.md)。旧设计、组件和前端说明已从当前运行目录清理；页面生成只读取导演规则、业务规则和执行层资源。
 
 ## 自由组合与稳定配方
 

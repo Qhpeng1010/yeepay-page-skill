@@ -70,7 +70,6 @@ if (!existsSync(rulesManifestPath)) {
     failures.push('rules-read.md must include the selected family Rule Pack and its current hash');
   }
   for (const [file, recordedHash] of manifestHashes) {
-    if (file === 'modules/boss-ledger/components.md' && !existsSync(resolve(root, file))) continue;
     const filePath = resolve(root, file);
     if (!existsSync(filePath)) {
       failures.push(`rules-read.md names a missing rule file: ${file}`);

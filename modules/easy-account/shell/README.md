@@ -1,6 +1,6 @@
-# 易通账 Easy Account Shell
+# 易账通 Easy Account Shell
 
-该文件包按 Figma 节点 `29:4610` 的框架层重新实现，适用于 Yee账通 PC 管理后台页面。默认预览只展示 Shell，不注入业务内容。
+该文件包是易账通固定框架层，适用于易账通 PC 管理后台页面。业务页面由 `page-spec.json` 和固定渲染器生成，Shell 不单独维护页面模板。
 
 ## 文件职责
 
@@ -8,13 +8,8 @@
 | --- | --- |
 | `shell.css` | 224px 左侧导航、50px 多标签栏、内容区、页脚和折叠状态 |
 | `content-base.css` | 卡片、按钮、输入框、状态等通用内容组件 |
-| `business.css` | 查询列表预览业务样式，可替换 |
-| `wizard-business.css` | 向导页业务样式示例 |
 | `shell-runtime.js` | 渲染 Shell、Ant Design 图标、标签切换/关闭、菜单展开和侧栏折叠 |
 | `shell-config.example.js` | 品牌、多标签、菜单、账号和页脚配置 |
-| `preview.template.html` | 无需构建工具的纯 Shell 预览入口 |
-| `preview-app.template.js` | 可选查询列表内容模板，不在默认预览中加载 |
-| `preview-app.js` | 纯 Shell 预览启动文件 |
 | `assets/logo-txt@3x.png` | 侧栏展开时显示的完整品牌 Logo |
 | `assets/logo.png` | 侧栏收起时显示的方形品牌 Icon |
 | `vendor/` | Easy Account 独立维护的 React 18、Ant Design 5 与 Ant Design Icons 本地依赖 |
@@ -24,18 +19,18 @@
 - 框架图标统一使用 `@ant-design/icons`，配置项使用完整组件名，例如 `ApartmentOutlined`。
 - 默认使用 `Outlined` 风格；固定等明确选中状态可使用 `Filled`。
 - 不使用 Emoji、Unicode 字符、CSS 手绘图标或外部 CDN。
-- 业务内容使用 `ConfigProvider` + `App` 挂载 Ant Design 组件，主题 Token 以 `design.md` 为准。
+- 业务内容使用 `ConfigProvider` + `App` 挂载 Ant Design 组件，视觉规则以 `director-rules/01-visual-constitution.md` 为准，页面专属样式由执行层渲染器生成。
 - 业务内容根节点默认使用透明背景，继承 Shell 的 `--ea-bg`；仅查询区、列表区等实际模块使用白底。
 
 ## 本地预览
 
-直接打开 `preview.template.html`，或在当前目录启动静态服务器：
+页面预览由对应 Change 的固定构建命令生成：
 
 ```bash
-python3 -m http.server 8080
+node scripts/build-easy-account-page-spec.mjs changes/{change-id}/page-spec.json
 ```
 
-访问 `http://localhost:8080/preview.template.html`。
+然后人工打开该 Change 的 `preview.html` 验收。Shell 本身不再提供独立的旧模板预览入口。
 
 ## 多标签能力
 
@@ -48,10 +43,9 @@ python3 -m http.server 8080
 
 ## 接入方式
 
-1. 修改 `shell-config.example.js` 中的标签、导航和账号信息。
-2. 在业务脚本中创建 DOM 节点。
-3. 调用 `EasyAccountShell.mount({ content })` 挂载默认业务内容；React 业务内容可在返回的 `contentSlot` 中创建 Root。
-4. 框架规则只写入 `shell.css`，页面专属样式写入独立业务 CSS。
+1. 页面规格通过 `page-spec.json` 声明标签、导航和业务内容。
+2. 固定渲染器复制 Shell 运行时、配置、样式和 vendor，并生成业务预览。
+3. 框架规则只写入 `shell.css` 与 `content-base.css`，页面视觉规则由导演规则和执行层共同约束。
 
 ## 框架固定值
 

@@ -13,12 +13,12 @@
 - 提交后的业务结果
 - AI 生成时的业务完整性约束
 
-颜色、字号、间距、布局、Ant Design 组件选型和交互样式统一进入 [`design.md`](./design.md)。
+颜色、字号、间距、布局、Ant Design 组件选型和交互样式统一进入 [`director-rules/01-visual-constitution.md`](./director-rules/01-visual-constitution.md) 和 [`director-rules/03-interaction-acceptance-rules.md`](./director-rules/03-interaction-acceptance-rules.md)。
 
 生成页面时必须同时读取两个文件：
 
 1. 本文件决定“展示什么、允许做什么、如何流转”。
-2. `design.md` 决定“使用什么结构和组件、如何呈现与交互”。
+2. 导演规则决定“使用什么结构和组件、如何呈现与交互”。
 
 ## 2. 平台业务定位
 
@@ -327,7 +327,7 @@ Result 必须说明：
 4. 定义字段、枚举、单位和校验。
 5. 定义状态与允许操作。
 6. 定义成功、失败和空状态。
-7. 再按照 `design.md` 组装页面。
+7. 再按照导演规则组装页面。
 
 禁止：
 
