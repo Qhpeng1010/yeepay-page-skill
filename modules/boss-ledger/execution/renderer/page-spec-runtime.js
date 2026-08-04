@@ -611,13 +611,14 @@
         setWorkflow(null);
       }
     }) : null;
+    const tableMinimumWidth = columns.reduce((total, column) => total + (Number(column.width) || 140), tableSpec.rowSelection ? 48 : 0);
     const tableProps = {
       rowKey: tableSpec.rowKey,
       columns,
       dataSource: failed ? [] : pagedRows,
       loading,
       pagination: false,
-      scroll: tableSpec.scrollX ? { x: tableSpec.scrollX } : undefined,
+      scroll: { x: tableSpec.scrollX || tableMinimumWidth },
       locale: { emptyText }
     };
     if (tableSpec.rowSelection) tableProps.rowSelection = { selectedRowKeys: selectedKeys, onChange: setSelectedKeys };

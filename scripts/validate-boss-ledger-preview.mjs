@@ -296,6 +296,15 @@ function checkSource(html) {
       pass('validate', 'Direct result regions do not stack a second horizontal content inset');
     }
 
+    const containedTableBody = /\.boss-table-body\s*\{[^}]*width\s*:\s*100%[^}]*max-width\s*:\s*100%[^}]*overflow-x\s*:\s*auto/i.test(source)
+      && /\.boss-result-module(?:[^,{]*)\{[^}]*width\s*:\s*100%[^}]*max-width\s*:\s*100%/i.test(source)
+      && /const tableMinimumWidth = columns\.reduce[\s\S]{0,500}scroll:\s*\{\s*x:\s*tableSpec\.scrollX\s*\|\|\s*tableMinimumWidth\s*\}/i.test(source);
+    if (containedTableBody) {
+      pass('validate', 'Wide Table columns are constrained to the result module and scroll only inside the Table body');
+    } else {
+      fail('validate', 'Query-list Table width must follow the result module; wide columns require inner Table scrolling, not module or page overflow');
+    }
+
     const hasQueryStatistic = /(?:h|React\.createElement)\(\s*Statistic\b|<Statistic\b/i.test(source);
     if (hasQueryStatistic && !/\bboss-result-summary\b/i.test(source)) {
       fail('validate', 'Query-list Statistic groups must use boss-result-summary so result padding ownership is auditable');

@@ -24,6 +24,9 @@ const changeId = `20260803-list-workbench-test-${randomBytes(4).toString('hex')}
 const changeArg = `changes/${changeId}`;
 const changeDir = resolve(root, changeArg);
 const basicRequest = '创建老板管账的结算规则查询列表页。查询条件包括创建时间区间、规则名称和规则状态。列表展示规则编号、规则名称、商户名称、规则状态和创建时间。';
+const normalizedNaturalRequest = `创建一个页面，老板管账商户查询页面
+条件：注册时间、代理名称、部门名称、商户名称、商户编号、业务角色、首笔交易时间
+table列表：注册时间、商户编号、商户名称、商户简称、部门名称、直属代理、业务角色`;
 
 try {
   const classified = classifyBossLedgerGeneration(request);
@@ -53,6 +56,14 @@ try {
   const basicClassified = classifyBossLedgerGeneration(basicRequest);
   if (basicClassified.status !== 'fast' || basicClassified.recipe !== 'list-workbench') {
     throw new Error('A basic list request using “查询条件包括” did not select the list workbench recipe.');
+  }
+  const normalizedNatural = parseListWorkbenchRequest(normalizedNaturalRequest);
+  if (normalizedNatural.pageName !== '商户查询' || normalizedNatural.queryLabels.length !== 7 || normalizedNatural.columnLabels.length !== 7) {
+    throw new Error('Natural condition and table section headers were not normalized into a list workbench request.');
+  }
+  const normalizedNaturalClassified = classifyBossLedgerGeneration(normalizedNaturalRequest);
+  if (normalizedNaturalClassified.status !== 'fast' || normalizedNaturalClassified.recipe !== 'list-workbench') {
+    throw new Error('A normalized natural-language list request did not select the list workbench recipe.');
   }
 
   const compiled = compileListWorkbench({ rawRequest: request, changeId });

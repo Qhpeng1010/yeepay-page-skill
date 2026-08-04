@@ -44,6 +44,7 @@ const uploadWizard = scenarioSpec('05-settlement-import');
 const simplePageForm = readJson(resolve(fixtureRoot, 'valid/simple-page-form.json'));
 const runtimeSource = readFileSync(resolve(root, 'modules/boss-ledger/execution/renderer/page-spec-runtime.js'), 'utf8');
 const businessCssSource = readFileSync(resolve(root, 'modules/boss-ledger/execution/renderer/page-spec-business.css'), 'utf8');
+const contentBaseCssSource = readFileSync(resolve(root, 'modules/boss-ledger/shell/content-base.css'), 'utf8');
 const buildSource = readFileSync(resolve(root, 'scripts/build-boss-ledger-page-spec.mjs'), 'utf8');
 const previewValidatorSource = readFileSync(resolve(root, 'scripts/validate-boss-ledger-preview.mjs'), 'utf8');
 const directCases = [
@@ -235,6 +236,16 @@ if (!runtimeSource.includes("const DEFAULT_QUERY_DATE_PRESETS = ['今日', '近 
   || !businessCssSource.includes('background: var(--boss-selected-bg) !important;')
   ) {
   failures.push('adaptive-query-layout: query lists must use responsive 3/2/1 grid columns with content-sized Labels and same-column controls, reserve unused final-row columns, use the default date shortcuts, show one active shortcut with the primary-derived selection background, use a dedicated date row, and measure actual-row overflow without field-count thresholds.');
+} else {
+  passed += 1;
+}
+
+if (!runtimeSource.includes('const tableMinimumWidth = columns.reduce')
+  || !runtimeSource.includes('scroll: { x: tableSpec.scrollX || tableMinimumWidth }')
+  || !businessCssSource.includes('.boss-result-module { width: 100%; min-width: 0; max-width: 100%;')
+  || !businessCssSource.includes('.boss-table-body { width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; overflow-y: hidden; }')
+  || !contentBaseCssSource.includes('.boss-table-body { width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; overflow-y: hidden; }')) {
+  failures.push('contained-table-layout: result modules must constrain Table width and place any wide-table scroll inside the Table body.');
 } else {
   passed += 1;
 }

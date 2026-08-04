@@ -1,8 +1,8 @@
 /* Fixed business layout for declarative Boss Ledger Page Specs. */
-.boss-content-stack { flex: 1 0 auto; display: flex; flex-direction: column; gap: 16px; min-height: 100%; }
+.boss-content-stack { flex: 1 0 auto; display: flex; flex-direction: column; gap: 16px; width: 100%; min-width: 0; max-width: 100%; min-height: 100%; }
 .boss-query-module, .boss-result-module, .boss-form-module, .boss-detail-module, .boss-result-page { background: var(--boss-container); }
 .boss-query-module { padding: 16px; }
-.boss-result-module { padding: 0 16px 16px; min-height: 360px; }
+.boss-result-module { width: 100%; min-width: 0; max-width: 100%; padding: 0 16px 16px; min-height: 360px; overflow: hidden; }
 .boss-form-module, .boss-detail-module { flex: 1 0 auto; padding: 16px; min-height: 480px; }
 .boss-result-page { min-height: 520px; padding: 48px 16px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
 .boss-workflow-result { width: min(100%, 640px); padding: 0; }
@@ -56,7 +56,8 @@
 .boss-result-summary-inline strong { color: var(--boss-text); font-weight: 600; }
 .boss-result-summary { padding-top: 16px; margin-bottom: 8px; display: grid; grid-template-columns: repeat(var(--boss-summary-columns, 3), minmax(0, 1fr)); gap: 12px; }
 .boss-statistic-card { padding: 16px; background: var(--boss-statistic-bg); border-radius: var(--boss-radius-control); }
-.boss-table-body { min-width: 0; }
+.boss-table-body { width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; overflow-y: hidden; }
+.boss-table-body > .ant-table-wrapper { width: 100%; min-width: 0; max-width: 100%; }
 .boss-table-pagination { padding-top: 16px; display: flex; justify-content: flex-end; }
 .boss-column-settings { width: 240px; }
 .boss-column-settings-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }

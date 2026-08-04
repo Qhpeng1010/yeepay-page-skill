@@ -28,6 +28,16 @@ function fieldsFrom(value) {
     });
 }
 
+function sectionValue(request, headerPattern, nextHeaderPattern) {
+  const header = request.match(headerPattern);
+  if (!header || header.index === undefined) return '';
+  const remainder = request.slice(header.index + header[0].length);
+  const punctuationIndex = remainder.search(/[。；]/);
+  const nextHeaderIndex = nextHeaderPattern ? remainder.search(nextHeaderPattern) : -1;
+  const endIndex = [punctuationIndex, nextHeaderIndex].filter((index) => index >= 0).sort((left, right) => left - right)[0];
+  return remainder.slice(0, endIndex === undefined ? undefined : endIndex).trim();
+}
+
 function fieldKey(label, index = 0) {
   const known = {
     规则编号: 'ruleNo', 规则名称: 'ruleName', 商户编号: 'merchantNo', 商户名称: 'merchantName',
@@ -81,7 +91,8 @@ function sampleValue(column, rowIndex) {
 }
 
 function extractPageName(request) {
-  const match = request.match(/创建老板管账的([^。；]+?)(?:列表页|列表页面|列表|页面)/);
+  const match = request.match(/创建老板管账的([^。；]+?)(?:列表页|列表页面|列表|页面)/)
+    || request.match(/老板管账(?:的)?([^。；]+?)(?:列表页|列表页面|页面)/);
   return match ? match[1].trim().replace(/^【(.+)】$/, '$1') : '记录查询';
 }
 
@@ -96,12 +107,19 @@ function extractFormLabels(request, action) {
 export function parseListWorkbenchRequest(rawRequest) {
   const request = normalize(rawRequest);
   if (!request) throw new Error('缺少业务需求。');
+  const tableHeaderPattern = /(?:\btable\s*)?列表\s*(?:展示|显示|包括|为|有|字段|列|：|:)|(?:结果|表格)(?:列表|字段|列)\s*(?:展示|显示|包括|为|有|：|:)/i;
+  const querySection = sectionValue(
+    request,
+    /(?:查询|筛选)?(?:条件|筛选项|查询项)\s*(?:包括|为|有|：|:)\s*/,
+    tableHeaderPattern
+  );
+  const columnSection = sectionValue(request, tableHeaderPattern);
   const queryMatch = request.match(/(?:支持|可以|可)?(?:按|根据)([^。；]+?)(?:查询|筛选)/)
     || request.match(/(?:查询|筛选)条件(?:包括|为|有|：|:)\s*([^。；]+)/)
     || request.match(/(?:查询|筛选)字段(?:包括|为|有|：|:)\s*([^。；]+)/);
   const columnMatch = request.match(/列表(?:展示|显示)([^。；]+)/);
-  const queryLabels = queryMatch ? fieldsFrom(queryMatch[1]) : [];
-  const columnLabels = columnMatch ? fieldsFrom(columnMatch[1]) : [];
+  const queryLabels = queryMatch ? fieldsFrom(queryMatch[1]) : fieldsFrom(querySection);
+  const columnLabels = columnMatch ? fieldsFrom(columnMatch[1]) : fieldsFrom(columnSection);
   if (!queryLabels.length || !columnLabels.length) throw new Error('列表配方需要明确的查询条件和列表字段。');
 
   const hasDetail = /查看详情|查看.*详情|详情抽屉|只读展示.*详情|点击任一.*详情/.test(request);
