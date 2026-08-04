@@ -85,6 +85,90 @@
     return (options || []).map((option) => ({ label: option.label, value: option.value }));
   }
 
+  const DEFAULT_QUERY_DATE_PRESETS = ['今日', '近 7 日', '近 30 日'];
+
+  function queryDatePresets(field) {
+    const presets = Array.isArray(field?.presets) && field.presets.length ? field.presets : DEFAULT_QUERY_DATE_PRESETS;
+    return presets.map((preset) => typeof preset === 'string' ? { key: preset, label: preset } : preset).filter((preset) => preset?.label);
+  }
+
+  function queryDateRangeForPreset(preset) {
+    if (typeof global.dayjs !== 'function') return undefined;
+    const today = global.dayjs();
+    const label = typeof preset === 'string' ? preset : preset?.label;
+    if (label === '昨日') {
+      const yesterday = today.subtract(1, 'day');
+      return [yesterday.startOf('day'), yesterday.endOf('day')];
+    }
+    if (label === '近 3 日') return [today.subtract(2, 'day').startOf('day'), today.endOf('day')];
+    if (label === '近 7 日') return [today.subtract(6, 'day').startOf('day'), today.endOf('day')];
+    if (label === '近 30 日') return [today.subtract(29, 'day').startOf('day'), today.endOf('day')];
+    return [today.startOf('day'), today.endOf('day')];
+  }
+
+  function queryInitialValues(query) {
+    const values = { ...(query?.initialValues || {}) };
+    (query?.fields || []).forEach((field) => {
+      if (field.control !== 'date-range' || values[field.key] !== undefined) return;
+      values[field.key] = queryDateRangeForPreset(field.defaultPreset || queryDatePresets(field)[0]);
+    });
+    return values;
+  }
+
+  function isSameQueryDateRange(value, expected) {
+    if (!Array.isArray(value) || !Array.isArray(expected) || value.length !== 2 || expected.length !== 2) return false;
+    return value[0]?.isSame?.(expected[0], 'day') && value[1]?.isSame?.(expected[1], 'day');
+  }
+
+  function QueryDateRangeControl({ field, form }) {
+    const value = Form.useWatch(field.key, form);
+    const presets = queryDatePresets(field);
+    return h('div', { className: 'boss-query-date-range-control' },
+      h(Form.Item, { name: field.key, noStyle: true }, h(DatePicker.RangePicker, {
+        className: 'boss-query-date-range-picker',
+        placeholder: ['开始日期', '结束日期']
+      })),
+      h('div', { className: 'boss-query-date-presets', 'aria-label': `${field.label}快捷选择` }, ...presets.map((preset) => {
+        const range = queryDateRangeForPreset(preset);
+        const selected = isSameQueryDateRange(value, range);
+        return h(Button, {
+          key: preset.key || preset.label,
+          type: 'text',
+          className: `boss-query-date-preset${selected ? ' is-selected' : ''}`,
+          onClick: () => form.setFieldsValue({ [field.key]: range })
+        }, preset.label);
+      })));
+  }
+
+  function queryItem(field, form) {
+    const className = `boss-query-field${field.control === 'date-range' ? ' boss-query-date-range-field' : ''}`;
+    const data = {
+      key: field.key,
+      className,
+      'data-boss-query-row': 'field',
+      'data-boss-query-key': field.key,
+      'data-boss-query-control': field.control
+    };
+    if (field.control === 'date-range') {
+      return h('div', data, h(Form.Item, { label: field.label }, h(QueryDateRangeControl, { field, form })));
+    }
+    return h('div', data, h(Form.Item, { name: field.key, label: field.label }, controlForField(field)));
+  }
+
+  function queryRowTops(container) {
+    if (!container) return [];
+    return [...new Set([...container.querySelectorAll('[data-boss-query-row]')].map((node) => node.offsetTop))].sort((left, right) => left - right);
+  }
+
+  function queryFieldKeysWithinRows(container, rowTops, limit) {
+    if (!container || !rowTops.length) return [];
+    const maximumTop = rowTops[Math.min(limit - 1, rowTops.length - 1)];
+    return [...container.querySelectorAll('[data-boss-query-row="field"]')]
+      .filter((node) => node.offsetTop <= maximumTop)
+      .map((node) => node.dataset.bossQueryKey)
+      .filter(Boolean);
+  }
+
   function controlForField(field) {
     const common = { placeholder: field.placeholder || (['select', 'radio'].includes(field.control) ? `请选择${field.label}` : `请输入${field.label}`) };
     if (field.control === 'select') return h(Select, { ...common, allowClear: true, options: normalizeOptions(field.options) });
@@ -287,12 +371,20 @@
   function ListPage({ spec }) {
     const list = spec.list;
     const tableSpec = list.table;
+    const queryFields = list.query.fields || [];
+    const queryInitial = React.useMemo(() => queryInitialValues(list.query), [list.query]);
+    const hasSecondaryQueryFields = queryFields.some((field) => field.advanced);
     const [form] = Form.useForm();
     const [applied, setApplied] = React.useState({});
     const [rows, setRows] = React.useState(() => tableSpec.rows);
     const [loading, setLoading] = React.useState(false);
     const [failed, setFailed] = React.useState(false);
-    const [expanded, setExpanded] = React.useState(list.query.defaultExpanded !== false);
+    const [queryCollapsed, setQueryCollapsed] = React.useState(false);
+    const [queryHasOverflow, setQueryHasOverflow] = React.useState(false);
+    const [queryLayoutReady, setQueryLayoutReady] = React.useState(false);
+    const [collapsedQueryKeys, setCollapsedQueryKeys] = React.useState(() => queryFields.map((field) => field.key));
+    const queryLayoutRef = React.useRef(null);
+    const queryInitialLayoutRef = React.useRef(true);
     const [page, setPage] = React.useState(tableSpec.pagination.page || 1);
     const [detailRow, setDetailRow] = React.useState(null);
     const [workflow, setWorkflow] = React.useState(null);
@@ -303,8 +395,9 @@
     const [visibleKeys, setVisibleKeys] = React.useState(() => tableSpec.columns.filter((column) => column.hidden !== true).map((column) => column.key));
     const [columnOrder, setColumnOrder] = React.useState(initialColumnKeys);
 
-    const queryFields = list.query.fields || [];
-    const visibleQueryFields = expanded ? queryFields : queryFields.filter((field, index) => !field.advanced && index < (list.query.collapseThreshold || 6));
+    const visibleQueryFields = queryLayoutReady && queryHasOverflow && queryCollapsed
+      ? queryFields.filter((field) => collapsedQueryKeys.includes(field.key))
+      : queryFields;
     const filteredRows = React.useMemo(() => rows.filter((row) => queryFields.every((field) => matchesQuery(row, field, applied[field.key]))), [applied, queryFields, rows]);
     const pageSize = tableSpec.pagination.pageSize;
     const pagedRows = filteredRows.slice((page - 1) * pageSize, page * pageSize);
@@ -326,6 +419,76 @@
       setFailed(false);
       setPage(1);
       setSelectedKeys([]);
+    };
+
+    React.useLayoutEffect(() => {
+      if (queryLayoutReady) return undefined;
+      const defer = global.requestAnimationFrame || ((callback) => global.setTimeout(callback, 0));
+      const cancelDeferred = global.cancelAnimationFrame || global.clearTimeout;
+      const frame = defer(() => {
+        const container = queryLayoutRef.current;
+        const rowTops = queryRowTops(container);
+        const hasOverflow = rowTops.length > 2;
+        const isInitialLayout = queryInitialLayoutRef.current;
+        const primaryKeys = queryFields.filter((field) => !field.advanced).map((field) => field.key);
+        const twoLineKeys = queryFieldKeysWithinRows(container, rowTops, 2);
+        const fallbackKeys = primaryKeys.length ? primaryKeys : twoLineKeys;
+        setQueryHasOverflow(hasOverflow);
+        setCollapsedQueryKeys((current) => {
+          const currentKeys = current.filter((key) => queryFields.some((field) => field.key === key));
+          return isInitialLayout || !currentKeys.length ? fallbackKeys : currentKeys;
+        });
+        setQueryCollapsed((current) => {
+          if (!hasOverflow) return false;
+          if (isInitialLayout && hasSecondaryQueryFields && list.query.defaultExpanded !== true) return true;
+          return current;
+        });
+        queryInitialLayoutRef.current = false;
+        setQueryLayoutReady(true);
+      });
+      return () => cancelDeferred(frame);
+    }, [hasSecondaryQueryFields, list.query.defaultExpanded, queryFields, queryLayoutReady]);
+
+    React.useEffect(() => {
+      const container = queryLayoutRef.current;
+      if (!container) return undefined;
+      let width = container.clientWidth;
+      const remeasure = () => {
+        queryInitialLayoutRef.current = false;
+        setQueryLayoutReady(false);
+      };
+      if (typeof global.ResizeObserver === 'function') {
+        const observer = new global.ResizeObserver((entries) => {
+          const nextWidth = Math.round(entries[0]?.contentRect?.width || container.clientWidth);
+          if (Math.abs(nextWidth - width) < 1) return;
+          width = nextWidth;
+          remeasure();
+        });
+        observer.observe(container);
+        return () => observer.disconnect();
+      }
+      global.addEventListener?.('resize', remeasure);
+      return () => global.removeEventListener?.('resize', remeasure);
+    }, []);
+
+    React.useLayoutEffect(() => {
+      if (!queryLayoutReady || !queryHasOverflow || !queryCollapsed) return;
+      const container = queryLayoutRef.current;
+      if (queryRowTops(container).length <= 2) return;
+      const candidate = [...(container?.querySelectorAll('[data-boss-query-row="field"]') || [])]
+        .reverse()
+        .find((node) => node.dataset.bossQueryControl !== 'date-range');
+      const key = candidate?.dataset.bossQueryKey;
+      if (!key) return;
+      setCollapsedQueryKeys((current) => current.length > 1 ? current.filter((fieldKey) => fieldKey !== key) : current);
+    }, [collapsedQueryKeys, queryCollapsed, queryHasOverflow, queryLayoutReady]);
+
+    const toggleQuery = () => {
+      if (!queryCollapsed) {
+        const primaryKeys = queryFields.filter((field) => !field.advanced).map((field) => field.key);
+        if (primaryKeys.length) setCollapsedQueryKeys(primaryKeys);
+      }
+      setQueryCollapsed((current) => !current);
     };
     const updateRows = (keys, effect) => setRows((current) => current.map((row) => keys.includes(row[tableSpec.rowKey]) ? { ...row, [effect.field]: effect.value } : row));
     const removeRows = (keys) => setRows((current) => current.filter((row) => !keys.includes(row[tableSpec.rowKey])));
@@ -464,9 +627,13 @@
     }
     return h(React.Fragment, null,
       h('div', { className: 'boss-content-stack' },
-        h('section', { className: 'boss-query-module', 'data-boss-query-grid': '3' }, h(Form, { form, layout: 'horizontal', onFinish: runQuery, initialValues: list.query.initialValues || {} }, h('div', { className: 'boss-query-grid' },
-          ...visibleQueryFields.map((field) => h(Form.Item, { key: field.key, name: field.key, label: field.label }, controlForField(field))),
-          h('div', { className: 'boss-query-actions' }, queryFields.length > (list.query.collapseThreshold || 6) || queryFields.some((field) => field.advanced) ? h(Button, { type: 'text', className: 'boss-query-expand-button', icon: expanded ? h(UpOutlined) : h(DownOutlined), onClick: () => setExpanded((value) => !value) }, expanded ? '收 起' : '展 开') : null, h(Button, { onClick: reset }, '重 置'), h(Button, { type: 'primary', htmlType: 'submit' }, '查 询'))))),
+        h('section', { className: 'boss-query-module', 'data-boss-query-layout': 'adaptive' }, h(Form, { form, layout: 'horizontal', onFinish: runQuery, initialValues: queryInitial }, h('div', {
+          ref: queryLayoutRef,
+          className: `boss-query-grid${queryLayoutReady ? '' : ' is-measuring'}`,
+          'data-boss-query-measurement': 'actual-row-count'
+        },
+        ...visibleQueryFields.map((field) => queryItem(field, form)),
+        h('div', { className: 'boss-query-actions', 'data-boss-query-row': 'actions' }, queryLayoutReady && queryHasOverflow ? h(Button, { type: 'text', className: 'boss-query-expand-button', icon: queryCollapsed ? h(DownOutlined) : h(UpOutlined), onClick: toggleQuery }, queryCollapsed ? '展开' : '收起') : null, h(Button, { onClick: reset }, '重置'), h(Button, { type: 'primary', htmlType: 'submit' }, '查询'))))),
         h('section', { className: 'boss-result-module' }, statistics, h('div', { className: 'boss-result-toolbar' }, h('div', { className: 'boss-result-toolbar-left' }, summary), h('div', { className: 'boss-result-toolbar-right' }, ...toolbarTools)), batchBar, h('div', { className: 'boss-table-body' }, h(Table, tableProps)), h('div', { className: 'boss-table-pagination' }, h(Pagination, { current: page, pageSize, total: failed ? 0 : filteredRows.length, showSizeChanger: false, showTotal: (total) => `共 ${total} 条`, onChange: setPage })))),
       detailDrawer,
       workflowDrawer);

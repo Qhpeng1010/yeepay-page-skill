@@ -219,6 +219,26 @@ if (!previewValidatorSource.includes("pageSpec?.metadata?.family === 'list'")
   passed += 1;
 }
 
+if (!runtimeSource.includes("const DEFAULT_QUERY_DATE_PRESETS = ['今日', '近 7 日', '近 30 日']")
+  || !runtimeSource.includes('function queryRowTops')
+  || !runtimeSource.includes("'data-boss-query-measurement': 'actual-row-count'")
+  || runtimeSource.includes('collapseThreshold')
+  || !businessCssSource.includes('.boss-query-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));')
+  || !businessCssSource.includes('.boss-query-date-range-field { grid-column: 1 / -1;')
+  || !businessCssSource.includes('.boss-query-actions { display: flex; grid-column: 3; justify-self: end;')
+  || !businessCssSource.includes('  .boss-query-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }')
+  || !businessCssSource.includes('  .boss-query-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }')
+  || !businessCssSource.includes('width: max-content; min-width: 320px;')
+  || !runtimeSource.includes('const selected = isSameQueryDateRange(value, range);')
+  || !runtimeSource.includes("boss-query-date-preset${selected ? ' is-selected' : ''}")
+  || !businessCssSource.includes('.boss-query-date-preset.is-selected')
+  || !businessCssSource.includes('background: var(--boss-selected-bg) !important;')
+  ) {
+  failures.push('adaptive-query-layout: query lists must use responsive 3/2/1 grid columns with content-sized Labels and same-column controls, reserve unused final-row columns, use the default date shortcuts, show one active shortcut with the primary-derived selection background, use a dedicated date row, and measure actual-row overflow without field-count thresholds.');
+} else {
+  passed += 1;
+}
+
 for (const [name, spec, expectedError] of directCases) {
   const errors = validatePageSpec(spec, { root });
   if (!errors.includes(expectedError)) failures.push(`${name}: expected error '${expectedError}', received ${errors.join(' | ')}`);

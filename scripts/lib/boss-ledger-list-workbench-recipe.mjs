@@ -96,7 +96,9 @@ function extractFormLabels(request, action) {
 export function parseListWorkbenchRequest(rawRequest) {
   const request = normalize(rawRequest);
   if (!request) throw new Error('缺少业务需求。');
-  const queryMatch = request.match(/(?:支持|可以|可)?(?:按|根据)([^。；]+?)(?:查询|筛选)/);
+  const queryMatch = request.match(/(?:支持|可以|可)?(?:按|根据)([^。；]+?)(?:查询|筛选)/)
+    || request.match(/(?:查询|筛选)条件(?:包括|为|有|：|:)\s*([^。；]+)/)
+    || request.match(/(?:查询|筛选)字段(?:包括|为|有|：|:)\s*([^。；]+)/);
   const columnMatch = request.match(/列表(?:展示|显示)([^。；]+)/);
   const queryLabels = queryMatch ? fieldsFrom(queryMatch[1]) : [];
   const columnLabels = columnMatch ? fieldsFrom(columnMatch[1]) : [];
@@ -189,6 +191,6 @@ export function compileListWorkbench({ rawRequest, changeId }) {
     },
     shell: { activePrimaryKey: 'workspace' },
     content: { capabilities: [...new Set(capabilities)] },
-    list: { query: { fields: query, ...(isAdvancedQuery ? { collapseThreshold: 6 } : {}) }, table }
+    list: { query: { fields: query, ...(isAdvancedQuery ? { defaultExpanded: false } : {}) }, table }
   };
 }

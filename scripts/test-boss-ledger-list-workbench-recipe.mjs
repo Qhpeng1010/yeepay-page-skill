@@ -23,6 +23,7 @@ const request = `创建老板管账的分账规则管理列表页。
 const changeId = `20260803-list-workbench-test-${randomBytes(4).toString('hex')}`;
 const changeArg = `changes/${changeId}`;
 const changeDir = resolve(root, changeArg);
+const basicRequest = '创建老板管账的结算规则查询列表页。查询条件包括创建时间区间、规则名称和规则状态。列表展示规则编号、规则名称、商户名称、规则状态和创建时间。';
 
 try {
   const classified = classifyBossLedgerGeneration(request);
@@ -45,13 +46,21 @@ try {
   if (parsed.formLabels.length !== 10 || parsed.formLabels.at(-1) !== '手续费率') {
     throw new Error('The list workbench did not expand the edit field reference to the create fields.');
   }
+  const basic = parseListWorkbenchRequest(basicRequest);
+  if (basic.queryLabels.length !== 3 || basic.columnLabels.length !== 5 || Object.keys(basic.operations).length !== 0) {
+    throw new Error('A basic list request using “查询条件包括” was not parsed without optional row operations.');
+  }
+  const basicClassified = classifyBossLedgerGeneration(basicRequest);
+  if (basicClassified.status !== 'fast' || basicClassified.recipe !== 'list-workbench') {
+    throw new Error('A basic list request using “查询条件包括” did not select the list workbench recipe.');
+  }
 
   const compiled = compileListWorkbench({ rawRequest: request, changeId });
   if (!compiled.content.capabilities.includes('query.advanced') || compiled.content.capabilities.includes('query.basic')) {
     throw new Error('More than six query fields must use advanced query mode.');
   }
-  if (compiled.list.query.collapseThreshold !== 6 || compiled.list.query.fields.filter((field) => field.advanced).length !== 4) {
-    throw new Error('Advanced query fields did not receive the collapse behavior.');
+  if (compiled.list.query.defaultExpanded !== false || Object.hasOwn(compiled.list.query, 'collapseThreshold') || compiled.list.query.fields.filter((field) => field.advanced).length !== 4) {
+    throw new Error('Advanced query fields did not receive declarative primary/secondary grouping.');
   }
   if (!compiled.list.table.drawerDetail || compiled.list.table.primaryAction?.form?.fields.length !== 10) {
     throw new Error('The list workbench did not compile detail and create drawers.');

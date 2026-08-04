@@ -106,16 +106,6 @@ function appendLocalPreviewAssets(html, previewFile) {
   return sources.join('\n');
 }
 
-function countDeclaredQueryFields(source) {
-  const queryFieldsMatch = source.match(/const\s+queryFields\s*=\s*\[([\s\S]*?)\n\s*\];/);
-  if (!queryFieldsMatch) {
-    return null;
-  }
-
-  const keyMatches = queryFieldsMatch[1].match(/\bkey\s*:/g);
-  return keyMatches ? keyMatches.length : 0;
-}
-
 function findMatchingBracket(source, startIndex, openChar, closeChar) {
   let depth = 0;
   let quote = null;
@@ -339,33 +329,71 @@ function checkSource(html) {
     pass('validate', 'No query-list module pair detected; persistent white-module checks skipped');
   }
 
-  const fixedWizardSkeleton = /data-boss-wizard-template\s*['"]?\s*:/i.test(source) || /data-boss-wizard-template=/i.test(source);
-  const hasQueryArea = !fixedWizardSkeleton && /(data-boss-query-grid|boss-query-grid|query-grid|queryFields|查询条件)/i.test(source);
+  const hasQueryArea = pageSpec
+    ? pageSpec.metadata?.family === 'list'
+    : /(data-boss-query-layout|data-boss-query-grid|boss-query-grid|query-grid|queryFields|查询条件)/i.test(source);
   if (!hasQueryArea) {
-    pass('validate', 'No query area detected; three-column query-grid check skipped');
-  } else if (/(grid-template-columns\s*:\s*(?:repeat\(\s*3\s*,|[^;]*\s[^;]*\s[^;]*;)|data-boss-query-grid=["']3["'])/i.test(source)) {
-    pass('validate', 'Query area declares a three-column grid');
+    pass('validate', 'No query area detected; adaptive query-layout check skipped');
   } else {
-    fail('validate', 'Query area must use a three-column grid before placing actions');
+    const hasAdaptiveQueryLayout = /\.boss-query-grid\s*\{[^}]*display\s*:\s*grid[^}]*grid-template-columns\s*:\s*repeat\(\s*3\s*,\s*minmax\(\s*0\s*,\s*1fr\s*\)\s*\)/i.test(source)
+      && /@media\s*\(max-width:\s*1080px\)\s*\{[\s\S]{0,1600}\.boss-query-grid\s*\{[^}]*grid-template-columns\s*:\s*repeat\(\s*2\s*,\s*minmax\(\s*0\s*,\s*1fr\s*\)\s*\)/i.test(source)
+      && /@media\s*\(max-width:\s*768px\)\s*\{[\s\S]{0,1800}\.boss-query-grid\s*\{[^}]*grid-template-columns\s*:\s*minmax\(\s*0\s*,\s*1fr\s*\)/i.test(source)
+      && /\.boss-query-field\s*\{[^}]*min-width\s*:\s*0/i.test(source)
+      && /data-boss-query-layout/i.test(source);
+    const hasDedicatedDateRow = /\.boss-query-date-range-field\s*\{[^}]*grid-column\s*:\s*1\s*\/\s*-1/i.test(source);
+    const hasMeasuredRows = /queryRowTops\(container\)[\s\S]{0,800}rowTops\.length\s*>\s*2/i.test(source)
+      && /data-boss-query-row/i.test(source)
+      && /queryHasOverflow/i.test(source);
+    const hasGridAlignedActions = /\.boss-query-actions\s*\{[^}]*grid-column\s*:\s*3[^}]*justify-self\s*:\s*end/i.test(source);
+    if (hasAdaptiveQueryLayout && hasDedicatedDateRow && hasMeasuredRows && hasGridAlignedActions) {
+      pass('validate', 'Query area uses responsive 3/2/1 grid columns with Label-plus-control units, a dedicated date row, and measured two-row overflow');
+    } else {
+      fail('validate', 'Query area must use responsive 3/2/1 grid columns with Label-plus-control units, a dedicated date row, a final-column action area, and measured two-row overflow; field-count collapse is not allowed');
+    }
   }
 
   if (!hasQueryArea) {
     pass('validate', 'No query area detected; query label-alignment check skipped');
   } else {
-    const hasStableQueryLabelColumn = /\.boss-query-grid\s+\.ant-form-item-label\s*\{[^}]*(?:flex\s*:\s*0\s+0\s+var\(--boss-query-label-width\)|max-width\s*:\s*var\(--boss-query-label-width\))/i.test(source);
-    const hasRightAlignedQueryLabels = /\.boss-query-grid\s+\.ant-form-item-label\s*\{[^}]*text-align\s*:\s*right/i.test(source)
-      && /\.boss-query-grid\s+\.ant-form-item-label\s*>\s*label\s*\{[^}]*justify-content\s*:\s*flex-end/i.test(source);
+    const hasContentSizedQueryLabels = /\.boss-query-field\s+\.ant-form-item-label\s*\{[^}]*(?:flex\s*:\s*0\s+0\s+auto|max-width\s*:\s*none)/i.test(source);
+    const hasRightAlignedQueryLabels = /\.boss-query-field\s+\.ant-form-item-label\s*\{[^}]*text-align\s*:\s*right/i.test(source)
+      && /\.boss-query-field\s+\.ant-form-item-label\s*>\s*label\s*\{[^}]*justify-content\s*:\s*flex-end/i.test(source);
     const usesHorizontalQueryForm = /React\.createElement\(\s*Form\s*,\s*\{[^}]*layout\s*:\s*['"]horizontal['"]/i.test(source)
       || /\bh\(\s*Form\s*,\s*\{[^}]*layout\s*:\s*['"]horizontal['"]/i.test(source)
       || /<Form\b[^>]*\blayout\s*=\s*['"]horizontal['"]/i.test(source);
-    if (hasStableQueryLabelColumn && hasRightAlignedQueryLabels && usesHorizontalQueryForm) {
-      pass('validate', 'Query form uses stable right-aligned horizontal labels');
+    if (hasContentSizedQueryLabels && hasRightAlignedQueryLabels && usesHorizontalQueryForm) {
+      pass('validate', 'Query form uses content-sized, right-aligned horizontal Labels');
     } else {
-      fail('validate', 'Query-list conditions must use a horizontal Form with stable right-aligned label columns and aligned control edges');
+      fail('validate', 'Query-list conditions must use horizontal, content-sized, right-aligned Labels with their controls kept as one unit');
     }
   }
 
-  const hasQueryExpand = hasQueryArea && /(?:DownOutlined|UpOutlined)/i.test(source) && /(?:展 开|收 起)/.test(source);
+  const dateRangeQueryFields = pageSpec?.list?.query?.fields?.filter((field) => field.control === 'date-range') || [];
+  if (!dateRangeQueryFields.length) {
+    pass('validate', 'No date-range query field declared; default date shortcut check skipped');
+  } else {
+    const hasDefaultDatePresets = /DEFAULT_QUERY_DATE_PRESETS\s*=\s*\[['"]今日['"],\s*['"]近 7 日['"],\s*['"]近 30 日['"]\]/i.test(source);
+    const hasDateShortcutInteraction = /boss-query-date-presets/i.test(source)
+      && /form\.setFieldsValue\(\{\s*\[field\.key\]\s*:\s*range\s*\}\)/i.test(source)
+      && /queryInitialValues\(list\.query\)/i.test(source);
+    const hasCompactDateRange = /\.boss-query-date-range-control\s*>\s*\.boss-query-date-range-picker\s*\{[^}]*width\s*:\s*max-content[^}]*min-width\s*:\s*320px/i.test(source);
+    const hasPrimaryDerivedPresetSelection = /const\s+selected\s*=\s*isSameQueryDateRange\(value,\s*range\)/i.test(source)
+      && /boss-query-date-preset\$\{selected\s*\?\s*['"]\s+is-selected['"]\s*:\s*['"]['"]\}/i.test(source)
+      && /\.boss-query-date-preset\.is-selected[^}]*color\s*:\s*var\(--boss-primary\)[^}]*background\s*:\s*var\(--boss-selected-bg\)/i.test(source);
+    if (hasDefaultDatePresets && hasDateShortcutInteraction && hasCompactDateRange && hasPrimaryDerivedPresetSelection) {
+      pass('validate', 'Date-range queries default to today, use compact one-column width, and show the active shortcut with primary-derived selection styling');
+    } else {
+      fail('validate', 'Date-range queries must default to today, use compact one-column width, provide right-side quick selections for 今日、近 7 日、近 30 日, and show the active shortcut with primary-derived selection styling');
+    }
+  }
+
+  if (hasQueryArea && /\bcollapseThreshold\b/i.test(source)) {
+    fail('validate', 'Query expansion must be determined from actual rows, not collapseThreshold field counts');
+  } else {
+    pass('validate', 'Query expansion does not use field-count collapse thresholds');
+  }
+
+  const hasQueryExpand = hasQueryArea && /(?:DownOutlined|UpOutlined)/i.test(source) && /(?:展开|收起)/.test(source);
   if (hasQueryExpand) {
     const usesExpandContract = /className\s*:\s*['"][^'"]*boss-query-expand-button/i.test(source)
       || /className\s*=\s*['"][^'"]*boss-query-expand-button/i.test(source);
@@ -812,10 +840,11 @@ function checkSource(html) {
 
   if (!hasQueryArea) {
     pass('validate', 'No query area detected; query-action alignment check skipped');
-  } else if (/(data-boss-query-actions|query-actions|filter-actions)[\s\S]{0,240}(grid-column\s*:\s*(?:3|3\s*\/)|justify-self\s*:\s*end|margin-left\s*:\s*auto|text-align\s*:\s*right)/i.test(source)) {
-    pass('validate', 'Query action area is declared at the right side of the three-column grid');
+  } else if (/data-boss-query-row['"]?\s*[:=]\s*['"]actions['"]/i.test(source)
+    && /\.boss-query-actions\s*\{[^}]*display\s*:\s*flex[^}]*grid-column\s*:\s*3[^}]*justify-self\s*:\s*end/i.test(source)) {
+    pass('validate', 'Query action area occupies the final responsive grid column and aligns right within it');
   } else {
-    fail('validate', 'Query action area must be in the rightmost column of the three-column grid');
+    fail('validate', 'Query action area must occupy the final responsive grid column and align right within it');
   }
 
   const hasTableOperationColumn = /(?:title\s*:\s*['"]操作['"]|data-boss-operation-column|operation-(?:links|actions|column))/i.test(source);
@@ -915,37 +944,6 @@ function checkSource(html) {
     }
   } else {
     pass('validate', 'No Table status column detected; status presentation checks skipped');
-  }
-
-  const declaredQueryFieldCount = countDeclaredQueryFields(source);
-  if (declaredQueryFieldCount !== null && declaredQueryFieldCount <= 6) {
-    const hasExpandCollapseEntry = /(query-toggle|data-boss-query-toggle|DownOutlined|UpOutlined)/i.test(source)
-      || /(?:boss-query|query-form|query-panel)[\s\S]{0,700}(?:展\s*开|收\s*起)/i.test(source);
-    const hasFieldCountGuard = /queryFields\.length\s*>\s*6|queryFields\.length\s*>=\s*7|declaredQueryFieldCount\s*>\s*6|shouldShowQueryToggle/i.test(source);
-    if (hasExpandCollapseEntry && !hasFieldCountGuard) {
-      fail('validate', 'Query forms with 6 or fewer fields must not render or reserve expand/collapse controls');
-    } else {
-      pass('validate', 'Query expand/collapse is hidden or guarded for 6-or-fewer-field forms');
-    }
-    if (declaredQueryFieldCount === 6) {
-      const actionSlotIsSeparate = /data-boss-query-action-slot=["']7["']/i.test(source)
-        || /query-actions[^,{]*[,{][\s\S]{0,360}(?:grid-row\s*:\s*3|grid-area\s*:[^;}]*3\s*\/\s*3|data-boss-query-actions[^>]*data-boss-query-action-slot=["']7["'])/i.test(source);
-      const actionSlotInRightColumn = /(data-boss-query-actions|query-actions|filter-actions)[\s\S]{0,360}grid-column\s*:\s*(?:3|3\s*\/)/i.test(source);
-      if (actionSlotIsSeparate && actionSlotInRightColumn) {
-        pass('validate', 'Six-field query action area is a separate 7th slot on a new row in the rightmost column');
-      } else {
-        fail('validate', 'Query forms with exactly 6 fields must render Reset/Search as a separate 7th grid slot on a new row in the rightmost column');
-      }
-    }
-  } else if (declaredQueryFieldCount !== null) {
-    if (/(query-toggle|data-boss-query-toggle|DownOutlined|UpOutlined)/i.test(source)
-      || /(?:boss-query|query-form|query-panel)[\s\S]{0,700}(?:展\s*开|收\s*起)/i.test(source)) {
-      pass('validate', 'Query forms with more than 6 fields include expand/collapse controls');
-    } else {
-      fail('validate', 'Query forms with more than 6 fields must include expand/collapse controls');
-    }
-  } else {
-    pass('validate', 'No declarative queryFields array detected; query expand/collapse field-count rule skipped');
   }
 
   const hasSummary = /(data-boss-query-summary|query-summary|查询统计|Statistic)/i.test(source);
