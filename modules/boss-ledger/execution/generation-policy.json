@@ -12,7 +12,7 @@
       "intentModes": {
         "query-list": "page-spec-default",
         "inline-summary-list": "page-spec-default",
-        "card-summary-list": "shadow"
+        "card-summary-list": "page-spec-default"
       },
       "ruleRefs": ["BL-TPL-001", "BL-TPL-010", "BL-TPL-013", "BL-INT-003", "BL-INT-004", "BL-INT-008", "BL-INT-010"],
       "capabilities": [

@@ -12,20 +12,52 @@ const STATUS_MAP = {
 };
 
 function normalize(value) {
-  return String(value || '').replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+  return String(value || '').replace(/\r?\n/g, '、').replace(/\s+/g, ' ').trim();
 }
 
 function fieldsFrom(value) {
   return normalize(value)
     .replace(/[。；;]+$/g, '')
     .split(/[、，,；;]|和/)
-    .map((field) => field.replace(/^(?:按|根据|填写|输入|修改|展示|显示|包括)/, '').trim())
-    .filter((field) => field && !/^(?:保存|提交|关闭|确认|并|后)/.test(field))
+    .map((field) => field
+      .replace(/^(?:[-*]\s*|\d+[.)]\s*)/, '')
+      .replace(/^[：:]\s*/, '')
+      .replace(/^(?:按|根据|填写|输入|修改|展示|显示|包括)/, '')
+      .trim())
+    .filter((field) => field && !/^(?:保存|提交|关闭|确认|并|后|操作)$/.test(field))
     .filter((field) => {
       const compact = field.replace(/\s+/g, '');
       return !/^共\d+(?:个查询条件|列|个字段|个项)$/.test(compact)
         && !/^以上\d+(?:个字段|个项)$/.test(compact);
     });
+}
+
+function summaryCount(value) {
+  const normalized = String(value || '').trim();
+  const named = { 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5 };
+  return named[normalized] || Number(normalized);
+}
+
+function parseListSummary(request) {
+  const patterns = [
+    {
+      kind: 'inline',
+      expression: /(?:在)?结果工具栏左侧(?:展示|显示|提供)\s*([一二两12])\s*(?:项|个)?\s*(?:简单|轻量|行内)?(?:统计|指标|汇总)\s*[：:]\s*([^。；]+)/
+    },
+    {
+      kind: 'cards',
+      expression: /(?:在)?(?:(?:列表)?结果(?:区|模块)?|页面顶部)(?:展示|显示|提供)?\s*([三四五345])\s*(?:项|个)?\s*(?:重要)?(?:统计|指标|汇总)\s*[：:]\s*([^。；]+)/
+    }
+  ];
+  for (const { kind, expression } of patterns) {
+    const match = request.match(expression);
+    if (!match) continue;
+    const count = summaryCount(match[1]);
+    const labels = fieldsFrom(match[2].split(/(?:、)?操作\s*[:：]/)[0]);
+    if (labels.length !== count) throw new Error(`${kind === 'inline' ? '工具栏简单统计' : '统计卡片'}声明为 ${count} 项，但只识别到 ${labels.length} 项。`);
+    return { kind, labels };
+  }
+  return null;
 }
 
 function sectionValue(request, headerPattern, nextHeaderPattern) {
@@ -113,21 +145,29 @@ export function parseListWorkbenchRequest(rawRequest) {
     /(?:查询|筛选)?(?:条件|筛选项|查询项)\s*(?:包括|为|有|：|:)\s*/,
     tableHeaderPattern
   );
-  const columnSection = sectionValue(request, tableHeaderPattern);
+  const columnSection = sectionValue(
+    request,
+    tableHeaderPattern,
+    /(?:页面顶部|在(?:列表)?结果(?:区|模块)?|结果工具栏|操作)\s*(?:展示|显示|提供|[:：])/
+  );
   const queryMatch = request.match(/(?:支持|可以|可)?(?:按|根据)([^。；]+?)(?:查询|筛选)/)
     || request.match(/(?:查询|筛选)条件(?:包括|为|有|：|:)\s*([^。；]+)/)
     || request.match(/(?:查询|筛选)字段(?:包括|为|有|：|:)\s*([^。；]+)/);
   const columnMatch = request.match(/列表(?:展示|显示)([^。；]+)/);
-  const queryLabels = queryMatch ? fieldsFrom(queryMatch[1]) : fieldsFrom(querySection);
-  const columnLabels = columnMatch ? fieldsFrom(columnMatch[1]) : fieldsFrom(columnSection);
+  const queryLabels = fieldsFrom(querySection).length ? fieldsFrom(querySection) : (queryMatch ? fieldsFrom(queryMatch[1]) : []);
+  const columnLabels = fieldsFrom(columnSection).length ? fieldsFrom(columnSection) : (columnMatch ? fieldsFrom(columnMatch[1]) : []);
   if (!queryLabels.length || !columnLabels.length) throw new Error('列表配方需要明确的查询条件和列表字段。');
+  const summary = parseListSummary(request);
 
   const hasDetail = /查看详情|查看.*详情|详情抽屉|只读展示.*详情|点击任一.*详情/.test(request);
   const hasCreate = /新增/.test(request);
   const hasEdit = /编辑|修改/.test(request);
   const hasDelete = /删除/.test(request);
+  const hasExport = /导出/.test(request);
+  const hasRefresh = /刷新/.test(request);
   if (!hasDetail && !hasCreate && !hasEdit && !hasDelete) {
-    return { request, pageName: extractPageName(request), queryLabels, columnLabels, operations: {} };
+    const operations = hasExport || hasRefresh ? { export: hasExport, refresh: hasRefresh } : {};
+    return { request, pageName: extractPageName(request), queryLabels, columnLabels, summary, operations };
   }
 
   const columns = columnLabels.map((label, index) => columnFor(label, index));
@@ -142,7 +182,8 @@ export function parseListWorkbenchRequest(rawRequest) {
     pageName: extractPageName(request),
     queryLabels,
     columnLabels,
-    operations: { detail: hasDetail, create: hasCreate, edit: hasEdit, delete: hasDelete },
+    summary,
+    operations: { detail: hasDetail, create: hasCreate, edit: hasEdit, delete: hasDelete, export: hasExport, refresh: hasRefresh },
     columns,
     formLabels
   };
@@ -168,15 +209,21 @@ export function compileListWorkbench({ rawRequest, changeId }) {
   const columns = parsed.columns || parsed.columnLabels.map((label, index) => columnFor(label, index));
   const rowKey = columns.find((column) => /编号/.test(column.label))?.key || columns[0].key;
   const rows = [0, 1].map((rowIndex) => Object.fromEntries(columns.map((column) => [column.key, sampleValue(column, rowIndex)])));
-  const capabilities = [isAdvancedQuery ? 'query.advanced' : 'query.basic', 'table.flat', 'table.pagination'];
+  const capabilities = [isAdvancedQuery ? 'query.advanced' : 'query.basic', 'table.flat', 'table.pagination', 'table.columnSettings'];
+  if (parsed.summary?.kind === 'inline') capabilities.push('summary.inline');
+  if (parsed.summary?.kind === 'cards') capabilities.push('statistics.cards');
   if (columns.some((column) => column.format === 'status')) capabilities.push('table.status');
   if (columns.some((column) => column.format === 'amount')) capabilities.push('table.amount');
   if (parsed.operations.detail) capabilities.push('detail.drawer');
   if (parsed.operations.create) capabilities.push('list.drawerCreate');
   if (parsed.operations.edit) capabilities.push('table.editAction');
   if (parsed.operations.delete) capabilities.push('table.confirmAction', 'table.deleteAction');
+  if (parsed.operations.export) capabilities.push('table.export');
+  if (parsed.operations.refresh) capabilities.push('table.refresh');
 
-  const table = { rowKey, sectionTitle: `${parsed.pageName}列表`, columns, rows, pagination: { page: 1, pageSize: 20, total: rows.length } };
+  const table = { rowKey, sectionTitle: `${parsed.pageName}列表`, tools: ['settings'], columns, rows, pagination: { page: 1, pageSize: 20, total: rows.length } };
+  if (parsed.operations.refresh) table.tools.unshift('refresh');
+  if (parsed.operations.export) table.secondaryActions = [{ key: 'export', label: '导出', type: 'export' }];
   if (parsed.operations.create) {
     table.primaryAction = { key: 'create', label: '新增', createRecord: { [rowKey]: 'R003' }, form: formSpec(parsed, 'create') };
   }
@@ -198,17 +245,48 @@ export function compileListWorkbench({ rawRequest, changeId }) {
     };
   }
 
+  const list = { query: { fields: query, ...(isAdvancedQuery ? { defaultExpanded: false } : {}) }, table };
+  if (parsed.summary?.kind === 'inline') {
+    list.summary = {
+      items: parsed.summary.labels.map((label, index) => ({
+        key: `summary${index + 1}`,
+        label,
+        value: 0,
+        suffix: /金额|收入|扣账|手续费/.test(label) ? ' 元' : ' 条'
+      }))
+    };
+  }
+  if (parsed.summary?.kind === 'cards') {
+    list.statistics = {
+      items: parsed.summary.labels.map((label, index) => ({
+        key: `statistic${index + 1}`,
+        label,
+        value: 0,
+        unit: /金额|收入|扣账|手续费/.test(label) ? '元' : '条'
+      }))
+    };
+  }
+
+  const templateId = parsed.summary?.kind === 'inline'
+    ? 'list.inline-summary'
+    : parsed.summary?.kind === 'cards' ? 'list.card-summary' : 'list.regular';
+  const selectionReason = parsed.summary?.kind === 'inline'
+    ? '主要任务是查询和处理一组记录；结果工具栏左侧使用 1 至 2 项轻量统计辅助扫描。'
+    : parsed.summary?.kind === 'cards'
+      ? '主要任务是查询和处理一组记录；结果区使用 3 至 5 项重要统计卡片辅助整体扫描。'
+      : '主要任务是查询和处理一组记录；详情、新增、编辑和删除按业务需求组合到同一列表工作台。';
+
   return {
     schemaVersion: 1,
     ui: { system: 'boss-ledger', runtime: 'react-antd-page-spec', rendererVersion: 1 },
     metadata: {
-      changeId, pageName: parsed.pageName, family: 'list', templateId: 'list.regular', executionMode: 'page-spec-default', request: parsed.request,
-      selectionReason: '主要任务是查询和处理一组记录；详情、新增、编辑和删除按业务需求组合到同一列表工作台。',
+      changeId, pageName: parsed.pageName, family: 'list', templateId, executionMode: 'page-spec-default', request: parsed.request,
+      selectionReason,
       assumptions: ['当前为客户端交互原型，不调用真实业务服务。', '未提供样例数据时使用两条通用演示记录。', '删除为当前列表中的客户端移除，并提供不可撤销确认。'],
-      ruleRefs: RULE_REFS
+      ruleRefs: parsed.summary ? [...RULE_REFS, 'BL-TPL-011'] : RULE_REFS
     },
     shell: { activePrimaryKey: 'workspace' },
     content: { capabilities: [...new Set(capabilities)] },
-    list: { query: { fields: query, ...(isAdvancedQuery ? { defaultExpanded: false } : {}) }, table }
+    list
   };
 }

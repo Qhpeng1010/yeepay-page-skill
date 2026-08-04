@@ -24,6 +24,34 @@ const changeId = `20260803-list-workbench-test-${randomBytes(4).toString('hex')}
 const changeArg = `changes/${changeId}`;
 const changeDir = resolve(root, changeArg);
 const basicRequest = '创建老板管账的结算规则查询列表页。查询条件包括创建时间区间、规则名称和规则状态。列表展示规则编号、规则名称、商户名称、规则状态和创建时间。';
+const inlineSummaryRequest = '创建老板管账的结算规则查询页面。查询条件包括规则名称、商户编号、规则状态和创建时间。列表展示规则编号、规则名称、商户编号、规则状态、待结算金额、创建时间和操作。在结果工具栏左侧展示 2 项简单统计：规则总数、待处理规则数。支持新增规则、导出和查看详情。';
+const cardSummaryRequest = '创建老板管账的结算账单查询页面。查询条件包括账单编号、商户名称、结算状态和结算日期。列表展示账单编号、商户名称、结算金额、手续费、到账金额、结算状态、结算日期和操作。在列表结果区展示 4 项重要统计：账单总数、结算总金额、已结算金额、待结算金额。支持新增账单、导出、刷新和查看详情。';
+const structuredProductRequest = `创建老板管账的【日本报备商品查询】页面。
+
+查询条件：
+- 商品名称
+- 商品编号
+- 商品类型
+- 商品发货状态
+- 商品上架日期
+
+列表字段：
+- 商品名称
+- 商品编号
+- 商品类型
+- 商品发货状态
+- 商品上架日期
+- 操作
+
+页面顶部展示四项统计：
+- 商品总数量
+- 商品已发货数量
+- 商品运输中数量
+- 商品代发数量
+
+操作：
+- 新增商品：使用抽屉表单，填写商品名称、商品编号、商品类型、商品发货状态、商品上架日期。
+- 查看详情：使用详情抽屉，保留列表查询条件和分页上下文，只读展示商品完整信息。`;
 const normalizedNaturalRequest = `创建一个页面，老板管账商户查询页面
 条件：注册时间、代理名称、部门名称、商户名称、商户编号、业务角色、首笔交易时间
 table列表：注册时间、商户编号、商户名称、商户简称、部门名称、直属代理、业务角色`;
@@ -57,6 +85,33 @@ try {
   if (basicClassified.status !== 'fast' || basicClassified.recipe !== 'list-workbench') {
     throw new Error('A basic list request using “查询条件包括” did not select the list workbench recipe.');
   }
+  const inlineSummary = parseListWorkbenchRequest(inlineSummaryRequest);
+  if (inlineSummary.summary?.kind !== 'inline' || inlineSummary.summary.labels.length !== 2) {
+    throw new Error('An explicitly declared two-item toolbar summary was not parsed.');
+  }
+  const inlineSummaryCompiled = compileListWorkbench({ rawRequest: inlineSummaryRequest, changeId });
+  if (inlineSummaryCompiled.metadata.templateId !== 'list.inline-summary' || !inlineSummaryCompiled.content.capabilities.includes('summary.inline') || inlineSummaryCompiled.list.summary?.items.length !== 2) {
+    throw new Error('A two-item toolbar summary did not compile as an inline-summary list.');
+  }
+  const cardSummary = parseListWorkbenchRequest(cardSummaryRequest);
+  if (cardSummary.summary?.kind !== 'cards' || cardSummary.summary.labels.length !== 4) {
+    throw new Error('An explicitly declared four-item result summary was not parsed.');
+  }
+  const cardSummaryCompiled = compileListWorkbench({ rawRequest: cardSummaryRequest, changeId });
+  if (cardSummaryCompiled.metadata.templateId !== 'list.card-summary' || cardSummaryCompiled.metadata.executionMode !== 'page-spec-default' || !cardSummaryCompiled.content.capabilities.includes('statistics.cards') || cardSummaryCompiled.list.statistics?.items.length !== 4) {
+    throw new Error('A four-item result summary did not compile as a statistics-card list.');
+  }
+  if (!cardSummaryCompiled.list.table.secondaryActions?.some((action) => action.type === 'export') || !cardSummaryCompiled.list.table.tools.includes('refresh')) {
+    throw new Error('Requested export and refresh actions were not preserved in the list toolbar.');
+  }
+  const structuredProduct = parseListWorkbenchRequest(structuredProductRequest);
+  if (structuredProduct.queryLabels.length !== 5 || structuredProduct.columnLabels.length !== 5 || structuredProduct.summary?.kind !== 'cards' || structuredProduct.summary.labels.length !== 4) {
+    throw new Error('A structured bullet-list request was not parsed into isolated query, table, and statistics fields.');
+  }
+  const structuredProductCompiled = compileListWorkbench({ rawRequest: structuredProductRequest, changeId });
+  if (structuredProductCompiled.list.table.rows.some((row) => row[structuredProductCompiled.list.table.rowKey] === 0) || structuredProductCompiled.list.table.rows[0][structuredProductCompiled.list.table.rowKey] === structuredProductCompiled.list.table.rows[1][structuredProductCompiled.list.table.rowKey]) {
+    throw new Error('A structured bullet-list request produced non-unique table row keys.');
+  }
   const normalizedNatural = parseListWorkbenchRequest(normalizedNaturalRequest);
   if (normalizedNatural.pageName !== '商户查询' || normalizedNatural.queryLabels.length !== 7 || normalizedNatural.columnLabels.length !== 7) {
     throw new Error('Natural condition and table section headers were not normalized into a list workbench request.');
@@ -69,6 +124,9 @@ try {
   const compiled = compileListWorkbench({ rawRequest: request, changeId });
   if (!compiled.content.capabilities.includes('query.advanced') || compiled.content.capabilities.includes('query.basic')) {
     throw new Error('More than six query fields must use advanced query mode.');
+  }
+  if (!compiled.content.capabilities.includes('table.columnSettings') || !compiled.list.table.tools?.includes('settings')) {
+    throw new Error('Every list workbench must declare the fixed column-settings control.');
   }
   if (compiled.list.query.defaultExpanded !== false || Object.hasOwn(compiled.list.query, 'collapseThreshold') || compiled.list.query.fields.filter((field) => field.advanced).length !== 4) {
     throw new Error('Advanced query fields did not receive declarative primary/secondary grouping.');

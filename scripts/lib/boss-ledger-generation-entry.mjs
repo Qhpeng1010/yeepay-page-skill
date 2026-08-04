@@ -40,7 +40,7 @@ export function classifyBossLedgerGeneration(rawRequest) {
     };
   }
   if (route.intent !== 'wizard') {
-    if (route.intent === 'query-list') {
+    if (['query-list', 'inline-summary-list', 'card-summary-list'].includes(route.intent)) {
       try {
         const parsed = parseListWorkbenchRequest(request);
         return {

@@ -74,8 +74,8 @@ try {
     'modules/boss-ledger/execution/context-packs/index.md',
     'modules/boss-ledger/execution/context-packs/list.md'
   ];
-  if (route.status !== 'resolved' || route.module !== 'boss-ledger' || route.intent !== 'query-list' || route.template !== 'list.regular') {
-    throw new Error('该需求未唯一命中老板管账的常规查询列表配方。');
+  if (route.status !== 'resolved' || route.module !== 'boss-ledger' || !['query-list', 'inline-summary-list', 'card-summary-list'].includes(route.intent)) {
+    throw new Error('该需求未唯一命中老板管账的查询列表配方。');
   }
   if (JSON.stringify(route.resources) !== JSON.stringify(expectedResources)) {
     throw new Error('列表工作台配方只能读取 Boss Ledger 的核心、索引和列表规则包。');
@@ -85,7 +85,7 @@ try {
   if (!changeDir.startsWith(`${changesRoot}/`) || existsSync(changeDir)) throw new Error('Change 必须是不存在的 changes/ 子目录。');
   const changeId = basename(changeDir);
   const spec = compileListWorkbench({ rawRequest: request, changeId });
-  run('fast preparation', 'scripts/prepare-boss-ledger-page-spec.mjs', [changeArg, route.template]);
+  run('fast preparation', 'scripts/prepare-boss-ledger-page-spec.mjs', [changeArg, spec.metadata.templateId]);
   writeFileSync(resolve(changeDir, 'requirement.md'), requirement(spec));
   writeFileSync(resolve(changeDir, 'page-spec.json'), `${JSON.stringify(spec, null, 2)}\n`);
   writeFileSync(resolve(changeDir, 'page-design.md'), pageDesign(spec));
