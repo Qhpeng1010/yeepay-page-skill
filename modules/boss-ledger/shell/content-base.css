@@ -7,7 +7,8 @@
 .boss-content-stack > .boss-query-module:first-child, .boss-content-stack > .boss-result-module:first-child { border-top-left-radius: 0; }
 .boss-query-module .ant-form-item { margin: 0; }
 .boss-query-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: flex-start; column-gap: 24px; row-gap: 0; width: 100%; }
-.boss-query-grid.is-measuring { visibility: hidden; }
+/* Keep query controls visible while their responsive row count is recalculated. */
+.boss-query-grid.is-measuring { visibility: visible; }
 .boss-query-field { min-width: 0; }
 .boss-query-field .ant-form-item { margin-bottom: 16px; }
 .boss-query-field .ant-form-item-row { column-gap: 8px; flex-wrap: nowrap; }

@@ -32,7 +32,8 @@
 .boss-dashboard-chart-title { margin: 0 0 8px; font-size: 16px; font-weight: 600; color: var(--boss-text); }
 .boss-dashboard-scope-status { display: block; color: var(--boss-tertiary); font-size: 12px; }
 .boss-query-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: flex-start; column-gap: 24px; row-gap: 0; width: 100%; }
-.boss-query-grid.is-measuring { visibility: hidden; }
+/* Keep query controls visible while their responsive row count is recalculated. */
+.boss-query-grid.is-measuring { visibility: visible; }
 .boss-query-field { min-width: 0; }
 .boss-query-field .ant-form-item { margin-bottom: 16px; }
 .boss-query-field .ant-form-item-row { column-gap: 8px; flex-wrap: nowrap; }

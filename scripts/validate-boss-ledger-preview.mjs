@@ -353,11 +353,12 @@ function checkSource(html) {
     const hasMeasuredRows = /queryRowTops\(container\)[\s\S]{0,800}rowTops\.length\s*>\s*2/i.test(source)
       && /data-boss-query-row/i.test(source)
       && /queryHasOverflow/i.test(source);
+    const keepsConditionsVisibleWhileMeasuring = !/\.boss-query-grid\.is-measuring\s*\{[^}]*visibility\s*:\s*hidden/i.test(source);
     const hasGridAlignedActions = /\.boss-query-actions\s*\{[^}]*grid-column\s*:\s*3[^}]*justify-self\s*:\s*end/i.test(source);
-    if (hasAdaptiveQueryLayout && hasDedicatedDateRow && hasMeasuredRows && hasGridAlignedActions) {
-      pass('validate', 'Query area uses responsive 3/2/1 grid columns with Label-plus-control units, a dedicated date row, and measured two-row overflow');
+    if (hasAdaptiveQueryLayout && hasDedicatedDateRow && hasMeasuredRows && keepsConditionsVisibleWhileMeasuring && hasGridAlignedActions) {
+      pass('validate', 'Query area uses responsive 3/2/1 grid columns with visible remeasurement, Label-plus-control units, a dedicated date row, and measured two-row overflow');
     } else {
-      fail('validate', 'Query area must use responsive 3/2/1 grid columns with Label-plus-control units, a dedicated date row, a final-column action area, and measured two-row overflow; field-count collapse is not allowed');
+      fail('validate', 'Query area must use responsive 3/2/1 grid columns with visible remeasurement, Label-plus-control units, a dedicated date row, a final-column action area, and measured two-row overflow; field-count collapse is not allowed');
     }
   }
 

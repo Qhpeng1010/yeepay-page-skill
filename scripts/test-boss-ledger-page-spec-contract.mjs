@@ -234,8 +234,10 @@ if (!runtimeSource.includes("const DEFAULT_QUERY_DATE_PRESETS = ['今日', '近 
   || !runtimeSource.includes("boss-query-date-preset${selected ? ' is-selected' : ''}")
   || !businessCssSource.includes('.boss-query-date-preset.is-selected')
   || !businessCssSource.includes('background: var(--boss-selected-bg) !important;')
+  || !businessCssSource.includes('.boss-query-grid.is-measuring { visibility: visible; }')
+  || !contentBaseCssSource.includes('.boss-query-grid.is-measuring { visibility: visible; }')
   ) {
-  failures.push('adaptive-query-layout: query lists must use responsive 3/2/1 grid columns with content-sized Labels and same-column controls, reserve unused final-row columns, use the default date shortcuts, show one active shortcut with the primary-derived selection background, use a dedicated date row, and measure actual-row overflow without field-count thresholds.');
+  failures.push('adaptive-query-layout: query lists must use responsive 3/2/1 grid columns with content-sized Labels and same-column controls, reserve unused final-row columns, use the default date shortcuts, show one active shortcut with the primary-derived selection background, use a dedicated date row, measure actual-row overflow without field-count thresholds, and keep conditions visible while recalculating.');
 } else {
   passed += 1;
 }
