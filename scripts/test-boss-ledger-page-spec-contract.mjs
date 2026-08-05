@@ -39,6 +39,8 @@ const splitRuleQuery = scenarioSpec('06-split-rule-query');
 const drawerCreateList = scenarioSpec('17-merchant-service-config-drawer-create');
 const cardSummaryList = scenarioSpec('08-settlement-bill-statistics');
 const dashboard = scenarioSpec('19-operation-dashboard');
+const groupedDetail = scenarioSpec('14-merchant-settlement-long-detail');
+const groupedDrawerDetail = scenarioSpec('13-split-record-drawer');
 const contactModal = scenarioSpec('01-contact-create');
 const guidedForm = scenarioSpec('02-settlement-account-change');
 const uploadWizard = scenarioSpec('05-settlement-import');
@@ -48,6 +50,15 @@ const businessCssSource = readFileSync(resolve(root, 'modules/boss-ledger/execut
 const contentBaseCssSource = readFileSync(resolve(root, 'modules/boss-ledger/shell/content-base.css'), 'utf8');
 const buildSource = readFileSync(resolve(root, 'scripts/build-boss-ledger-page-spec.mjs'), 'utf8');
 const previewValidatorSource = readFileSync(resolve(root, 'scripts/validate-boss-ledger-preview.mjs'), 'utf8');
+const normalizedTimeInitialValues = runtimeSource.match(/initialValues\[field\.key\] = initialValueForField\(field\);/g) || [];
+if (!runtimeSource.includes("function initialValueForField(field, sourceValue = field.default)")
+  || !runtimeSource.includes("field.control === 'time'")
+  || normalizedTimeInitialValues.length < 2
+  || !runtimeSource.includes('initialValueForField(field, initialValues[field.key])')) {
+  failures.push('time-initial-values: page, step and drawer forms must normalize raw date and time defaults before passing them to Ant Design controls.');
+} else {
+  passed += 1;
+}
 const twoItemCardSummary = {
   ...merchantPilot,
   metadata: {
@@ -81,6 +92,55 @@ if (!normalizedTwoItemCardSummary.changed
 }
 if (normalizeListSummaryPresentation(cardSummaryList, { root }).changed) {
   failures.push('list-summary-reconciliation: a valid three-to-five-item card summary must remain unchanged.');
+} else {
+  passed += 1;
+}
+const extendedFieldControls = JSON.parse(JSON.stringify(merchantPilot));
+extendedFieldControls.list.query.fields = [
+  { key: 'merchantKeyword', label: '商户名称', control: 'auto-complete', options: [{ label: '华北商户', value: '华北商户' }] },
+  { key: 'region', label: '经营区域', control: 'cascader', options: [{ label: '华北', value: 'north', children: [{ label: '北京', value: 'beijing' }] }] },
+  { key: 'category', label: '经营类目', control: 'tree-select', options: [{ label: '零售', value: 'retail', children: [{ label: '商超', value: 'supermarket' }] }] },
+  { key: 'cutoffTime', label: '截单时间', control: 'time', format: 'HH:mm' },
+  { key: 'serviceChannels', label: '服务渠道', control: 'checkbox', options: [{ label: '线上', value: 'online' }, { label: '线下', value: 'offline' }] }
+];
+if (validatePageSpec(extendedFieldControls, { root }).length) {
+  failures.push('extended-field-controls: AutoComplete, Cascader, TreeSelect, TimePicker and Checkbox.Group must be valid Page Spec controls.');
+} else {
+  passed += 1;
+}
+const transferForm = JSON.parse(JSON.stringify(readJson(resolve(fixtureRoot, 'valid/grouped-form.json'))));
+transferForm.form.groups[1] = {
+  ...transferForm.form.groups[1],
+  container: 'card',
+  fields: [{
+    key: 'serviceScope',
+    label: '服务范围',
+    control: 'transfer',
+    options: [{ label: '线上收款', value: 'online' }, { label: '线下收款', value: 'offline' }]
+  }]
+};
+if (validatePageSpec(transferForm, { root }).length) {
+  failures.push('transfer-and-group-card: Transfer fields and independently framed form groups must be valid Page Spec structures.');
+} else {
+  passed += 1;
+}
+const tagAndDropdownList = JSON.parse(JSON.stringify(merchantPilot));
+tagAndDropdownList.content.capabilities.push('table.export');
+tagAndDropdownList.list.table.columns.push({
+  key: 'splitMode',
+  label: '分账模式',
+  format: 'tag',
+  tagMap: { system: { label: '系统商户', color: 'orange' } }
+});
+tagAndDropdownList.list.table.rows = tagAndDropdownList.list.table.rows.map((row) => ({ ...row, splitMode: 'system' }));
+tagAndDropdownList.list.table.secondaryActions = [{
+  key: 'more',
+  label: '更多操作',
+  type: 'dropdown',
+  items: [{ key: 'export', label: '导出结果', type: 'export' }]
+}];
+if (validatePageSpec(tagAndDropdownList, { root }).length) {
+  failures.push('tag-and-dropdown: Tag columns and grouped secondary table actions must be valid Page Spec structures.');
 } else {
   passed += 1;
 }
@@ -285,6 +345,83 @@ if (!runtimeSource.includes('const tableMinimumWidth = columns.reduce')
   || !businessCssSource.includes('.boss-table-body { width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; overflow-y: hidden; }')
   || !contentBaseCssSource.includes('.boss-table-body { width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; overflow-y: hidden; }')) {
   failures.push('contained-table-layout: result modules must constrain Table width and place any wide-table scroll inside the Table body.');
+} else {
+  passed += 1;
+}
+
+if (!runtimeSource.includes('AutoComplete,')
+  || !runtimeSource.includes('Cascader,')
+  || !runtimeSource.includes('TimePicker,')
+  || !runtimeSource.includes('TreeSelect,')
+  || !runtimeSource.includes("field.control === 'auto-complete'")
+  || !runtimeSource.includes("field.control === 'cascader'")
+  || !runtimeSource.includes("field.control === 'tree-select'")
+  || !runtimeSource.includes("field.control === 'time'")
+  || !runtimeSource.includes("field.control === 'checkbox'")
+  || !runtimeSource.includes('children: normalizeOptions(option.children)')) {
+  failures.push('extended-field-control-runtime: the five new Page Spec controls must render real Ant Design components and preserve nested options.');
+} else {
+  passed += 1;
+}
+
+if (!runtimeSource.includes('Card,')
+  || !runtimeSource.includes('Divider,')
+  || !runtimeSource.includes('Dropdown,')
+  || !runtimeSource.includes('Tag,')
+  || !runtimeSource.includes('Transfer,')
+  || !runtimeSource.includes("field.control === 'transfer'")
+  || !runtimeSource.includes("action.type === 'dropdown'")
+  || !runtimeSource.includes("column.format === 'tag'")
+  || !runtimeSource.includes("section.container === 'card'")
+  || !runtimeSource.includes('h(Divider,')) {
+  failures.push('extended-business-component-runtime: Transfer, Dropdown, Tag, Divider and Card must render as real Ant Design components for their declared business use.');
+} else {
+  passed += 1;
+}
+
+if (!runtimeSource.includes("spec.metadata.templateId === 'form.grouped-page' && section.container !== 'plain'")
+  || !runtimeSource.includes('boss-grouped-form-module')
+  || !businessCssSource.includes('.boss-grouped-form-module { min-height: 100%; padding: 0 0 96px; background: var(--boss-page-bg); }')
+  || !businessCssSource.includes('.boss-grouped-form-module .boss-form-section-card { border-color: var(--boss-divider);')
+  || settlementForm.form.groups.some((group) => group.container === 'card')) {
+  failures.push('grouped-form-surface: grouped page forms must turn default business groups into separated white task surfaces on the neutral workspace, without requiring per-scenario Card declarations.');
+} else {
+  passed += 1;
+}
+
+if (!runtimeSource.includes("const groupedDetailSurfaces = detail.presentation === 'page' && !detail.tabs && (detail.groups || []).length > 1;")
+  || !runtimeSource.includes("className: 'boss-detail-section boss-detail-section-card'")
+  || !runtimeSource.includes("' boss-grouped-detail-module'")
+  || !businessCssSource.includes('.boss-grouped-detail-module { min-height: 100%; padding: 16px 0; background: var(--boss-page-bg); }')
+  || !businessCssSource.includes('.boss-grouped-detail-module .boss-detail-section-card { border-color: var(--boss-divider);')
+  || groupedDetail.detail.anchors
+  || groupedDetail.metadata?.validatedCombinations?.[0] !== 'detail.grouped-basic'
+  || validatePageSpec(groupedDetail, { root }).length) {
+  failures.push('grouped-detail-surface: multi-group standalone details must use separate white group surfaces on the neutral workspace without default anchor navigation.');
+} else {
+  passed += 1;
+}
+
+if (!runtimeSource.includes("boss-drawer-detail${detailSpec.groups.length > 1 ? ' boss-drawer-grouped-detail' : ''}")
+  || !runtimeSource.includes("boss-drawer-detail${detail.groups.length > 1 ? ' boss-drawer-grouped-detail' : ''}")
+  || !businessCssSource.includes('.boss-drawer-grouped-detail .boss-detail-section + .boss-detail-section { margin-top: 28px; }')
+  || !businessCssSource.includes('.boss-drawer-grouped-detail .ant-table-wrapper { max-width: 100%; overflow-x: auto; }')
+  || groupedDrawerDetail.list.table.drawerDetail.groups.length !== 3
+  || groupedDrawerDetail.list.table.drawerDetail.groups[1]?.title !== '支付信息'
+  || !groupedDrawerDetail.list.table.drawerDetail.groups[2]?.table
+  || validatePageSpec(groupedDrawerDetail, { root }).length) {
+  failures.push('grouped-drawer-detail: two-to-three concise information groups and one short detail table must render inside a single Drawer surface without nested Cards.');
+} else {
+  passed += 1;
+}
+
+if (!runtimeSource.includes("'data-boss-query-summary': 'inline'")
+  || !runtimeSource.includes("'查询统计：'")
+  || !runtimeSource.includes('boss-result-summary-inline-divider')
+  || !businessCssSource.includes('.boss-result-summary-inline-value { color: var(--boss-primary);')
+  || !businessCssSource.includes('.boss-result-summary-inline-divider { padding-inline: 12px; color: var(--boss-border); }')
+  || !previewValidatorSource.includes('boss-result-summary-prefix')) {
+  failures.push('inline-summary-presentation: simple query statistics must show the 查询统计 prefix, primary-colored values, and light-gray separators.');
 } else {
   passed += 1;
 }

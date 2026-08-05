@@ -222,6 +222,14 @@
       "ruleRefs": ["BL-TPL-009", "BL-VIS-014"]
     },
     {
+      "id": "detail.grouped-basic",
+      "family": "detail",
+      "templateIds": ["detail.record"],
+      "evidence": "manual-business",
+      "capabilities": ["detail.groups"],
+      "ruleRefs": ["BL-TPL-009", "BL-VIS-014"]
+    },
+    {
       "id": "detail.modal-quick",
       "family": "detail",
       "templateIds": ["detail.record"],
@@ -230,7 +238,7 @@
       "ruleRefs": ["BL-TPL-009"]
     },
     {
-      "id": "detail.drawer-table",
+      "id": "detail.drawer-grouped-table",
       "family": "detail",
       "templateIds": ["detail.record"],
       "evidence": "manual-business",

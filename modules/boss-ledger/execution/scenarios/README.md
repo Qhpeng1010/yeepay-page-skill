@@ -9,6 +9,7 @@
 - [recipe-regression-prompts.md](./recipe-regression-prompts.md)：已通过人工验收的参数化配方提示词。需求应命中统一入口的快速生成配方，重点验证字段解析、数量阈值和配方内可选操作。
 - [rule-combination-prompts.md](./rule-combination-prompts.md)：根据导演规则组合页面能力的人工提示词。它们用于验证列表统计、批量、展开子表、详情分组、表单分组等组合，不默认命中快速配方。
 - [manual-regression-prompts.md](./manual-regression-prompts.md)：15 个业务场景的完整人工回归集，覆盖表单、列表、详情和结果流程。
+- [component-regression-prompts.md](./component-regression-prompts.md)：组件专项人工回归集，补充复杂表单控件和列表分类/更多操作的可用性验证；不修改已验收的 15 条业务基线。
 - [capability-scenarios.mjs](./capability-scenarios.mjs)：可执行的 Page Spec 场景基线，由静态契约和能力场景检查使用。
 - [legacy-template-coverage-prompts.md](./legacy-template-coverage-prompts.md)：历史模板覆盖提示词，仅用于补充旧项目回归，不作为当前页面规则来源。
 

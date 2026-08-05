@@ -11,12 +11,17 @@
   const {
     App: AntApp,
     Alert,
+    AutoComplete,
     Badge,
     Button,
+    Card,
+    Cascader,
     Checkbox,
     ConfigProvider,
     DatePicker,
     Descriptions,
+    Divider,
+    Dropdown,
     Drawer,
     Empty,
     Form,
@@ -35,7 +40,11 @@
     Switch,
     Table,
     Tabs,
+    Tag,
+    TimePicker,
     Tooltip,
+    Transfer,
+    TreeSelect,
     Upload,
     message
   } = antd;
@@ -82,7 +91,18 @@
   }
 
   function normalizeOptions(options) {
-    return (options || []).map((option) => ({ label: option.label, value: option.value }));
+    return (options || []).map((option) => ({
+      label: option.label,
+      value: option.value,
+      ...(Array.isArray(option.children) && option.children.length ? { children: normalizeOptions(option.children) } : {})
+    }));
+  }
+
+  function transferOptions(options) {
+    return (options || []).flatMap((option) => [
+      { key: String(option.value), title: option.label, disabled: Boolean(option.disabled) },
+      ...transferOptions(option.children)
+    ]);
   }
 
   const DEFAULT_QUERY_DATE_PRESETS = ['今日', '近 7 日', '近 30 日'];
@@ -170,13 +190,29 @@
   }
 
   function controlForField(field) {
-    const common = { placeholder: field.placeholder || (['select', 'radio'].includes(field.control) ? `请选择${field.label}` : `请输入${field.label}`) };
+    const common = { placeholder: field.placeholder || (['select', 'auto-complete', 'cascader', 'tree-select', 'radio'].includes(field.control) ? `请选择${field.label}` : `请输入${field.label}`) };
     if (field.control === 'select') return h(Select, { ...common, allowClear: true, options: normalizeOptions(field.options) });
+    if (field.control === 'auto-complete') return h(AutoComplete, { ...common, allowClear: true, options: normalizeOptions(field.options) });
+    if (field.control === 'cascader') return h(Cascader, { ...common, style: { width: '100%' }, allowClear: true, options: normalizeOptions(field.options), multiple: Boolean(field.multiple), showSearch: field.showSearch !== false });
+    if (field.control === 'tree-select') return h(TreeSelect, { ...common, style: { width: '100%' }, allowClear: true, treeData: normalizeOptions(field.options), treeCheckable: Boolean(field.treeCheckable), multiple: Boolean(field.multiple || field.treeCheckable), showSearch: field.showSearch !== false });
     if (field.control === 'date') return h(DatePicker, { style: { width: '100%' }, placeholder: field.placeholder || `请选择${field.label}` });
     if (field.control === 'date-range') return h(DatePicker.RangePicker, { style: { width: '100%' }, placeholder: ['开始日期', '结束日期'] });
+    if (field.control === 'time') return h(TimePicker, { style: { width: '100%' }, placeholder: field.placeholder || `请选择${field.label}`, format: field.format });
     if (field.control === 'number') return h(InputNumber, { ...common, style: { width: '100%' }, min: field.min, max: field.max, precision: field.precision });
     if (field.control === 'textarea') return h(Input.TextArea, { ...common, rows: field.rows || 4, maxLength: field.maxLength, showCount: Boolean(field.maxLength) });
     if (field.control === 'radio') return h(Radio.Group, { options: normalizeOptions(field.options) });
+    if (field.control === 'checkbox') {
+      if (Array.isArray(field.options) && field.options.length) return h(Checkbox.Group, { options: normalizeOptions(field.options) });
+      return h(Checkbox, null, field.checkedLabel || '是');
+    }
+    if (field.control === 'transfer') return h(Transfer, {
+      dataSource: transferOptions(field.options),
+      titles: field.titles || ['待选', '已选'],
+      showSearch: Boolean(field.showSearch),
+      oneWay: Boolean(field.oneWay),
+      pagination: Boolean(field.pagination),
+      render: (item) => item.title
+    });
     if (field.control === 'switch') return h(Switch, { checkedChildren: field.checkedLabel || '是', unCheckedChildren: field.uncheckedLabel || '否' });
     if (field.control === 'upload') return h(Upload, {
       accept: field.accept || '.xlsx',
@@ -207,6 +243,19 @@
       className: useSideLabel ? 'boss-horizontal-form' : 'boss-vertical-form',
       fieldsClassName: useSideLabel ? 'boss-form-stack' : ''
     };
+  }
+
+  function initialValueForField(field, sourceValue = field.default) {
+    const value = sourceValue;
+    if (!['date', 'date-range', 'time'].includes(field.control) || typeof global.dayjs !== 'function') return value;
+    const normalize = (candidate) => {
+      if (candidate === undefined || candidate === null || typeof candidate?.isValid === 'function') return candidate;
+      if (field.control === 'time' && typeof candidate === 'string' && /^\d{2}:\d{2}(?::\d{2})?$/.test(candidate)) {
+        return global.dayjs(`1970-01-01T${candidate.length === 5 ? `${candidate}:00` : candidate}`);
+      }
+      return global.dayjs(candidate);
+    };
+    return field.control === 'date-range' && Array.isArray(value) ? value.map(normalize) : normalize(value);
   }
 
   function ResultSummary({ summary }) {
@@ -286,8 +335,8 @@
         name: field.key,
         label: field.label,
         rules: formRules(field),
-        valuePropName: field.control === 'switch' ? 'checked' : field.control === 'upload' ? 'fileList' : 'value',
-        getValueFromEvent: field.control === 'upload' ? (event) => Array.isArray(event) ? event : event?.fileList : undefined,
+        valuePropName: field.control === 'switch' || (field.control === 'checkbox' && !field.options?.length) ? 'checked' : field.control === 'upload' ? 'fileList' : field.control === 'transfer' ? 'targetKeys' : 'value',
+        getValueFromEvent: field.control === 'upload' ? (event) => Array.isArray(event) ? event : event?.fileList : field.control === 'transfer' ? (targetKeys) => targetKeys : undefined,
         extra: field.help
       }, controlForField(field)));
   }
@@ -305,7 +354,15 @@
       if (endTime !== null && !Number.isNaN(endTime) && sourceTime > endTime) return false;
       return true;
     }
-    if (field.control === 'select' || field.control === 'radio' || field.control === 'switch') return source === value;
+    if (['select', 'radio', 'switch', 'tree-select'].includes(field.control)) {
+      const sourceValues = Array.isArray(source) ? source : [source];
+      return sourceValues.includes(value);
+    }
+    if (['checkbox', 'cascader'].includes(field.control)) {
+      const selectedValues = Array.isArray(value) ? value.flat(Infinity) : [value];
+      const sourceValues = Array.isArray(source) ? source.flat(Infinity) : [source];
+      return selectedValues.some((selected) => sourceValues.includes(selected));
+    }
     return String(source ?? '').toLowerCase().includes(String(value).toLowerCase());
   }
 
@@ -323,6 +380,10 @@
       const status = field.statusMap?.[value] || { label: String(value ?? '-'), status: 'default' };
       return h(Badge, { status: status.status || 'default', text: status.label });
     }
+    if (field.format === 'tag') {
+      const tag = field.tagMap?.[value] || { label: String(value ?? '-') };
+      return h(Tag, { color: tag.color }, tag.label);
+    }
     if (field.format === 'amount') return formatAmount(value, field);
     return String(value ?? '-');
   }
@@ -331,7 +392,12 @@
     const [drawerForm] = Form.useForm();
     const drawerLayout = resolveFormLayout({ presentation: 'drawer' }, workflow?.fields || []);
     React.useEffect(() => {
-      if (open) drawerForm.setFieldsValue(initialValues || {});
+      if (open) {
+        const normalizedValues = Object.fromEntries((workflow?.fields || [])
+          .filter((field) => Object.hasOwn(initialValues || {}, field.key))
+          .map((field) => [field.key, initialValueForField(field, initialValues[field.key])]));
+        drawerForm.setFieldsValue(normalizedValues);
+      }
     }, [drawerForm, initialValues, open]);
     const submit = async () => {
       const values = await drawerForm.validateFields();
@@ -362,6 +428,12 @@
         resolved.render = (value) => {
           const status = column.statusMap?.[value] || { label: String(value ?? '-'), status: 'default' };
           return h(Badge, { status: status.status || 'default', text: status.label });
+        };
+      }
+      if (column.format === 'tag') {
+        resolved.render = (value) => {
+          const tag = column.tagMap?.[value] || { label: String(value ?? '-') };
+          return h(Tag, { color: tag.color }, tag.label);
         };
       }
       return resolved;
@@ -581,10 +653,31 @@
       tableSpec.columnSettings?.allowOrder ? h('span', { className: 'boss-column-drag-handle', 'aria-label': '拖拽排序' }, '::') : null,
       h(Checkbox, { checked: visibleKeys.includes(column.key), onChange: (event) => setVisibleKeys((current) => event.target.checked ? [...new Set(current.concat(column.key))] : current.filter((key) => key !== column.key)) }, column.label)))));
 
-    const summary = list.summary?.items?.length ? h('div', { className: 'boss-result-summary-inline' }, ...list.summary.items.map((item) => h('span', { key: item.key }, `${item.label} `, h('strong', null, item.value), item.suffix || ''))) : h('div', { className: 'boss-result-title' }, tableSpec.sectionTitle || '查询结果');
-    const statistics = list.statistics?.items?.length ? h('div', { className: 'boss-result-summary', style: { '--boss-summary-columns': list.statistics.items.length } }, ...list.statistics.items.map((item) => h('div', { key: item.key, className: 'boss-statistic-card' }, h(Statistic, { title: item.label, value: item.value, precision: item.precision, suffix: item.unit })))) : null;
+    const summary = list.summary?.items?.length ? h('div', { className: 'boss-result-summary-inline', 'data-boss-query-summary': 'inline' },
+      h('span', { className: 'boss-result-summary-prefix' }, '查询统计：'),
+      ...list.summary.items.flatMap((item, index) => [
+        index ? h('span', { key: `${item.key}-divider`, className: 'boss-result-summary-inline-divider', 'aria-hidden': true }, '|') : null,
+        h('span', { key: item.key, className: 'boss-result-summary-inline-item' },
+          h('span', { className: 'boss-result-summary-inline-label' }, item.label),
+          h('strong', { className: 'boss-result-summary-inline-value' }, item.value),
+          item.suffix ? h('span', { className: 'boss-result-summary-inline-suffix' }, String(item.suffix).trim()) : null)
+      ])) : h('div', { className: 'boss-result-title' }, tableSpec.sectionTitle || '查询结果');
+    const statistics = list.statistics?.items?.length ? h('div', { className: 'boss-result-summary', style: { '--boss-summary-columns': list.statistics.items.length } }, ...list.statistics.items.map((item) => h(Card, { key: item.key, size: 'small', bordered: false, className: 'boss-statistic-card' }, h(Statistic, { title: item.label, value: item.value, precision: item.precision, suffix: item.unit })))) : null;
     const toolbarTools = [];
-    (tableSpec.secondaryActions || []).forEach((action) => toolbarTools.push(h(Button, { key: action.key, onClick: action.type === 'export' ? exportRows : () => message.success(`${action.label}操作已触发`) }, action.label)));
+    const runSecondaryAction = (action) => action.type === 'export' ? exportRows() : message.success(`${action.label}操作已触发`);
+    (tableSpec.secondaryActions || []).forEach((action) => {
+      if (action.type === 'dropdown') {
+        const items = (action.items || []).map((item) => ({
+          key: item.key,
+          label: item.label,
+          danger: Boolean(item.danger),
+          onClick: () => runSecondaryAction(item)
+        }));
+        toolbarTools.push(h(Dropdown, { key: action.key, menu: { items }, trigger: ['click'] }, h(Button, { icon: h(DownOutlined) }, action.label)));
+      } else {
+        toolbarTools.push(h(Button, { key: action.key, onClick: () => runSecondaryAction(action) }, action.label));
+      }
+    });
     if (tableSpec.primaryAction) toolbarTools.push(h(Button, { key: tableSpec.primaryAction.key, type: 'primary', onClick: () => setWorkflow({ kind: 'create', action: tableSpec.primaryAction, row: tableSpec.primaryAction.createRecord || {} }) }, tableSpec.primaryAction.label));
     if ((tableSpec.tools || []).includes('refresh')) toolbarTools.push(h(Tooltip, { key: 'refresh', title: '刷新' }, h(Button, { icon: h(ReloadOutlined), 'aria-label': '刷新', onClick: () => runQuery(form.getFieldsValue()) })));
     // Column settings are a fixed list affordance, so it remains the final toolbar tool for every query list.
@@ -596,7 +689,7 @@
       open: Boolean(detailRow), title: detailSpec.title, width: detailSpec.width || 808, closeIcon: false, onClose: () => setDetailRow(null),
       extra: h(Button, { type: 'text', icon: h(CloseOutlined), 'aria-label': '关闭详情', onClick: () => setDetailRow(null) }),
       footer: h('div', { className: 'boss-drawer-footer-actions' }, h(Button, { onClick: () => setDetailRow(null) }, detailSpec.closeLabel))
-    }, detailRow ? h('div', { className: 'boss-drawer-detail' }, ...detailSpec.groups.map((group) => h('div', { key: group.key, className: 'boss-detail-section' },
+    }, detailRow ? h('div', { className: `boss-drawer-detail${detailSpec.groups.length > 1 ? ' boss-drawer-grouped-detail' : ''}` }, ...detailSpec.groups.map((group) => h('div', { key: group.key, className: 'boss-detail-section' },
       h('div', { className: 'boss-section-title' }, group.title),
       group.fields ? h(Descriptions, { column: group.columns || 3, size: 'small', items: group.fields.map((field) => ({ key: field.key, label: field.label, span: field.span || 1, children: boundDetailValue(field, detailRow) })) }) : null,
       group.table ? h(Table, { rowKey: group.table.rowKey, columns: dataColumns(group.table.columns), dataSource: group.table.rowsSource ? detailRow[group.table.rowsSource] || [] : group.table.rows || [], pagination: false, size: 'small' }) : null))) : null) : null;
@@ -651,7 +744,7 @@
     const [submitError, setSubmitError] = React.useState(null);
     const allFields = wizardSteps.flatMap((item) => item.fields || []);
     const initialValues = {};
-    allFields.forEach((field) => { if (Object.hasOwn(field, 'default')) initialValues[field.key] = field.default; });
+    allFields.forEach((field) => { if (Object.hasOwn(field, 'default')) initialValues[field.key] = initialValueForField(field); });
     const currentStep = wizardSteps[step];
     const currentFields = currentStep.fields || [];
     const formLayout = resolveFormLayout(formSpec, currentFields);
@@ -736,7 +829,7 @@
     const initialValues = {};
     const allFields = formSpec.fields || (formSpec.groups ? formSpec.groups.flatMap((group) => group.fields || []) : []);
     const formLayout = resolveFormLayout(formSpec, allFields);
-    allFields.forEach((field) => { if (Object.hasOwn(field, 'default')) initialValues[field.key] = field.default; });
+    allFields.forEach((field) => { if (Object.hasOwn(field, 'default')) initialValues[field.key] = initialValueForField(field); });
     const submit = async () => {
       const values = await form.validateFields();
       setSubmitError(null);
@@ -768,13 +861,19 @@
     const formBody = completed
       ? renderFormSuccessResult(formSpec.submit.success, closeOrReset, closeOrReset)
       : h(Form, { form, layout: formLayout.layout, labelCol: formLayout.labelCol, initialValues, className: formLayout.className, 'data-boss-form-layout': formLayout.layout },
-        ...(sections || []).map((section) => h('div', { key: section.key, className: 'boss-form-section' }, section.title ? h('div', { className: 'boss-section-title' }, section.title) : null, h('div', { className: `boss-form-grid ${formLayout.fieldsClassName}` }, ...(section.fields || []).map((field) => formItem(field))))),
+        ...(sections || []).map((section) => {
+          const fields = h('div', { className: `boss-form-grid ${formLayout.fieldsClassName}` }, ...(section.fields || []).map((field) => formItem(field)));
+          const useCard = section.container === 'card' || (spec.metadata.templateId === 'form.grouped-page' && section.container !== 'plain');
+          if (useCard) return h(Card, { key: section.key, size: 'small', className: 'boss-form-section boss-form-section-card', title: section.title || undefined }, fields);
+          return h('section', { key: section.key, className: 'boss-form-section' }, section.title ? h(Divider, { orientation: 'left', plain: true, className: 'boss-form-section-divider' }, section.title) : null, fields);
+        }),
         submitError ? h(Alert, { className: 'boss-form-submit-error', type: 'error', showIcon: true, message: submitError.message, description: submitError.recovery }) : null,
         presentation === 'page' ? pageActions : null);
     if (presentation === 'modal') return h('div', { className: 'boss-content-stack' }, h(Modal, { open: true, title: spec.metadata.pageName, width: formSpec.width || 500, closable: true, onCancel: closeOrReset, footer: completed ? null : floatingActions }, formBody));
     if (presentation === 'drawer') return h('div', { className: 'boss-content-stack' }, h(Drawer, { open: true, title: spec.metadata.pageName, width: formSpec.width || 640, closeIcon: false, onClose: closeOrReset, extra: React.createElement(Button, { type: 'text', icon: h(CloseOutlined), 'aria-label': '关闭表单', onClick: closeOrReset }), footer: completed ? null : h('div', { className: 'boss-drawer-footer-actions' }, ...floatingActions) }, formBody));
     if (completed) return h('div', { className: 'boss-content-stack' }, h('section', { className: 'boss-result-page' }, formBody));
-    return h('div', { className: 'boss-content-stack' }, h('section', { className: `boss-form-module boss-full-page-form${usesInlinePageActions ? ' boss-inline-action-page' : ''}` }, formSpec.sideGuide ? h('div', { className: 'boss-guided-form-layout' }, h('div', { className: 'boss-guided-form-main' }, formBody), h(BusinessGuide, { guide: formSpec.sideGuide })) : formBody));
+    const groupedPageClass = spec.metadata.templateId === 'form.grouped-page' ? ' boss-grouped-form-module' : '';
+    return h('div', { className: 'boss-content-stack' }, h('section', { className: `boss-form-module boss-full-page-form${usesInlinePageActions ? ' boss-inline-action-page' : ''}${groupedPageClass}` }, formSpec.sideGuide ? h('div', { className: 'boss-guided-form-layout' }, h('div', { className: 'boss-guided-form-main' }, formBody), h(BusinessGuide, { guide: formSpec.sideGuide })) : formBody));
   }
 
   function detailItems(fields) {
@@ -786,6 +885,8 @@
         ? h(Badge, { status: field.status || 'default', text: field.value })
         : field.format === 'amount'
           ? formatAmount(field.value, field)
+          : field.format === 'tag'
+            ? h(Tag, { color: field.tagMap?.[field.value]?.color }, field.tagMap?.[field.value]?.label || String(field.value ?? '-'))
           : String(field.value ?? '-')
     }));
   }
@@ -793,17 +894,21 @@
   function DetailPage({ spec }) {
     const detail = spec.detail;
     const [open, setOpen] = React.useState(true);
-    const groupView = (group) => h('div', { key: group.key, id: `detail-${group.key}`, className: 'boss-detail-section' },
-      h('div', { className: 'boss-section-title' }, group.title),
-      group.fields ? h(Descriptions, { column: group.columns || 3, size: 'small', items: detailItems(group.fields) }) : null,
-      group.table ? h(Table, { rowKey: group.table.rowKey, columns: dataColumns(group.table.columns), dataSource: group.table.rows, pagination: false, size: 'small' }) : null);
+    const groupedDetailSurfaces = detail.presentation === 'page' && !detail.tabs && (detail.groups || []).length > 1;
+    const groupView = (group) => {
+      const content = h(React.Fragment, null,
+        group.fields ? h(Descriptions, { column: group.columns || 3, size: 'small', items: detailItems(group.fields) }) : null,
+        group.table ? h(Table, { rowKey: group.table.rowKey, columns: dataColumns(group.table.columns), dataSource: group.table.rows, pagination: false, size: 'small' }) : null);
+      if (groupedDetailSurfaces) return h(Card, { key: group.key, id: `detail-${group.key}`, size: 'small', className: 'boss-detail-section boss-detail-section-card', title: group.title }, content);
+      return h('div', { key: group.key, id: `detail-${group.key}`, className: 'boss-detail-section' }, h('div', { className: 'boss-section-title' }, group.title), content);
+    };
     const groupedContent = detail.tabs ? h(Tabs, { items: detail.tabs.map((tab) => ({ key: tab.key, label: tab.label, children: tab.groupKeys.map((key) => groupView(detail.groups.find((group) => group.key === key))) })) }) : detail.groups.map(groupView);
     const body = h(React.Fragment, null,
       detail.metrics?.length ? h('div', { className: 'boss-detail-metrics', style: { '--boss-metric-columns': detail.metrics.length } }, ...detail.metrics.map((metric) => h('div', { key: metric.key, className: 'boss-detail-metric' }, h(Statistic, { title: metric.label, value: metric.value, suffix: metric.unit, precision: metric.precision })))) : null,
-      detail.anchors ? h('div', { className: 'boss-detail-with-anchors' }, h('nav', { className: 'boss-detail-anchors', 'aria-label': '详情目录' }, ...detail.groups.map((group) => h('a', { key: group.key, href: `#detail-${group.key}` }, group.title))), h('div', { className: 'boss-detail-anchor-content' }, groupedContent)) : groupedContent);
+      detail.anchors && !groupedDetailSurfaces ? h('div', { className: 'boss-detail-with-anchors' }, h('nav', { className: 'boss-detail-anchors', 'aria-label': '详情目录' }, ...detail.groups.map((group) => h('a', { key: group.key, href: `#detail-${group.key}` }, group.title))), h('div', { className: 'boss-detail-anchor-content' }, groupedContent)) : groupedContent);
     if (detail.presentation === 'modal') return h('div', { className: 'boss-content-stack' }, h(Modal, { open, title: spec.metadata.pageName, onCancel: () => setOpen(false), footer: h(Button, { onClick: () => setOpen(false) }, detail.closeLabel || '关 闭'), width: detail.width || 640 }, body));
-    if (detail.presentation === 'drawer') return h('div', { className: 'boss-content-stack' }, h(Drawer, { open, title: spec.metadata.pageName, width: detail.width || 808, closeIcon: false, onClose: () => setOpen(false), extra: React.createElement(Button, { type: 'text', icon: h(CloseOutlined), 'aria-label': '关闭详情', onClick: () => setOpen(false) }), footer: h('div', { className: 'boss-drawer-footer-actions' }, h(Button, { onClick: () => setOpen(false) }, detail.closeLabel || '我知道了')) }, body));
-    return h('div', { className: 'boss-content-stack' }, h('section', { className: 'boss-detail-module' }, body));
+    if (detail.presentation === 'drawer') return h('div', { className: 'boss-content-stack' }, h(Drawer, { open, title: spec.metadata.pageName, width: detail.width || 808, closeIcon: false, onClose: () => setOpen(false), extra: React.createElement(Button, { type: 'text', icon: h(CloseOutlined), 'aria-label': '关闭详情', onClick: () => setOpen(false) }), footer: h('div', { className: 'boss-drawer-footer-actions' }, h(Button, { onClick: () => setOpen(false) }, detail.closeLabel || '我知道了')) }, h('div', { className: `boss-drawer-detail${detail.groups.length > 1 ? ' boss-drawer-grouped-detail' : ''}` }, body)));
+    return h('div', { className: 'boss-content-stack' }, h('section', { className: `boss-detail-module${groupedDetailSurfaces ? ' boss-grouped-detail-module' : ''}` }, body));
   }
 
   function ResultPage({ spec }) {

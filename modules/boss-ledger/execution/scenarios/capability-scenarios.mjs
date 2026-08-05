@@ -227,22 +227,22 @@ export const scenarios = [
   },
   {
     id: '13-split-record-drawer',
-    title: '详情抽屉和退款明细',
+    title: '抽屉内分组详情和退款明细',
     spec: base({
       changeId: '20260729-capability-13-split-record-drawer', pageName: '分账记录查询', family: 'list', templateId: 'list.regular', executionMode: 'page-spec-default',
-      request: '运营人员从分账记录列表打开 Drawer 查看订单信息和两条退款明细。', selectionReason: '来源记录和有限退款明细需同时保留列表上下文，使用带子表的只读详情 Drawer。', refs: [...ruleRefs.list, 'BL-TPL-013', 'BL-INT-004'],
+      request: '运营人员从分账记录列表打开 Drawer，连续查看订单信息、支付信息和两条退款明细。', selectionReason: '一条来源记录需连续核对两组信息并查看有限退款明细，使用抽屉内分组详情。', refs: [...ruleRefs.list, 'BL-VIS-014', 'BL-TPL-013', 'BL-INT-004'],
       capabilities: ['query.basic', 'table.flat', 'table.pagination', 'table.status', 'table.amount', 'detail.drawer', 'detail.drawerTable'],
-      body: { list: { query: { fields: [{ key: 'batchNo', label: '分账批次号', control: 'input' }] }, table: { rowKey: 'batchNo', sectionTitle: '分账记录列表', columns: [{ key: 'batchNo', label: '分账批次号', width: 260 }, { key: 'merchantName', label: '商户简称', width: 220 }, { key: 'status', label: '分账状态', format: 'status', width: 120, statusMap: { partial: { label: '部分成功', status: 'processing' } } }, { key: 'totalAmount', label: '分账总金额', hidden: true }, { key: 'receivedAmount', label: '到账总金额', hidden: true }, { key: 'mode', label: '分账方式', hidden: true }, { key: 'count', label: '分账到账笔数', hidden: true }, { key: 'operator', label: '操作员', hidden: true }, { key: 'createdAt', label: '分账发起时间', hidden: true }, { key: 'actions', label: '操作', width: 100, hideable: false }], drawerDetail: { title: '分账记录详情', closeLabel: '我知道了', groups: [{ key: 'order', title: '订单信息', fields: [{ key: 'merchantName', label: '商户简称', source: 'merchantName' }, { key: 'status', label: '分账状态', source: 'status', format: 'status', statusMap: { partial: { label: '部分成功', status: 'processing' } } }, { key: 'totalAmount', label: '分账总金额', source: 'totalAmount', format: 'amount', unit: '元' }, { key: 'receivedAmount', label: '到账总金额', source: 'receivedAmount', format: 'amount', unit: '元' }, { key: 'mode', label: '分账方式', source: 'mode' }, { key: 'count', label: '分账到账笔数', source: 'count' }, { key: 'operator', label: '操作员', source: 'operator' }, { key: 'createdAt', label: '分账发起时间', source: 'createdAt' }, { key: 'batchNo', label: '分账批次号', source: 'batchNo', span: 2 }] }, { key: 'refund', title: '退款信息', table: { rowsSource: 'refunds', rowKey: 'requestNo', columns: [{ key: 'requestedAt', label: '退款请求时间' }, { key: 'requestNo', label: '退款请求号' }, { key: 'completedAt', label: '退款完成时间' }, { key: 'amount', label: '退款金额', format: 'amount', unit: '元' }, { key: 'description', label: '退款说明' }, { key: 'remark', label: '账备注' }, { key: 'status', label: '退款状态', format: 'status', statusMap: { success: { label: '成功', status: 'success' }, failed: { label: '失败', status: 'error' } } }] } }] }, rowActions: [{ key: 'detail', label: '详情', type: 'detail' }], rows: [{ batchNo: '1320250529180001984748592271', merchantName: '签约名10080028707', status: 'partial', totalAmount: 766651.38, receivedAmount: 6654.98, mode: '自动', count: '2 笔', operator: '杨小雨', createdAt: '2025-05-29 18:00:02', refunds: [{ requestedAt: '2025-05-29 18:08:21', requestNo: '10082983398', completedAt: '2025-05-29 18:09:10', amount: 26293.99, description: '-', remark: '-', status: 'success' }, { requestedAt: '2025-05-29 18:12:45', requestNo: '10082983400', completedAt: '2025-05-29 18:13:21', amount: 2332.87, description: '余额不足', remark: '余额不足', status: 'failed' }] }], pagination: { page: 1, pageSize: 20, total: 1 } } } }
+      body: { list: { query: { fields: [{ key: 'batchNo', label: '分账批次号', control: 'input' }] }, table: { rowKey: 'batchNo', sectionTitle: '分账记录列表', columns: [{ key: 'batchNo', label: '分账批次号', width: 260 }, { key: 'merchantName', label: '商户简称', width: 220 }, { key: 'status', label: '分账状态', format: 'status', width: 120, statusMap: { partial: { label: '部分成功', status: 'processing' } } }, { key: 'totalAmount', label: '分账总金额', hidden: true }, { key: 'receivedAmount', label: '到账总金额', hidden: true }, { key: 'mode', label: '分账方式', hidden: true }, { key: 'count', label: '分账到账笔数', hidden: true }, { key: 'operator', label: '操作员', hidden: true }, { key: 'createdAt', label: '分账发起时间', hidden: true }, { key: 'actions', label: '操作', width: 100, hideable: false }], drawerDetail: { title: '分账记录详情', closeLabel: '我知道了', groups: [{ key: 'order', title: '订单信息', fields: [{ key: 'merchantName', label: '商户简称', source: 'merchantName' }, { key: 'status', label: '分账状态', source: 'status', format: 'status', statusMap: { partial: { label: '部分成功', status: 'processing' } } }, { key: 'totalAmount', label: '分账总金额', source: 'totalAmount', format: 'amount', unit: '元' }, { key: 'batchNo', label: '分账批次号', source: 'batchNo', span: 2 }] }, { key: 'payment', title: '支付信息', fields: [{ key: 'receivedAmount', label: '到账总金额', source: 'receivedAmount', format: 'amount', unit: '元' }, { key: 'mode', label: '分账方式', source: 'mode' }, { key: 'count', label: '分账到账笔数', source: 'count' }, { key: 'operator', label: '操作员', source: 'operator' }, { key: 'createdAt', label: '分账发起时间', source: 'createdAt', span: 2 }] }, { key: 'refund', title: '退款信息', table: { rowsSource: 'refunds', rowKey: 'requestNo', columns: [{ key: 'requestedAt', label: '退款请求时间' }, { key: 'requestNo', label: '退款请求号' }, { key: 'completedAt', label: '退款完成时间' }, { key: 'amount', label: '退款金额', format: 'amount', unit: '元' }, { key: 'description', label: '退款说明' }, { key: 'remark', label: '账备注' }, { key: 'status', label: '退款状态', format: 'status', statusMap: { success: { label: '成功', status: 'success' }, failed: { label: '失败', status: 'error' } } }] } }] }, rowActions: [{ key: 'detail', label: '详情', type: 'detail' }], rows: [{ batchNo: '1320250529180001984748592271', merchantName: '签约名10080028707', status: 'partial', totalAmount: 766651.38, receivedAmount: 6654.98, mode: '自动', count: '2 笔', operator: '杨小雨', createdAt: '2025-05-29 18:00:02', refunds: [{ requestedAt: '2025-05-29 18:08:21', requestNo: '10082983398', completedAt: '2025-05-29 18:09:10', amount: 26293.99, description: '-', remark: '-', status: 'success' }, { requestedAt: '2025-05-29 18:12:45', requestNo: '10082983400', completedAt: '2025-05-29 18:13:21', amount: 2332.87, description: '余额不足', remark: '余额不足', status: 'failed' }] }], pagination: { page: 1, pageSize: 20, total: 1 } } } }
     })
   },
   {
     id: '14-merchant-settlement-long-detail',
-    title: '长详情页和锚点定位',
+    title: '长详情页分组承载',
     spec: base({
-      changeId: '20260729-capability-14-merchant-settlement-long-detail', pageName: '渠道结算配置详情', family: 'detail', templateId: 'detail.record', executionMode: 'shadow', validatedCombinations: ['detail.page-anchors'],
-      request: '财务人员查看杭州星云商贸有限公司的七组渠道结算配置，只读并快速定位任一分组。', selectionReason: '分组多且需要定位，使用带锚点的独立详情页。', refs: ruleRefs.detail,
-      capabilities: ['detail.groups', 'detail.anchors'],
-      body: { detail: { presentation: 'page', anchors: true, groups: [
+      changeId: '20260729-capability-14-merchant-settlement-long-detail', pageName: '渠道结算配置详情', family: 'detail', templateId: 'detail.record', executionMode: 'shadow', validatedCombinations: ['detail.grouped-basic'],
+      request: '财务人员查看杭州星云商贸有限公司的七组渠道结算配置，并按业务信息组完成只读核对。', selectionReason: '多个独立业务信息组需要连续核对，使用分组独立详情页。', refs: ruleRefs.detail,
+      capabilities: ['detail.groups'],
+      body: { detail: { presentation: 'page', groups: [
         { key: 'basic', title: '基本信息', fields: [{ key: 'merchantNo', label: '商户编号', value: 'M10080028707' }, { key: 'merchantName', label: '商户名称', value: '杭州星云商贸有限公司' }, { key: 'status', label: '配置状态', value: '生效中', format: 'status', status: 'success' }, { key: 'createdAt', label: '创建时间', value: '2026-07-16 11:35:22' }] },
         { key: 'subject', title: '商户主体', fields: [{ key: 'subjectType', label: '主体类型', value: '企业' }, { key: 'creditCode', label: '统一社会信用代码', value: '91330100MA2AXXXX' }, { key: 'legalName', label: '法人姓名', value: '王小明' }, { key: 'mobile', label: '联系人电话', value: '13800138000' }] },
         { key: 'account', title: '收款账户', fields: [{ key: 'accountName', label: '账户名称', value: '杭州星云商贸有限公司' }, { key: 'bank', label: '开户行', value: '招商银行杭州分行' }, { key: 'accountNo', label: '银行账号', value: '6222********7890' }, { key: 'accountStatus', label: '账户状态', value: '已核验', format: 'status', status: 'success' }] },
@@ -336,6 +336,71 @@ export const scenarios = [
         { key: 'splitTrend', title: '近 7 日分账趋势', role: 'trend', type: 'line', xField: 'date', yField: 'amount', data: [{ date: '07-24', amount: 290000 }, { date: '07-25', amount: 350000 }, { date: '07-26', amount: 320000 }, { date: '07-27', amount: 375000 }, { date: '07-28', amount: 330000 }, { date: '07-29', amount: 385000 }, { date: '07-30', amount: 450000 }] },
         { key: 'incomeRanking', title: '收入来源排行', role: 'ranking', type: 'bar', xField: 'amount', yField: 'source', data: [{ source: '线上收单', amount: 1280000 }, { source: '联营渠道', amount: 760000 }, { source: '直营网点', amount: 520000 }] }
       ] } }
+    })
+  },
+  {
+    id: '20-service-scope-component-form',
+    title: '服务范围配置与复杂表单控件',
+    spec: base({
+      changeId: '20260805-capability-20-service-scope-component-form', pageName: '商户服务范围配置', family: 'form', templateId: 'form.grouped-page', executionMode: 'shadow', validatedCombinations: ['form.grouped'],
+      request: '商户运营人员按商户归属、服务权限和结算安排配置商户服务范围，完成后保存。', selectionReason: '八项配置字段分属三个需要分别核对的信息组，使用分组全页表单并固定提交操作。', assumptions: ['可选服务和结算渠道为示例数据，保存后仅显示客户端反馈。'], refs: [...ruleRefs.form, 'BL-TPL-007'],
+      capabilities: ['form.groups', 'form.stickyActions'],
+      body: { form: { presentation: 'page', stickyActions: true, groups: [
+        { key: 'merchant', title: '商户归属', fields: [
+          { key: 'merchantName', label: '商户名称', control: 'auto-complete', required: true, options: [{ label: '杭州星云商贸有限公司', value: '杭州星云商贸有限公司' }, { label: '上海锦程科技有限公司', value: '上海锦程科技有限公司' }] },
+          { key: 'region', label: '经营区域', control: 'cascader', required: true, showSearch: true, options: [{ label: '浙江省', value: 'zhejiang', children: [{ label: '杭州市', value: 'hangzhou', children: [{ label: '西湖区', value: 'xihu' }, { label: '滨江区', value: 'binjiang' }] }] }, { label: '上海市', value: 'shanghai', children: [{ label: '浦东新区', value: 'pudong' }] }] },
+          { key: 'daySettlement', label: '日间结算', control: 'switch', default: true, checkedLabel: '开启', uncheckedLabel: '关闭' }
+        ] },
+        { key: 'service', title: '服务权限', container: 'card', fields: [
+          { key: 'categories', label: '可经营类目', control: 'tree-select', required: true, treeCheckable: true, options: [{ label: '零售', value: 'retail', children: [{ label: '商超', value: 'supermarket' }, { label: '便利店', value: 'convenience' }] }, { label: '餐饮', value: 'food', children: [{ label: '正餐', value: 'dining' }, { label: '快餐', value: 'fast-food' }] }] },
+          { key: 'services', label: '可用服务', control: 'checkbox', required: true, default: ['online'], options: [{ label: '线上收单', value: 'online' }, { label: '线下收单', value: 'offline' }, { label: '分账服务', value: 'split' }, { label: '结算服务', value: 'settlement' }] },
+          { key: 'settlementChannels', label: '可结算渠道', control: 'transfer', required: true, default: ['online'], titles: ['待选择', '已选择'], showSearch: true, options: [{ label: '线上收单', value: 'online' }, { label: '联营渠道', value: 'partner' }, { label: '直营网点', value: 'direct' }, { label: '跨境收款', value: 'cross-border' }] }
+        ] },
+        { key: 'schedule', title: '结算安排', fields: [
+          { key: 'cutoffTime', label: '每日清算截点', control: 'time', required: true, default: '18:00', format: 'HH:mm' },
+          { key: 'effectiveAt', label: '生效日期', control: 'date', required: true }
+        ] }
+      ], submit: { primaryLabel: '保 存', cancelLabel: '取 消', success: { title: '保存成功', message: '商户服务范围配置已保存。' } } } }
+    })
+  },
+  {
+    id: '21-split-rule-tag-dropdown',
+    title: '分类标签与更多操作查询列表',
+    spec: base({
+      changeId: '20260805-capability-21-split-rule-tag-dropdown', pageName: '分账规则查询', family: 'list', templateId: 'list.regular', executionMode: 'page-spec-default',
+      request: '运营人员查询、核对并维护分账规则；通过分类标签识别分账模式，并将导入、导出和刷新归入更多操作。', selectionReason: '核心任务是筛选并维护记录集合，分类信息服务于表格扫描，使用常规查询列表。', assumptions: ['导入、导出和刷新仅模拟客户端操作，不调用真实服务。'], refs: [...ruleRefs.list, 'BL-INT-010'],
+      capabilities: ['query.basic', 'table.flat', 'table.pagination', 'table.status', 'table.amount', 'table.export', 'table.confirmAction', 'table.editAction', 'list.drawerCreate'],
+      body: { list: { query: { fields: [
+        { key: 'ruleName', label: '规则名称', control: 'input' },
+        { key: 'merchantNo', label: '商户编号', control: 'input' },
+        { key: 'channel', label: '分账渠道', control: 'select', options: [{ label: '线上收单', value: '线上收单' }, { label: '联营渠道', value: '联营渠道' }, { label: '直营网点', value: '直营网点' }] },
+        { key: 'status', label: '规则状态', control: 'select', options: [{ label: '生效中', value: 'active' }, { label: '待生效', value: 'pending' }, { label: '已失效', value: 'disabled' }] }
+      ] }, table: { rowKey: 'ruleNo', sectionTitle: '分账规则列表', primaryAction: { key: 'create', label: '新增规则', createRecord: { ruleNo: 'R005', status: 'pending', splitMode: 'standard', pendingAmount: 0, createdAt: '2026-08-05 12:00:00' }, form: { title: '新增分账规则', primaryLabel: '保 存', successMessage: '分账规则已新增。', fields: [
+        { key: 'ruleName', label: '规则名称', control: 'input', required: true },
+        { key: 'merchantName', label: '商户名称', control: 'input', required: true },
+        { key: 'merchantNo', label: '商户编号', control: 'input', required: true },
+        { key: 'channel', label: '分账渠道', control: 'select', required: true, options: [{ label: '线上收单', value: '线上收单' }, { label: '联营渠道', value: '联营渠道' }, { label: '直营网点', value: '直营网点' }] },
+        { key: 'splitMode', label: '分账模式', control: 'select', required: true, options: [{ label: '系统商户', value: 'system' }, { label: '标准商户', value: 'standard' }, { label: '易宝支付', value: 'yeepay' }, { label: '企业付款', value: 'enterprise' }] }
+      ] } }, secondaryActions: [{ key: 'more', label: '更多操作', type: 'dropdown', items: [{ key: 'import', label: '导入规则' }, { key: 'export', label: '导出结果', type: 'export' }, { key: 'refresh', label: '刷新列表' }] }], columns: [
+        { key: 'ruleNo', label: '规则编号', width: 110, hideable: false },
+        { key: 'ruleName', label: '规则名称', width: 170 },
+        { key: 'merchantName', label: '商户名称', width: 190 },
+        { key: 'merchantNo', label: '商户编号', width: 140 },
+        { key: 'channel', label: '分账渠道', width: 120 },
+        { key: 'status', label: '规则状态', width: 100, format: 'status', statusMap },
+        { key: 'splitMode', label: '分账模式', width: 120, format: 'tag', tagMap: { system: { label: '系统商户', color: 'orange' }, standard: { label: '标准商户', color: 'blue' }, yeepay: { label: '易宝支付', color: 'cyan' }, enterprise: { label: '企业付款', color: 'purple' } } },
+        { key: 'pendingAmount', label: '待分账金额', width: 140, format: 'amount', unit: '元' },
+        { key: 'createdAt', label: '创建时间', width: 180 },
+        { key: 'actions', label: '操作', width: 150, hideable: false }
+      ], rows: [
+        { ruleNo: 'R001', ruleName: '连锁门店分润', merchantName: '杭州星云商贸有限公司', merchantNo: 'M10080048989', channel: '线上收单', status: 'active', splitMode: 'system', pendingAmount: 12860.32, createdAt: '2026-08-05 11:35:22' },
+        { ruleNo: 'R002', ruleName: '联合运营', merchantName: '上海锦程科技有限公司', merchantNo: 'M10080048990', channel: '联营渠道', status: 'pending', splitMode: 'standard', pendingAmount: 9820, createdAt: '2026-08-04 16:20:10' },
+        { ruleNo: 'R003', ruleName: '直营网点分账', merchantName: '北京跃升贸易有限公司', merchantNo: 'M10080048991', channel: '直营网点', status: 'active', splitMode: 'yeepay', pendingAmount: 7610.5, createdAt: '2026-08-03 09:35:22' },
+        { ruleNo: 'R004', ruleName: '企业付款结算', merchantName: '深圳迅达服务有限公司', merchantNo: 'M10080048992', channel: '线上收单', status: 'disabled', splitMode: 'enterprise', pendingAmount: 0, createdAt: '2026-08-02 14:10:00' }
+      ], pagination: { page: 1, pageSize: 20, total: 4 }, rowActions: [
+        { key: 'edit', label: '修改', type: 'edit', form: { title: '修改分账规则', primaryLabel: '保 存', successMessage: '分账规则已更新。', fields: [{ key: 'ruleName', label: '规则名称', control: 'input', required: true }, { key: 'channel', label: '分账渠道', control: 'select', required: true, options: [{ label: '线上收单', value: '线上收单' }, { label: '联营渠道', value: '联营渠道' }, { label: '直营网点', value: '直营网点' }] }] } },
+        { key: 'disable', label: '失效', type: 'confirm-state-change', danger: true, visibleWhen: { field: 'status', equals: 'active' }, confirm: { title: '确认使规则失效', description: '确认使当前分账规则失效？', impact: '失效后该规则不再参与后续分账。', reversible: false, successMessage: '分账规则已失效。' }, effect: { field: 'status', value: 'disabled' } }
+      ] } } }
     })
   }
 ];

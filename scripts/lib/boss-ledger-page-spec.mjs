@@ -172,16 +172,21 @@ function validateField(errors, field, location) {
   if (!field || typeof field !== 'object') return;
   issue(errors, nonEmptyString(field.key), `${location}.key is required.`);
   issue(errors, nonEmptyString(field.label), `${location}.label is required.`);
-  issue(errors, ['input', 'textarea', 'select', 'date', 'date-range', 'number', 'radio', 'switch', 'upload'].includes(field.control), `${location}.control is unsupported.`);
-  if (['select', 'radio'].includes(field.control)) {
+  issue(errors, ['input', 'textarea', 'select', 'auto-complete', 'cascader', 'tree-select', 'date', 'date-range', 'time', 'number', 'radio', 'checkbox', 'switch', 'transfer', 'upload'].includes(field.control), `${location}.control is unsupported.`);
+  if (['select', 'auto-complete', 'cascader', 'tree-select', 'radio', 'transfer'].includes(field.control)
+    || (field.control === 'checkbox' && field.options !== undefined)) {
     issue(errors, Array.isArray(field.options) && field.options.length > 0, `${location}.options are required for ${field.control}.`);
   }
-  if (field.options) {
-    field.options.forEach((option, index) => {
-      issue(errors, nonEmptyString(option?.label), `${location}.options[${index}].label is required.`);
-      issue(errors, option && Object.hasOwn(option, 'value'), `${location}.options[${index}].value is required.`);
+  function validateOptions(options, optionsLocation) {
+    if (!Array.isArray(options)) return;
+    options.forEach((option, index) => {
+      const optionLocation = `${optionsLocation}[${index}]`;
+      issue(errors, nonEmptyString(option?.label), `${optionLocation}.label is required.`);
+      issue(errors, option && Object.hasOwn(option, 'value'), `${optionLocation}.value is required.`);
+      validateOptions(option?.children, `${optionLocation}.children`);
     });
   }
+  validateOptions(field.options, `${location}.options`);
 }
 
 function validateListDrawerDetail(errors, table, capabilities, columnKeys) {
@@ -297,6 +302,7 @@ function validateList(errors, spec, capabilities) {
     issue(errors, nonEmptyString(column.label), `list.table.columns[${index}].label is required.`);
     if (column.format === 'status') issue(errors, capabilities.includes('table.status'), 'Status columns require table.status.');
     if (column.format === 'amount') issue(errors, capabilities.includes('table.amount'), 'Amount columns require table.amount.');
+    if (column.format === 'tag') issue(errors, column.tagMap && typeof column.tagMap === 'object', 'Tag columns require tagMap.');
   });
   const rowActions = table.rowActions || [];
   const actionsColumn = (table.columns || []).find((column) => column.key === 'actions');
@@ -341,6 +347,16 @@ function validateList(errors, spec, capabilities) {
   (table.secondaryActions || []).forEach((action, index) => {
     issue(errors, nonEmptyString(action?.key) && nonEmptyString(action?.label), `list.table.secondaryActions[${index}] requires key and label.`);
     if (action?.type === 'export') issue(errors, capabilities.includes('table.export'), 'Export actions require table.export.');
+    if (action?.type === 'dropdown') {
+      issue(errors, Array.isArray(action.items) && action.items.length > 0, `list.table.secondaryActions[${index}].items are required for dropdown actions.`);
+      if (Array.isArray(action.items)) {
+        issue(errors, unique(action.items.map((item) => item?.key)), `list.table.secondaryActions[${index}].items keys must be unique.`);
+        action.items.forEach((item, itemIndex) => {
+          issue(errors, nonEmptyString(item?.key) && nonEmptyString(item?.label), `list.table.secondaryActions[${index}].items[${itemIndex}] requires key and label.`);
+          if (item?.type === 'export') issue(errors, capabilities.includes('table.export'), 'Dropdown export actions require table.export.');
+        });
+      }
+    }
   });
   if (table.columnSettings?.allowOrder) issue(errors, capabilities.includes('table.columnOrder'), 'Column ordering requires table.columnOrder.');
   if (table.pagination?.total !== undefined) {
@@ -442,6 +458,7 @@ function validateForm(errors, spec, capabilities) {
   (form.groups || []).forEach((group, index) => {
     issue(errors, nonEmptyString(group.key) && nonEmptyString(group.title), `form.groups[${index}] requires key and title.`);
     issue(errors, Array.isArray(group.fields) && group.fields.length > 0, `form.groups[${index}].fields are required.`);
+    if (group.container !== undefined) issue(errors, ['plain', 'card'].includes(group.container), `form.groups[${index}].container must be plain or card.`);
   });
   (form.steps || []).forEach((step, index) => {
     issue(errors, nonEmptyString(step.key) && nonEmptyString(step.title), `form.steps[${index}] requires key and title.`);

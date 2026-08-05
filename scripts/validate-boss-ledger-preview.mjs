@@ -966,7 +966,7 @@ function checkSource(html) {
     }
 
     const lightweightSummary = usesTemplate('list.inline-summary')
-      && /(data-boss-query-summary|query-summary|查询统计)[\s\S]{0,800}(｜|query-summary-divider|结算总笔数|总笔数|总金额)/i.test(source);
+      && /data-boss-query-summary[\s\S]{0,800}boss-result-summary-prefix[\s\S]{0,800}boss-result-summary-inline-value[\s\S]{0,800}boss-result-summary-inline-divider/i.test(source);
     const hasResultTitle = /(toolbar-title|result-title|list-title)[^>]*>[^<]*(查询列表|查询结果|列表数据)|>\s*(查询列表|查询结果|列表数据)\s*</i.test(source);
     if (lightweightSummary && hasResultTitle) {
       fail('validate', 'Lightweight query summary must not be rendered together with the result-section title');
@@ -974,7 +974,7 @@ function checkSource(html) {
       pass('validate', 'Lightweight query summary and result-section title are not rendered together');
     }
 
-    const lightweightSummarySharesToolbar = /className:\s*['"][^'"]*\btoolbar\b[^'"]*['"][\s\S]{0,1600}className:\s*['"]query-summary['"][\s\S]{0,1600}className:\s*['"]toolbar-actions['"]/i.test(source);
+    const lightweightSummarySharesToolbar = /className:\s*['"]boss-result-toolbar['"][\s\S]{0,800}className:\s*['"]boss-result-toolbar-left['"][\s\S]{0,800}summary[\s\S]{0,800}className:\s*['"]boss-result-toolbar-right['"]/i.test(source);
     if (lightweightSummary && lightweightSummarySharesToolbar) {
       pass('validate', 'Lightweight query summary shares the toolbar row with right-side actions');
     } else if (lightweightSummary) {
