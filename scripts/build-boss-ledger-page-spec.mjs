@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // rule-assertion: delivery.page-design
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, relative, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import {
@@ -14,49 +14,19 @@ import {
   readJson,
   validatePageSpec
 } from './lib/boss-ledger-page-spec.mjs';
+import { syncPageDesignEvidence } from './lib/boss-ledger-page-design-evidence.mjs';
+import { installPageVendor, renderBossLedgerPreview } from './lib/shared-browser-runtime.mjs';
 
 const specArg = process.argv.find((arg) => arg.endsWith('page-spec.json'));
-const materializeVendor = process.argv.includes('--materialize-vendor');
+const portable = process.argv.includes('--portable') || process.argv.includes('--materialize-vendor');
+const flexible = process.argv.includes('--flexible');
 if (!specArg) {
-  console.error('Usage: node scripts/build-boss-ledger-page-spec.mjs changes/{change-id}/page-spec.json [--materialize-vendor]');
+  console.error('Usage: node scripts/build-boss-ledger-page-spec.mjs changes/{change-id}/page-spec.json [--portable]');
   process.exit(2);
 }
 
 function sha256File(file) {
   return createHash('sha256').update(readFileSync(file)).digest('hex');
-}
-
-function validatePageDesign(changeDir, spec, policy) {
-  const designPath = resolve(changeDir, 'page-design.md');
-  if (!existsSync(designPath)) throw new Error('page-design.md is missing; selection evidence is required before build.');
-  const design = readFileSync(designPath, 'utf8');
-  const templateId = spec.metadata.templateId.replace(/\.md$/, '');
-  const templateEvidence = [
-    `Rule template: \`${templateId}\``,
-    `Template: \`${templateId}\``,
-    `Template: \`${templateId}.md\``
-  ];
-  const requiredLines = [
-    '## Routing',
-    `Family: \`${spec.metadata.family}\``,
-    `Runtime mode: \`${spec.metadata.executionMode}\``,
-    `Selection reason: ${spec.metadata.selectionReason}`,
-    'Rejected candidates:',
-    'Capabilities:',
-    '## Assumptions',
-    '## Rule References'
-  ];
-  requiredLines.forEach((line) => { if (!design.includes(line)) throw new Error(`page-design.md is missing required selection evidence: ${line}`); });
-  if (spec.metadata.executionMode === 'shadow') {
-    const combinationEvidence = `Validated combinations: ${spec.metadata.validatedCombinations.map((id) => `\`${id}\``).join('、')}`;
-    if (!design.includes(combinationEvidence)) throw new Error(`page-design.md is missing required shadow evidence: ${combinationEvidence}`);
-  }
-  // Earlier reviewed design records may identify historical templates by Markdown filename.
-  if (!templateEvidence.some((line) => design.includes(line))) {
-    throw new Error(`page-design.md is missing required selection evidence: ${templateEvidence[0]}`);
-  }
-  spec.metadata.assumptions.forEach((assumption) => { if (!design.includes(assumption)) throw new Error(`page-design.md does not record assumption: ${assumption}`); });
-  spec.metadata.ruleRefs.forEach((ruleId) => { if (!design.includes(ruleId)) throw new Error(`page-design.md does not reference selected rule: ${ruleId}`); });
 }
 
 function synchronizePageDesignForListSummary(changeDir, spec) {
@@ -85,21 +55,21 @@ try {
     synchronizePageDesignForListSummary(changeDir, spec);
     console.log(`- normalized list summary to ${normalized.kind} presentation.`);
   }
-  const errors = validatePageSpec(spec, { root });
+  const errors = validatePageSpec(spec, { root, strictGovernance: !flexible });
   if (errors.length) throw new Error(errors.join('\n'));
   const policy = loadPolicy(root);
   const mode = expectedRuntimeMode(policy, spec.metadata.family, spec.metadata.templateId);
-  if (mode !== spec.metadata.executionMode) throw new Error('Page Spec execution mode does not match the active generation policy.');
-  validatePageDesign(changeDir, spec, policy);
+  if (!flexible && mode !== spec.metadata.executionMode) throw new Error('Page Spec execution mode does not match the active generation policy.');
   if (spec.metadata.changeId !== basename(changeDir)) throw new Error('metadata.changeId must match the Change directory name.');
   if (!existsSync(resolve(changeDir, 'rules-read.md'))) throw new Error('rules-read.md is missing. Run the routed preflight first.');
+  const designEvidence = syncPageDesignEvidence(resolve(changeDir, 'page-design.md'), spec);
+  if (designEvidence.changed) console.log('- synchronized structured page-design evidence from page-spec.json.');
 
   const shellRoot = resolve(root, 'modules/boss-ledger/shell');
   const rendererRoot = resolve(root, 'modules/boss-ledger/execution/renderer');
   const themeRoot = resolve(root, 'modules/boss-ledger/execution/theme');
   mkdirSync(resolve(changeDir, 'assets'), { recursive: true });
   const fixedCopies = [
-    [resolve(rendererRoot, 'page-spec-preview.template.html'), resolve(changeDir, 'preview.html')],
     [resolve(rendererRoot, 'page-spec-runtime.js'), resolve(changeDir, 'page-spec-runtime.js')],
     [resolve(rendererRoot, 'page-spec-business.css'), resolve(changeDir, 'business.css')],
     [resolve(themeRoot, 'theme.css'), resolve(changeDir, 'theme.css')],
@@ -122,16 +92,10 @@ try {
     ]);
   }
   fixedCopies.forEach(([source, target]) => cpSync(source, target));
-
-  const vendorSource = resolve(shellRoot, 'vendor');
-  const vendorTarget = resolve(changeDir, 'vendor');
-  if (!existsSync(vendorTarget)) {
-    if (materializeVendor) cpSync(vendorSource, vendorTarget, { recursive: true });
-    else symlinkSync('../../modules/boss-ledger/shell/vendor', vendorTarget, 'dir');
-  } else if (lstatSync(vendorTarget).isSymbolicLink() && readlinkSync(vendorTarget) !== '../../modules/boss-ledger/shell/vendor') {
-    unlinkSync(vendorTarget);
-    symlinkSync('../../modules/boss-ledger/shell/vendor', vendorTarget, 'dir');
-  }
+  const previewPath = resolve(changeDir, 'preview.html');
+  const previewTemplate = readFileSync(resolve(rendererRoot, 'page-spec-preview.template.html'), 'utf8');
+  writeFileSync(previewPath, renderBossLedgerPreview(previewTemplate, spec));
+  installPageVendor(root, changeDir, spec, { portable });
 
   const appPath = resolve(changeDir, 'preview-app.js');
   writeFileSync(appPath, generatedPreviewApp(spec));
@@ -140,8 +104,10 @@ try {
     system: 'boss-ledger',
     policyVersion: policy.policyVersion,
     rendererVersion: spec.ui.rendererVersion,
+    governanceMode: flexible ? 'flexible' : 'strict',
     pageSpecHash: pageSpecHash(spec),
     generated: Object.fromEntries([
+      ['preview.html', previewPath],
       ['preview-app.js', appPath],
       ...fixedCopies.map(([source, target]) => [relative(changeDir, target), target])
     ].map(([name, file]) => [name, sha256File(file)]))

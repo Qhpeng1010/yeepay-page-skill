@@ -12,17 +12,23 @@
         "integration-guide": "modules/open-platform/execution/context-packs/integration-guide.md"
       },
       "scaffoldCommand": "node scripts/scaffold-open-platform-page-spec.mjs changes/{change-id}",
-      "buildCommand": "node scripts/build-open-platform-page-spec.mjs changes/{change-id}/page-spec.json",
-      "verifyCommand": "node scripts/verify-open-platform-page-spec.mjs changes/{change-id}/page-spec.json"
+      "checkCommand": "node scripts/check-open-platform-page-spec.mjs changes/{change-id}/page-spec.json --flexible",
+      "buildCommand": "node scripts/build-open-platform-page-spec.mjs changes/{change-id}/page-spec.json --flexible",
+      "verifyCommand": "node scripts/verify-open-platform-page-spec.mjs changes/{change-id}/page-spec.json --flexible"
     },
     "resources": {
       "requirement": ["modules/shared/product.md"],
       "design": ["modules/shared/design-system.md", "modules/open-platform/theme.md", "modules/shared/page-templates.md", "modules/shared/components.md"],
       "template": [],
-      "generate": ["modules/shared/frontend.md", "modules/shared/templates/html-preview.md"],
+      "generate": [],
       "review": ["modules/open-platform/theme.md"]
     },
-    "commands": {}
+    "commands": {
+      "generate": {
+        "prepare": "node scripts/prepare-open-platform-page-spec.mjs changes/{change-id} {family}",
+        "coverage": "node scripts/check-open-platform-requirement-coverage.mjs --spec changes/{change-id}/page-spec.json"
+      }
+    }
   },
   "intents": [
     {"id":"product-home","pageType":"product-home","executionFamily":"marketing","signals":["产品首页","开放平台首页","产品介绍","产品中心"]},

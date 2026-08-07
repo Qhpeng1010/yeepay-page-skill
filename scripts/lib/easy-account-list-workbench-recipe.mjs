@@ -1,3 +1,5 @@
+import { normalizeRecipeRequest } from './recipe-request-bridge.mjs';
+
 const RULE_REFS = ['EA-TPL-001', 'EA-TPL-003', 'EA-TPL-004', 'EA-TPL-005', 'EA-TPL-017', 'EA-INT-002', 'EA-INT-004', 'EA-INT-005', 'EA-INT-014'];
 
 const STATUS_OPTIONS = [
@@ -23,6 +25,7 @@ function normalize(value) {
 
 function fieldsFrom(value) {
   return normalize(value)
+    .replace(/(开业时间)(?=门店状态)/g, '$1、')
     .replace(/[。；;]+$/g, '')
     .split(/[、，,；;]|和/)
     .map((field) => field.replace(/^(?:按|根据|填写|输入|修改|展示|显示|包括)/, '').trim())
@@ -44,7 +47,10 @@ function fieldKey(label, index = 0) {
     可用余额: 'availableBalance', 账户余额: 'accountBalance', 冻结金额: 'frozenAmount', 金额: 'amount',
     手续费: 'fee', 服务费: 'serviceFee', 手续费率: 'feeRate', 服务费率: 'serviceFeeRate',
     费率类型: 'feeType', 规则类型: 'ruleType', 结算方式: 'settlementMethod', 结算周期: 'settlementCycle',
-    所属行业: 'industry', 创建人: 'createdBy', 最后修改人: 'updatedBy', 审核状态: 'reviewStatus', 配置状态: 'configStatus'
+    所属行业: 'industry', 创建人: 'createdBy', 最后修改人: 'updatedBy', 审核状态: 'reviewStatus', 配置状态: 'configStatus',
+    门店ID: 'storeId', 门店名称: 'storeName', 门店类型: 'storeType', 品牌侧门店编码: 'brandStoreCode',
+    所属组织: 'organization', 所属品牌: 'brand', '品牌名称/品牌ID': 'brand', 渠道绑定: 'channelBinding',
+    门店状态: 'storeStatus', 开业时间: 'openedAt'
   };
   if (known[label]) return known[label];
   const hash = [...String(label)].reduce((value, character) => ((value * 31) + character.codePointAt(0)) >>> 0, 7);
@@ -54,6 +60,9 @@ function fieldKey(label, index = 0) {
 function controlFor(label) {
   if (/状态/.test(label)) return { control: 'select', options: STATUS_OPTIONS };
   if (/日期|时间/.test(label)) return { control: 'date' };
+  if (label === '门店类型') {
+    return { control: 'select', options: [{ label: '直营门店', value: '直营门店' }, { label: '加盟门店', value: '加盟门店' }] };
+  }
   if (/类型|渠道|方式|角色|行业|周期/.test(label)) {
     return { control: 'select', options: [{ label: '基础账户', value: 'basic' }, { label: '专用账户', value: 'special' }] };
   }
@@ -111,7 +120,13 @@ function sampleValue(column, rowIndex) {
     服务费: [currency('4880'), currency('3120'), currency('2600')],
     手续费率: ['0.38%', '0.20%', '0.12%'],
     服务费率: ['0.38%', '0.20%', '0.12%'],
-    费率类型: ['按比例', '按固定金额', '按比例']
+    费率类型: ['按比例', '按固定金额', '按比例'],
+    '品牌名称/品牌ID': ['星云便利 / BR10001', '锦程生活 / BR10002', '启明优选 / BR10003'],
+    门店ID: ['ST10080001', 'ST10080002', 'ST10080003'],
+    门店名称: ['星云便利西湖店', '锦程生活静安店', '启明优选天河店'],
+    门店类型: ['直营门店', '直营门店', '加盟门店'],
+    渠道绑定: ['已绑定 2 个渠道', '已绑定 1 个渠道', '未绑定'],
+    门店状态: [STATUS_MAP.正常, STATUS_MAP.待核验, STATUS_MAP.已关闭]
   };
   const value = values[column.label]?.[rowIndex];
   if (value !== undefined) return value;
@@ -122,33 +137,95 @@ function sampleValue(column, rowIndex) {
 }
 
 function extractPageName(request) {
+  const sideNav = request.match(/二级菜单(?:为|是|：|:)\s*([^，,。；]+)/);
+  if (sideNav) return sideNav[1].trim();
   const match = request.match(/创建(?:易账通|Easy\s*Account)?的?([^。；]+?)(?:列表页|列表页面|列表|页面)/i);
   return match ? match[1].trim().replace(/^【(.+)】$/, '$1') : '账户记录';
+}
+
+function extractShell(request) {
+  const primary = request.match(/一级菜单(?:为|是|：|:)\s*([^，,。；]+)/)?.[1]?.trim();
+  const secondary = request.match(/二级菜单(?:为|是|：|:)\s*([^，,。；]+)/)?.[1]?.trim();
+  return {
+    primaryNav: primary || '账户管理',
+    sideNav: secondary || '账户查询'
+  };
+}
+
+function extractViews(request) {
+  const match = request.match(/列表(?:可)?切换(?:为|是|：|:)\s*([^。；]+)/);
+  if (!match) return [];
+  return fieldsFrom(match[1]).map((item, index) => {
+    const parsed = item.match(/^(.+?)[（(](\d+)[）)]$/);
+    const label = (parsed?.[1] || item).trim();
+    const view = {
+      key: `view-${index + 1}`,
+      label,
+      ...(parsed ? { count: Number(parsed[2]) } : {})
+    };
+    if (/直营/.test(label)) view.filter = { storeType: '直营门店' };
+    if (/加盟/.test(label)) view.filter = { storeType: '加盟门店' };
+    return view;
+  });
+}
+
+function extractOperationLabels(request) {
+  const match = request.match(/操作[（(]([^）)]+)[）)]/);
+  return match ? fieldsFrom(match[1]) : [];
 }
 
 function extractFormLabels(request, action) {
   const expression = action === 'edit'
     ? /编辑[\s\S]*?(?:修改|填写)([^。；]*?)(?=(?:保存|提交|确认|关闭)|[。；]|$)/
-    : /新增[\s\S]*?(?:填写|输入)([^。；]*?)(?=(?:保存|提交|确认|关闭)|[。；]|$)/;
+    : /(?:新增|新建)[\s\S]*?(?:填写|输入)([^。；]*?)(?=(?:保存|提交|确认|关闭)|[。；]|$)/;
   const match = request.match(expression);
-  return match ? fieldsFrom(match[1]) : [];
+  if (match) return fieldsFrom(match[1]);
+  if (action === 'create') {
+    const grouped = request.match(/(?:新增|新建)[^。；]*?(?:[：:]；?)?(?:基础信息)?[（(]([^）)]+)[）)]/)
+      || request.match(/(?:新增|新建)[\s\S]*?基础信息[（(]([^）)]+)[）)]/);
+    if (grouped) return fieldsFrom(grouped[1]);
+  }
+  return [];
 }
 
 export function parseEasyAccountListWorkbenchRequest(rawRequest) {
-  const request = normalize(rawRequest);
+  const sourceRequest = String(rawRequest || '').trim();
+  const request = normalize(normalizeRecipeRequest(sourceRequest));
   if (!request) throw new Error('缺少业务需求。');
-  const queryMatch = request.match(/(?:支持|可以|可)?(?:按|根据)([^。；]+?)(?:查询|筛选)/);
-  const columnMatch = request.match(/列表(?:展示|显示)([^。；]+)/);
+  if (request.includes('$1')) throw new Error('需求归一化失败，无法安全识别查询与列表字段边界。');
+  if (/(?:角色树|权限树|树展示|TreeSelect)/i.test(request)) {
+    throw new Error('列表工作台配方不支持角色或权限树配置，请使用受控自然语言生成。');
+  }
+  const queryMatch = request.match(/(?:支持|可以|可)?(?:按|根据)([^。；]+?)(?:查询|筛选)/)
+    || request.match(/(?:查询|筛选)条件(?:包括|为|有|：|:)\s*([^。；]+)/)
+    || request.match(/(?:查询|筛选)字段(?:包括|为|有|：|:)\s*([^。；]+)/);
+  const columnMatch = request.match(/列表(?:展示|显示|字段|列)(?:包括|为|有|：|:)?([^。；]+)/)
+    || request.match(/(?:列表字段)(?:包括|为|有|：|:)?([^。；]+)/);
   const queryLabels = queryMatch ? fieldsFrom(queryMatch[1]) : [];
-  const columnLabels = columnMatch ? fieldsFrom(columnMatch[1]) : [];
+  const columnLabels = columnMatch
+    ? fieldsFrom(columnMatch[1].replace(/(?:、|，|,)?操作[（(][^）)]*[）)]/g, ''))
+      .filter((label) => !/^操作(?:[（(].*)?$/.test(label))
+    : [];
   if (!queryLabels.length || !columnLabels.length) throw new Error('列表配方需要明确的查询条件和列表字段。');
 
-  const hasDetail = /查看详情|查看.*详情|详情抽屉|只读展示.*详情|点击任一.*详情/.test(request);
-  const hasCreate = /新增/.test(request);
-  const hasEdit = /编辑|修改/.test(request);
-  const hasDelete = /删除/.test(request);
-  if (!hasDetail && !hasCreate && !hasEdit && !hasDelete) {
-    return { request, pageName: extractPageName(request), queryLabels, columnLabels, operations: {} };
+  const operationLabels = extractOperationLabels(request);
+  const hasDetail = /查看详情|查看.*详情|详情抽屉|只读展示.*详情|点击任一.*详情/.test(request)
+    || operationLabels.some((label) => /^查看(?:详情)?$/.test(label));
+  const hasCreate = /(?:新增|新建)/.test(request);
+  const hasEdit = /编辑|修改/.test(request) || operationLabels.some((label) => /编辑|修改/.test(label));
+  const hasDelete = /删除/.test(request) || operationLabels.some((label) => /删除/.test(label));
+  const customActions = operationLabels.filter((label) => !/^(?:查看|查看详情|编辑|修改|删除)$/.test(label));
+  const shared = {
+    request,
+    sourceRequest,
+    pageName: extractPageName(request),
+    shell: extractShell(request),
+    views: extractViews(request),
+    queryLabels,
+    columnLabels
+  };
+  if (!hasDetail && !hasCreate && !hasEdit && !hasDelete && !customActions.length) {
+    return { ...shared, operations: {} };
   }
 
   const columns = columnLabels.map((label, index) => columnFor(label, index));
@@ -162,11 +239,8 @@ export function parseEasyAccountListWorkbenchRequest(rawRequest) {
     throw new Error('列表内抽屉新增或编辑最多支持 10 个字段；请使用整页表单。');
   }
   return {
-    request,
-    pageName: extractPageName(request),
-    queryLabels,
-    columnLabels,
-    operations: { detail: hasDetail, create: hasCreate, edit: hasEdit, delete: hasDelete },
+    ...shared,
+    operations: { detail: hasDetail, create: hasCreate, edit: hasEdit, delete: hasDelete, custom: customActions },
     columns,
     formLabels
   };
@@ -194,7 +268,7 @@ export function compileEasyAccountListWorkbench({ rawRequest, changeId }) {
     ...(isAdvancedQuery && index >= 6 ? { advanced: true } : {})
   }));
   const columns = parsed.columns || parsed.columnLabels.map((label, index) => columnFor(label, index));
-  const rowKey = columns.find((column) => /编号|账户号/.test(column.label))?.key || columns[0].key;
+  const rowKey = columns.find((column) => /编号|账户号|ID/i.test(column.label))?.key || columns[0].key;
   const rows = [0, 1].map((rowIndex) => Object.fromEntries(columns.map((column) => [column.key, sampleValue(column, rowIndex)])));
   const capabilities = [isAdvancedQuery ? 'query.advanced' : 'query.basic', 'table.flat', 'table.pagination', 'table.columnSettings'];
   if (columns.some((column) => column.format === 'status')) capabilities.push('table.status');
@@ -210,10 +284,11 @@ export function compileEasyAccountListWorkbench({ rawRequest, changeId }) {
     sectionTitle: `${parsed.pageName}列表`,
     columns,
     rows,
-    scrollX: Math.max(1080, columns.reduce((total, column) => total + (column.width || 140), 0) + (parsed.operations.detail || parsed.operations.edit || parsed.operations.delete ? 210 : 0)),
+    scrollX: Math.max(1080, columns.reduce((total, column) => total + (column.width || 140), 0) + (parsed.operations.detail || parsed.operations.edit || parsed.operations.delete || parsed.operations.custom?.length ? 210 : 0)),
     pagination: { page: 1, pageSize: 20, total: rows.length },
     tools: ['settings']
   };
+  if (parsed.views.length) table.views = parsed.views;
   if (parsed.operations.create) {
     table.primaryAction = {
       key: 'create',
@@ -225,6 +300,9 @@ export function compileEasyAccountListWorkbench({ rawRequest, changeId }) {
   const actions = [];
   if (parsed.operations.detail) actions.push({ key: 'detail', label: '查看详情', type: 'detail' });
   if (parsed.operations.edit) actions.push({ key: 'edit', label: '编辑', type: 'edit', form: formSpec(parsed, 'edit', rowKey, nextKeyValue) });
+  for (const label of parsed.operations.custom || []) {
+    actions.push({ key: fieldKey(label), label, type: 'action' });
+  }
   if (parsed.operations.delete) actions.push({
     key: 'delete',
     label: '删除',
@@ -267,13 +345,13 @@ export function compileEasyAccountListWorkbench({ rawRequest, changeId }) {
       pageName: parsed.pageName,
       family: 'list',
       templateId: 'list.account-query',
-      request: parsed.request,
+      request: parsed.sourceRequest,
       selectionReason: '主要任务是查询和处理一组账户或账务记录；详情、新增、编辑和删除按业务需求组合到同一列表工作台。',
       assumptions: ['当前为客户端交互原型，不调用真实账户或账务服务。', '未提供样例数据时使用两条通用演示记录。', '删除为当前列表中的客户端移除，并提供不可恢复确认。'],
       ruleRefs: RULE_REFS
     },
     ui: { system: 'easy-account', runtime: 'easy-account-page-spec', rendererVersion: 1 },
-    shell: { primaryNav: '账户管理', sideNav: '账户查询' },
+    shell: parsed.shell,
     content: { capabilities: [...new Set(capabilities)] },
     list: { query: { fields: query, ...(isAdvancedQuery ? { collapseThreshold: 6 } : {}) }, table },
     states: { loading: true, empty: true, error: true, permissionDenied: true }

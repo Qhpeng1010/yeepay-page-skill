@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 import { existsSync, writeFileSync } from 'node:fs';
 import { basename, relative, resolve } from 'node:path';
-import { spawnSync } from 'node:child_process';
 import { resolveResources } from './resolve-resources.mjs';
 import { compileEasyAccountListWorkbench } from './lib/easy-account-list-workbench-recipe.mjs';
+import { normalizeRecipeRequest } from './lib/recipe-request-bridge.mjs';
+import { readRecipeRouteContext } from './lib/recipe-route-context.mjs';
+import { runTimedNode, writeGenerationReport } from './lib/generation-performance.mjs';
 
 const root = process.cwd();
 const args = process.argv.slice(2);
@@ -11,12 +13,6 @@ const args = process.argv.slice(2);
 function arg(name) {
   const index = args.indexOf(name);
   return index >= 0 ? args[index + 1] : '';
-}
-
-function run(label, script, scriptArgs) {
-  const result = spawnSync(process.execPath, [resolve(root, script), ...scriptArgs], { cwd: root, encoding: 'utf8', stdio: 'inherit', timeout: 30_000 });
-  if (result.error?.code === 'ETIMEDOUT') throw new Error(`${label} exceeded 30000ms.`);
-  if (result.error || result.status !== 0) throw new Error(`${label} failed.`);
 }
 
 function requirement(spec) {
@@ -39,7 +35,12 @@ try {
   if (!request || !changeArg || args.length !== 4) {
     throw new Error('Usage: node scripts/compile-easy-account-list-workbench-recipe.mjs --request "<业务需求>" --change changes/{change-id}');
   }
-  const route = resolveResources(request, 'generate');
+  const normalizedRequest = normalizeRecipeRequest(request);
+  const routedContext = readRecipeRouteContext(request);
+  const rawRoute = routedContext || resolveResources(request, 'generate');
+  const route = rawRoute.status === 'resolved' && rawRoute.intent === 'query-list'
+    ? rawRoute
+    : routedContext || resolveResources(normalizedRequest, 'generate');
   const expectedResources = [
     'modules/easy-account/execution/context-packs/core.md',
     'modules/easy-account/execution/context-packs/index.md',
@@ -55,15 +56,21 @@ try {
   const changesRoot = resolve(root, 'changes');
   if (!changeDir.startsWith(`${changesRoot}/`) || existsSync(changeDir)) throw new Error('Change 必须是不存在的 changes/ 子目录。');
   const changeId = basename(changeDir);
-  const spec = compileEasyAccountListWorkbench({ rawRequest: request, changeId });
-  run('fast preparation', 'scripts/prepare-easy-account-page-spec.mjs', [changeArg, route.template]);
+  const compileStarted = Date.now();
+  const spec = compileEasyAccountListWorkbench({ rawRequest: normalizedRequest, changeId });
+  const timings = { compileMs: Date.now() - compileStarted };
+  timings.prepareMs = runTimedNode(root, 'fast preparation', 'scripts/prepare-easy-account-page-spec.mjs', [changeArg, route.template]);
   writeFileSync(resolve(changeDir, 'requirement.md'), requirement(spec));
   writeFileSync(resolve(changeDir, 'page-spec.json'), `${JSON.stringify(spec, null, 2)}\n`);
   writeFileSync(resolve(changeDir, 'page-design.md'), pageDesign(spec));
-  run('page-spec contract', 'scripts/check-easy-account-page-spec.mjs', [`${changeArg}/page-spec.json`]);
-  run('page build', 'scripts/build-easy-account-page-spec.mjs', [`${changeArg}/page-spec.json`]);
-  run('static preflight', 'scripts/verify-easy-account-page-spec.mjs', [`${changeArg}/page-spec.json`]);
+  timings.coverageMs = runTimedNode(root, 'requirement coverage', 'scripts/check-page-requirement-coverage.mjs', ['--system', 'easy-account', '--spec', `${changeArg}/page-spec.json`]);
+  timings.checkMs = runTimedNode(root, 'page-spec contract', 'scripts/check-easy-account-page-spec.mjs', [`${changeArg}/page-spec.json`]);
+  timings.buildMs = runTimedNode(root, 'page build', 'scripts/build-easy-account-page-spec.mjs', [`${changeArg}/page-spec.json`]);
+  timings.verifyMs = runTimedNode(root, 'static preflight', 'scripts/verify-easy-account-page-spec.mjs', [`${changeArg}/page-spec.json`]);
   writeFileSync(resolve(changeDir, 'review.md'), review(spec));
+  timings.recipeTotalMs = Date.now() - started;
+  timings.totalMs = timings.recipeTotalMs;
+  writeGenerationReport(changeDir, { system: 'easy-account', recipeName: 'list-workbench', outcome: 'generated', fallbackReason: null, timings });
   console.log(`easy-account-list-workbench-recipe: pass (${relative(root, changeDir)})`);
   console.log(`- elapsed: ${Date.now() - started}ms`);
   console.log('- route: list workbench with requested operations');

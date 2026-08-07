@@ -1,0 +1,9 @@
+**/vendor/**
+changes/**
+node_modules/**
+.cache/**
+coverage/**
+dist/**
+**/*.min.js
+**/*.min.css
+**/*.map

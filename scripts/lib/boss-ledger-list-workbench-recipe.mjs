@@ -1,3 +1,6 @@
+import { normalizeRecipeRequest } from './recipe-request-bridge.mjs';
+import { parseListRequirement } from './page-requirement-coverage.mjs';
+
 const RULE_REFS = ['BL-TPL-001', 'BL-TPL-012', 'BL-TPL-013', 'BL-INT-002', 'BL-INT-004', 'BL-INT-010'];
 const STATUS_OPTIONS = [
   { label: '生效中', value: 'active' },
@@ -135,9 +138,18 @@ function sampleValue(column, rowIndex) {
 }
 
 function extractPageName(request) {
-  const match = request.match(/创建老板管账的([^。；]+?)(?:列表页|列表页面|列表|页面)/)
+  const match = request.match(/老板管账(?:的)?([^，,。；]+?)(?:列表页|列表页面|页面)/)
+    || request.match(/创建(?:老板管账(?:的|[：:])?)?(?:一个)?\s*([^。；]+?)(?:列表页|列表页面|列表|页面)/)
+    || request.match(/创建老板管账的([^。；]+?)(?:列表页|列表页面|列表|页面)/)
     || request.match(/老板管账(?:的)?([^。；]+?)(?:列表页|列表页面|页面)/);
-  return match ? match[1].trim().replace(/^【(.+)】$/, '$1') : '记录查询';
+  return match
+    ? match[1]
+      .trim()
+      .replace(/^[：:]\s*/, '')
+      .replace(/^创建(?:一个)?\s*/, '')
+      .replace(/的$/, '')
+      .replace(/^【(.+)】$/, '$1')
+    : '记录查询';
 }
 
 function extractFormLabels(request, action) {
@@ -149,7 +161,9 @@ function extractFormLabels(request, action) {
 }
 
 export function parseListWorkbenchRequest(rawRequest) {
-  const request = normalize(rawRequest);
+  const sourceRequest = normalize(rawRequest);
+  const request = normalizeRecipeRequest(sourceRequest);
+  const requirement = parseListRequirement(sourceRequest);
   if (!request) throw new Error('缺少业务需求。');
   const tableHeaderPattern = /(?:\btable\s*)?列表\s*(?:展示|显示|包括|为|有|字段|列|：|:)|(?:结果|表格)(?:列表|字段|列)\s*(?:展示|显示|包括|为|有|：|:)/i;
   const querySection = sectionValue(
@@ -171,33 +185,46 @@ export function parseListWorkbenchRequest(rawRequest) {
   if (!queryLabels.length || !columnLabels.length) throw new Error('列表配方需要明确的查询条件和列表字段。');
   const summary = parseListSummary(request);
 
-  const hasDetail = /查看详情|查看.*详情|详情抽屉|只读展示.*详情|点击任一.*详情/.test(request);
+  const hasDetail = requirement.operations.includes('查看');
   const hasCreate = /新增/.test(request);
-  const hasEdit = /编辑|修改/.test(request);
-  const hasDelete = /删除/.test(request);
-  const hasExport = /导出/.test(request);
-  const hasRefresh = /刷新/.test(request);
+  const hasEdit = requirement.operations.includes('编辑');
+  const hasDelete = requirement.operations.includes('删除');
+  const hasExport = requirement.operations.includes('导出') || /导出/.test(request);
+  const hasRefresh = requirement.operations.includes('刷新') || /刷新/.test(request);
+  const customOperations = requirement.operations.filter((label) => !['查看', '编辑', '删除', '导出', '刷新'].includes(label));
   if (!hasDetail && !hasCreate && !hasEdit && !hasDelete) {
     const operations = hasExport || hasRefresh ? { export: hasExport, refresh: hasRefresh } : {};
-    return { request, pageName: extractPageName(request), queryLabels, columnLabels, summary, operations };
+    if (customOperations.length) operations.custom = customOperations;
+    return { request, sourceRequest, pageName: extractPageName(request), queryLabels, columnLabels, summary, operations };
   }
 
   const columns = columnLabels.map((label, index) => columnFor(label, index));
   const editableLabels = [...new Set([
-    ...(hasCreate ? extractFormLabels(request, 'create') : []),
+    ...(hasCreate ? (requirement.createFields.length ? requirement.createFields : extractFormLabels(request, 'create')) : []),
     ...(hasEdit ? extractFormLabels(request, 'edit') : [])
   ])];
   const fallbackEditable = columns.filter((column) => !/编号|创建时间|更新时间/.test(column.label)).map((column) => column.label);
   const formLabels = editableLabels.length ? editableLabels : fallbackEditable;
   return {
     request,
+    sourceRequest,
     pageName: extractPageName(request),
     queryLabels,
     columnLabels,
     summary,
-    operations: { detail: hasDetail, create: hasCreate, edit: hasEdit, delete: hasDelete, export: hasExport, refresh: hasRefresh },
+    operations: {
+      detail: hasDetail,
+      create: hasCreate,
+      edit: hasEdit,
+      delete: hasDelete,
+      export: hasExport,
+      refresh: hasRefresh,
+      custom: customOperations
+    },
     columns,
-    formLabels
+    formLabels,
+    primaryNav: requirement.primaryNav,
+    sideNav: requirement.sideNav
   };
 }
 
@@ -208,6 +235,30 @@ function formSpec(parsed, kind) {
     primaryLabel: '保存',
     successMessage: `${parsed.pageName}${kind === 'edit' ? '已更新' : '已新增'}。`,
     fields: parsed.formLabels.map((label, index) => fieldFor(label, index))
+  };
+}
+
+function shellFor(parsed) {
+  if (!parsed.primaryNav && !parsed.sideNav) return { activePrimaryKey: 'workspace' };
+  const primaryKey = 'requested-primary';
+  const pageKey = 'page-spec-current';
+  const primaryLabel = parsed.primaryNav || '业务管理';
+  const sideLabel = parsed.sideNav || parsed.pageName;
+  return {
+    primaryNav: [{ key: primaryKey, label: primaryLabel, route: `/${primaryKey}` }],
+    sideMenusByPrimary: {
+      [primaryKey]: [{
+        key: 'requested-group',
+        label: primaryLabel,
+        icon: 'AppstoreOutlined',
+        children: [{ key: pageKey, label: sideLabel, route: `/${primaryKey}/${pageKey}`, closable: false }]
+      }]
+    },
+    tabs: [{ key: pageKey, label: sideLabel, route: `/${primaryKey}/${pageKey}`, closable: false }],
+    activePrimaryKey: primaryKey,
+    selectedMenuKey: pageKey,
+    openMenuKeys: ['requested-group'],
+    activeTabKey: pageKey
   };
 }
 
@@ -240,7 +291,7 @@ export function compileListWorkbench({ rawRequest, changeId }) {
     table.primaryAction = { key: 'create', label: '新增', createRecord: { [rowKey]: 'R003' }, form: formSpec(parsed, 'create') };
   }
   const actions = [];
-  if (parsed.operations.detail) actions.push({ key: 'detail', label: '详情', type: 'detail' });
+  if (parsed.operations.detail) actions.push({ key: 'detail', label: '查看', type: 'detail' });
   if (parsed.operations.edit) actions.push({ key: 'edit', label: '编辑', type: 'edit', form: formSpec(parsed, 'edit') });
   if (parsed.operations.delete) actions.push({
     key: 'delete', label: '删除', type: 'delete', danger: true,
@@ -292,12 +343,12 @@ export function compileListWorkbench({ rawRequest, changeId }) {
     schemaVersion: 1,
     ui: { system: 'boss-ledger', runtime: 'react-antd-page-spec', rendererVersion: 1 },
     metadata: {
-      changeId, pageName: parsed.pageName, family: 'list', templateId, executionMode: 'page-spec-default', request: parsed.request,
+      changeId, pageName: parsed.pageName, family: 'list', templateId, executionMode: 'page-spec-default', request: parsed.sourceRequest,
       selectionReason,
       assumptions: ['当前为客户端交互原型，不调用真实业务服务。', '未提供样例数据时使用两条通用演示记录。', '删除为当前列表中的客户端移除，并提供不可撤销确认。'],
       ruleRefs: parsed.summary ? [...RULE_REFS, 'BL-TPL-011'] : RULE_REFS
     },
-    shell: { activePrimaryKey: 'workspace' },
+    shell: shellFor(parsed),
     content: { capabilities: [...new Set(capabilities)] },
     list
   };

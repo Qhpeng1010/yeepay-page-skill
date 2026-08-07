@@ -78,7 +78,9 @@ export function parseStructuredWizardRequest(rawRequest) {
 
   const parsedSteps = steps.map((step) => {
     const parsedFields = fieldsFrom(step.content);
-    const review = parsedFields.length === 1 && /预览|复核|确认/.test(parsedFields[0]);
+    // Completion notes may follow the review label in the same sentence.
+    // The step still represents a read-only review when it begins with one.
+    const review = /^(?:预览|复核|确认)/.test(parsedFields[0] || '');
     if (!review && parsedFields.length === 0) throw new Error(`第${step.index}步没有可生成的字段。`);
     return {
       key: review ? 'review' : `step${step.index}`,

@@ -24,6 +24,9 @@ const request = `创建老板管账的分账规则管理列表页。
 const changeId = `20260803-list-workbench-test-${randomBytes(4).toString('hex')}`;
 const changeArg = `changes/${changeId}`;
 const changeDir = resolve(root, changeArg);
+const merchantChangeId = `20260806-merchant-list-expression-test-${randomBytes(4).toString('hex')}`;
+const merchantChangeArg = `changes/${merchantChangeId}`;
+const merchantChangeDir = resolve(root, merchantChangeArg);
 const basicRequest = '创建老板管账的结算规则查询列表页。查询条件包括创建时间区间、规则名称和规则状态。列表展示规则编号、规则名称、商户名称、规则状态和创建时间。';
 const inlineSummaryRequest = '创建老板管账的结算规则查询页面。查询条件包括规则名称、商户编号、规则状态和创建时间。列表展示规则编号、规则名称、商户编号、规则状态、待结算金额、创建时间和操作。在结果工具栏左侧展示 2 项简单统计：规则总数、待处理规则数。支持新增规则、导出和查看详情。';
 const genericTwoItemSummaryRequest = '创建老板管账的商品查询页面。查询条件包括商品名称、商品编号和商品状态。列表展示商品编号、商品名称、商品状态和创建时间。页面顶部展示 2 项统计：商品总数量、已发货数量。支持查看详情。';
@@ -58,6 +61,12 @@ const literalLineBreakProductRequest = structuredProductRequest.replace(/\n/g, '
 const normalizedNaturalRequest = `创建一个页面，老板管账商户查询页面
 条件：注册时间、代理名称、部门名称、商户名称、商户编号、业务角色、首笔交易时间
 table列表：注册时间、商户编号、商户名称、商户简称、部门名称、直属代理、业务角色`;
+const merchantRequest = `做一个老板管账的商户查询列表页面。
+一级菜单：商户管理；二级菜单：商户查询。
+查询条件：商户编号、商户名称、商户状态、所属行业。
+列表字段：商户编号、商户名称、所属行业、签约时间、商户状态、操作（查看、编辑、删除）。
+新增商户：基础信息（商户名称、商户简称、所属行业、联系人姓名、联系人手机号、商户状态）。`;
+const customActionRequest = merchantRequest.replace('查看、编辑、删除', '查看、编辑、删除、渠道绑定');
 
 try {
   const classified = classifyBossLedgerGeneration(request);
@@ -145,6 +154,26 @@ try {
   if (normalizedNaturalClassified.status !== 'fast' || normalizedNaturalClassified.recipe !== 'list-workbench') {
     throw new Error('A normalized natural-language list request did not select the list workbench recipe.');
   }
+  const merchant = parseListWorkbenchRequest(merchantRequest);
+  if (merchant.primaryNav !== '商户管理' || merchant.sideNav !== '商户查询' || !merchant.operations.detail || merchant.formLabels.length !== 6 || merchant.formLabels.at(-1) !== '商户状态') {
+    throw new Error('A standard merchant list request did not preserve menus, view action, or create fields.');
+  }
+  const merchantCompiled = compileListWorkbench({ rawRequest: merchantRequest, changeId });
+  if (validatePageSpec(merchantCompiled, { root }).length || merchantCompiled.shell.primaryNav?.[0]?.label !== '商户管理' || merchantCompiled.shell.sideMenusByPrimary?.['requested-primary']?.[0]?.children?.[0]?.label !== '商户查询' || !merchantCompiled.list.table.rowActions?.some((action) => action.label === '查看')) {
+    throw new Error('A standard merchant list request did not compile into a valid and complete list page.');
+  }
+  const merchantResult = spawnSync(process.execPath, [resolve(root, 'scripts/compile-boss-ledger-list-workbench-recipe.mjs'), '--request', merchantRequest, '--change', merchantChangeArg], {
+    cwd: root,
+    encoding: 'utf8',
+    timeout: 30_000
+  });
+  if (merchantResult.status !== 0 || !existsSync(resolve(merchantChangeDir, 'preview.html'))) {
+    throw new Error(merchantResult.stderr || merchantResult.stdout || 'A standard merchant list request failed static generation.');
+  }
+  const customAction = classifyBossLedgerGeneration(customActionRequest);
+  if (customAction.status !== 'fallback' || customAction.decision !== 'natural-generation') {
+    throw new Error('A clear list request with an unregistered custom action did not continue to controlled natural-language generation.');
+  }
 
   const compiled = compileListWorkbench({ rawRequest: request, changeId });
   if (!compiled.content.capabilities.includes('query.advanced') || compiled.content.capabilities.includes('query.basic')) {
@@ -202,4 +231,5 @@ try {
   process.exitCode = 1;
 } finally {
   rmSync(changeDir, { recursive: true, force: true });
+  rmSync(merchantChangeDir, { recursive: true, force: true });
 }

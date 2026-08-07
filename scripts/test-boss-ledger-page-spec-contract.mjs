@@ -48,6 +48,8 @@ const simplePageForm = readJson(resolve(fixtureRoot, 'valid/simple-page-form.jso
 const runtimeSource = readFileSync(resolve(root, 'modules/boss-ledger/execution/renderer/page-spec-runtime.js'), 'utf8');
 const businessCssSource = readFileSync(resolve(root, 'modules/boss-ledger/execution/renderer/page-spec-business.css'), 'utf8');
 const contentBaseCssSource = readFileSync(resolve(root, 'modules/boss-ledger/shell/content-base.css'), 'utf8');
+const shellCssSource = readFileSync(resolve(root, 'modules/boss-ledger/shell/shell.css'), 'utf8');
+const shellRuntimeSource = readFileSync(resolve(root, 'modules/boss-ledger/shell/shell-runtime.js'), 'utf8');
 const buildSource = readFileSync(resolve(root, 'scripts/build-boss-ledger-page-spec.mjs'), 'utf8');
 const previewValidatorSource = readFileSync(resolve(root, 'scripts/validate-boss-ledger-preview.mjs'), 'utf8');
 const normalizedTimeInitialValues = runtimeSource.match(/initialValues\[field\.key\] = initialValueForField\(field\);/g) || [];
@@ -56,6 +58,20 @@ if (!runtimeSource.includes("function initialValueForField(field, sourceValue = 
   || normalizedTimeInitialValues.length < 2
   || !runtimeSource.includes('initialValueForField(field, initialValues[field.key])')) {
   failures.push('time-initial-values: page, step and drawer forms must normalize raw date and time defaults before passing them to Ant Design controls.');
+} else {
+  passed += 1;
+}
+if (!runtimeSource.includes('const primaryNav = Array.isArray(shell.primaryNav)')
+  || !runtimeSource.includes("typeof shell.primaryNav === 'string' && shell.primaryNav.trim()")
+  || !runtimeSource.includes("label: shell.primaryNav.trim()")) {
+  failures.push('shell-primary-nav-normalization: the runtime must normalize a requested primary navigation label into an array before the Shell renders it.');
+} else {
+  passed += 1;
+}
+if (!runtimeSource.includes('function selectedMenuGroupKey(items, selectedKey)')
+  || !runtimeSource.includes('const inferredOpenMenuKey = selectedMenuGroupKey(sideMenusByPrimary[primaryKey], selectedMenuKey)')
+  || !runtimeSource.includes('inferredOpenMenuKey ? [inferredOpenMenuKey]')) {
+  failures.push('shell-secondary-menu-defaults: the runtime must infer the open secondary menu group from the selected child route.');
 } else {
   passed += 1;
 }
@@ -108,6 +124,24 @@ if (validatePageSpec(extendedFieldControls, { root }).length) {
 } else {
   passed += 1;
 }
+const multipleDateRanges = JSON.parse(JSON.stringify(merchantPilot));
+multipleDateRanges.list.query.fields = [
+  { key: 'createdAt', label: '创建时间', control: 'date-range', showPresets: false },
+  { key: 'completedAt', label: '完成时间', control: 'date-range' },
+  ...multipleDateRanges.list.query.fields.slice(1)
+];
+const invalidDatePresetDeclaration = JSON.parse(JSON.stringify(multipleDateRanges));
+invalidDatePresetDeclaration.list.query.fields[0].showPresets = 'false';
+if (validatePageSpec(multipleDateRanges, { root }).length
+  || !validatePageSpec(invalidDatePresetDeclaration, { root }).includes('list.query.fields[0].showPresets must be a boolean.')
+  || !runtimeSource.includes('function firstQueryDateRangeField(query)')
+  || !runtimeSource.includes('return firstDateRange?.key === field?.key && field?.showPresets !== false;')
+  || !runtimeSource.includes('queryItem(field, form, showDatePresets)')
+  || !runtimeSource.includes('field.key === datePresetFieldKey')) {
+  failures.push('query-date-presets: only the first date-range query field may show presets; showPresets: false must use the standard RangePicker and later date ranges must not inherit presets.');
+} else {
+  passed += 1;
+}
 const transferForm = JSON.parse(JSON.stringify(readJson(resolve(fixtureRoot, 'valid/grouped-form.json'))));
 transferForm.form.groups[1] = {
   ...transferForm.form.groups[1],
@@ -145,6 +179,18 @@ if (validatePageSpec(tagAndDropdownList, { root }).length) {
   passed += 1;
 }
 const directCases = [
+  [
+    'flat-secondary-menu',
+    {
+      ...merchantPilot,
+      shell: {
+        activePrimaryKey: 'merchant',
+        selectedMenuKey: 'merchant-query',
+        sideMenusByPrimary: { merchant: [{ key: 'merchant-query', label: '商户查询' }] }
+      }
+    },
+    'shell.sideMenusByPrimary.merchant[0].children must be a non-empty array.'
+  ],
   [
     'missing-assumptions',
     { ...merchantPilot, metadata: { ...merchantPilot.metadata, assumptions: [] } },
@@ -310,6 +356,35 @@ if (!runtimeSource.includes('function renderWorkflowResult')
   passed += 1;
 }
 
+if (!businessCssSource.includes('.boss-result-page { flex: 1 1 auto; min-height: 100%;')
+  || !shellCssSource.includes('.boss-shell-content-body { flex: 1 1 0; min-height: 0;')
+  || !businessCssSource.includes('.boss-content-stack { flex: 1 1 auto;')) {
+  failures.push('result-full-content-area: success Result surfaces must fill the Shell content body and center their content in that available space.');
+} else {
+  passed += 1;
+}
+
+if (!runtimeSource.includes("className: 'boss-confirm-modal',\n        centered: true,")
+  || !runtimeSource.includes("h(Modal, { open: true, centered: true,")
+  || !shellCssSource.includes('.boss-shell-footer { height: 32px; min-height: 32px; max-height: 32px; margin: 12px 0 0; flex: 0 0 32px; position: static; display: flex; align-items: center; justify-content: center;')
+  || !contentBaseCssSource.includes('.ant-modal-wrap { display: flex; align-items: center; justify-content: center; }')
+  || !contentBaseCssSource.includes('.ant-modal-wrap .ant-modal { top: 0; margin: 0 auto; padding-bottom: 0; }')) {
+  failures.push('modal-and-footer-separation: Modal and confirmation dialogs must be vertically centered, and the Footer must remain a distinct bottom region.');
+} else {
+  passed += 1;
+}
+
+if (!shellRuntimeSource.includes('const openTab = (tab) =>')
+  || !shellRuntimeSource.includes('renderContent?.({ activeTabKey, activeTab, activePrimaryKey, selectedMenuKey, tabs, openTab, closeTab })')
+  || !runtimeSource.includes('function LinkedWorkflowPage({ spec, activeTabKey, rootTabKey, tabs, openTab, closeTab })')
+  || !runtimeSource.includes('const workflowTabKey = `${rootTabKey}--create`;')
+  || !runtimeSource.includes('onStartWorkflow: openWorkflow')
+  || !runtimeSource.includes('closeTab?.(workflowTabKey);')) {
+  failures.push('source-list-workflow-tabs: full-page and staged create workflows must open in a closable Shell Tab while preserving the source list tab.');
+} else {
+  passed += 1;
+}
+
 if (!previewValidatorSource.includes("pageSpec?.metadata?.family === 'list'")
   || !previewValidatorSource.includes('function hasExactCssClassSelector')) {
   failures.push('query-list-validator-scope: list-only inset checks must use the Page Spec family and exact CSS class selectors.');
@@ -318,6 +393,9 @@ if (!previewValidatorSource.includes("pageSpec?.metadata?.family === 'list'")
 }
 
 if (!runtimeSource.includes("const DEFAULT_QUERY_DATE_PRESETS = ['今日', '近 7 日', '近 30 日']")
+  || !runtimeSource.includes('function firstQueryDateRangeField(query)')
+  || !runtimeSource.includes('function usesQueryDatePresets(query, field)')
+  || !runtimeSource.includes('field?.showPresets !== false')
   || !runtimeSource.includes('function queryRowTops')
   || !runtimeSource.includes("'data-boss-query-measurement': 'actual-row-count'")
   || runtimeSource.includes('collapseThreshold')
@@ -325,7 +403,10 @@ if (!runtimeSource.includes("const DEFAULT_QUERY_DATE_PRESETS = ['今日', '近 
   || !businessCssSource.includes('.boss-query-date-range-field { grid-column: 1 / -1;')
   || !businessCssSource.includes('.boss-query-actions { display: flex; grid-column: 3; justify-self: end;')
   || !businessCssSource.includes('  .boss-query-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }')
-  || !businessCssSource.includes('  .boss-query-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }')
+  || !businessCssSource.includes('  .boss-query-grid { grid-template-columns: minmax(0, 1fr); column-gap: 0; row-gap: 16px; }')
+  || !businessCssSource.includes('.boss-query-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: flex-start; column-gap: 24px; row-gap: 16px;')
+  || !businessCssSource.includes('.boss-query-field .ant-form-item { margin-bottom: 0; }')
+  || !contentBaseCssSource.includes('.boss-query-field .ant-form-item { margin-bottom: 0; }')
   || !businessCssSource.includes('width: max-content; min-width: 320px;')
   || !runtimeSource.includes('const selected = isSameQueryDateRange(value, range);')
   || !runtimeSource.includes("boss-query-date-preset${selected ? ' is-selected' : ''}")
@@ -334,7 +415,14 @@ if (!runtimeSource.includes("const DEFAULT_QUERY_DATE_PRESETS = ['今日', '近 
   || !businessCssSource.includes('.boss-query-grid.is-measuring { visibility: visible; }')
   || !contentBaseCssSource.includes('.boss-query-grid.is-measuring { visibility: visible; }')
   ) {
-  failures.push('adaptive-query-layout: query lists must use responsive 3/2/1 grid columns with content-sized Labels and same-column controls, reserve unused final-row columns, use the default date shortcuts, show one active shortcut with the primary-derived selection background, use a dedicated date row, measure actual-row overflow without field-count thresholds, and keep conditions visible while recalculating.');
+  failures.push('adaptive-query-layout: query lists must use responsive 3/2/1 grid columns with content-sized Labels and same-column controls, reserve unused final-row columns, limit optional default date shortcuts to the first date-range field, show one active shortcut with the primary-derived selection background, use a dedicated date row only when shortcuts are shown, measure actual-row overflow without field-count thresholds, and keep conditions visible while recalculating.');
+} else {
+  passed += 1;
+}
+
+if (!businessCssSource.includes('.boss-full-page-form { min-height: 100%; padding-bottom: 64px; display: flex; flex-direction: column; }')
+  || !previewValidatorSource.includes('padding-bottom\\s*:\\s*64px')) {
+  failures.push('full-page-scroll-safety: full-page forms must reserve a 64px scroll-safe area so their final group and fields remain visible above the fixed action area.');
 } else {
   passed += 1;
 }
@@ -379,12 +467,23 @@ if (!runtimeSource.includes('Card,')
   passed += 1;
 }
 
+if (!runtimeSource.includes('function resolveStatusDisplay(value, statusMap)')
+  || !runtimeSource.includes("if (typeof mapped === 'string') return { label: String(value ?? '-'), status: mapped };")
+  || !businessCssSource.includes('.boss-form-module, .boss-detail-module { flex: 1 0 auto; min-height: 480px; padding: 16px; border-radius: var(--boss-card-radius); overflow: hidden; }')
+  || !businessCssSource.includes('.boss-wizard-page { min-height: calc(100vh - 188px); background: var(--boss-container); padding: 24px 32px 72px; border-radius: var(--boss-card-radius); overflow: hidden; }')) {
+  failures.push('status-and-tab-surface-resilience: status cells must always render a text label and new Tab task surfaces must retain their upper-left task radius.');
+} else {
+  passed += 1;
+}
+
 if (!runtimeSource.includes("spec.metadata.templateId === 'form.grouped-page' && section.container !== 'plain'")
   || !runtimeSource.includes('boss-grouped-form-module')
-  || !businessCssSource.includes('.boss-grouped-form-module { min-height: 100%; padding: 0 0 96px; background: var(--boss-page-bg); }')
-  || !businessCssSource.includes('.boss-grouped-form-module .boss-form-section-card { border-color: var(--boss-divider);')
+  || !businessCssSource.includes('.boss-grouped-form-module { min-height: 100%; padding: 0; background: var(--boss-page-bg); }')
+  || !businessCssSource.includes('.boss-grouped-form-module .boss-form-section-card { border: 0;')
+  || !businessCssSource.includes('.boss-grouped-form-module .boss-form-section-card .ant-card-head { min-height: auto; padding: 20px 20px 0; border-bottom: 0; }')
+  || !businessCssSource.includes('.boss-grouped-form-module .boss-form-section-card .ant-card-body { padding: 20px; }')
   || settlementForm.form.groups.some((group) => group.container === 'card')) {
-  failures.push('grouped-form-surface: grouped page forms must turn default business groups into separated white task surfaces on the neutral workspace, without requiring per-scenario Card declarations.');
+  failures.push('grouped-form-surface: grouped page forms must use separated white business surfaces with 20px module spacing, no outer border, and no title divider.');
 } else {
   passed += 1;
 }
@@ -430,6 +529,18 @@ for (const [name, spec, expectedError] of directCases) {
   const errors = validatePageSpec(spec, { root });
   if (!errors.includes(expectedError)) failures.push(`${name}: expected error '${expectedError}', received ${errors.join(' | ')}`);
   else passed += 1;
+}
+
+const flexibleShadowSpec = {
+  ...settlementForm,
+  metadata: { ...settlementForm.metadata, validatedCombinations: undefined }
+};
+const strictShadowErrors = validatePageSpec(flexibleShadowSpec, { root });
+const flexibleShadowErrors = validatePageSpec(flexibleShadowSpec, { root, strictGovernance: false });
+if (!strictShadowErrors.includes('shadow Page Spec must declare non-empty unique metadata.validatedCombinations.') || flexibleShadowErrors.length) {
+  failures.push(`flexible-governance: strict mode must reject missing validated combinations while natural-generation mode accepts the structurally valid spec; flexible errors: ${flexibleShadowErrors.join(' | ')}`);
+} else {
+  passed += 1;
 }
 
 if (failures.length) {

@@ -27,24 +27,26 @@ try {
   if (!skillSource.includes('页面方案只决策一次')) {
     throw new Error('The Boss Ledger fast path must require a single page-solution decision.');
   }
-  if (!agentSource.includes('先读取 `SKILL.md`') || !agentSource.includes('不得在此之前或之后进行项目盘点')) {
-    throw new Error('Project instructions must route explicit Boss Ledger requests before generic project exploration.');
+  if (!agentSource.includes('先读取 `SKILL.md`') || !agentSource.includes('只运行一次统一入口') || !agentSource.includes('不得再次路由')) {
+    throw new Error('Project instructions must use the unified single-route generation entry.');
   }
-  if (!agentSource.includes('通用技能或工具若被环境自动加载，只能辅助执行已路由的方案')) {
+  if (!agentSource.includes('通用技能或工具只能辅助执行已路由的方案')) {
     throw new Error('Project instructions must prevent generic skills from changing the routed Boss Ledger solution.');
   }
   const stagedRuleRequest = '做一个老板管账的页面。可以点击新增分账规则进行配置，分账规则页面分为3步，带交互，可上一步下一步最后提交。第一步：规则名称、规则类型、规则渠道、渠道下级、生效日期。第二步：分账方、手续费、预计到账金额、预计扣账金额。第三步：预览页面。落地页展示完成，可以继续新增，也可以返回列表查看。';
   const stagedRouted = resolveResources(stagedRuleRequest, 'generate');
-  const expectedFormResources = [
+  const expectedWorkflowResources = [
     'modules/boss-ledger/execution/context-packs/core.md',
     'modules/boss-ledger/execution/context-packs/index.md',
-    'modules/boss-ledger/execution/context-packs/form.md'
+    'modules/boss-ledger/execution/context-packs/form.md',
+    'modules/boss-ledger/execution/context-packs/list.md',
+    'modules/boss-ledger/execution/context-packs/result.md'
   ];
   if (stagedRouted.intent !== 'wizard' || stagedRouted.template !== 'form.staged-flow') {
     throw new Error('A three-step rule configuration request did not resolve to the staged workflow.');
   }
-  if (JSON.stringify(stagedRouted.resources) !== JSON.stringify(expectedFormResources)) {
-    throw new Error('A staged workflow request did not load only the Boss Ledger core, index, and form rule packs.');
+  if (JSON.stringify(stagedRouted.resources) !== JSON.stringify(expectedWorkflowResources)) {
+    throw new Error('A staged workflow request did not load the form, source-list, and result rule packs in one route.');
   }
   if (stagedRouted.matches.includes('列表') || stagedRouted.execution?.family !== 'form') {
     throw new Error('A return-to-list follow-up incorrectly overrode the staged workflow intent.');

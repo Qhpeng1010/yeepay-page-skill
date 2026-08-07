@@ -15,6 +15,7 @@ import {
 } from './lib/boss-ledger-page-spec.mjs';
 
 const specArg = process.argv.find((arg) => arg.endsWith('page-spec.json'));
+const flexible = process.argv.includes('--flexible');
 if (process.argv.includes('--browser')) {
   console.error('Browser automatic acceptance is retired for Boss Ledger. Review preview.html manually.');
   process.exit(2);
@@ -30,6 +31,15 @@ function run(root, label, args) {
   if (result.error || result.status !== 0) throw new Error(`${label} failed.`);
 }
 
+function runWarning(root, label, args) {
+  const result = spawnSync(process.execPath, args, { cwd: root, encoding: 'utf8', stdio: 'inherit', timeout: 30_000 });
+  if (result.error || result.status !== 0) {
+    console.warn(`page-spec-precheck-warning: ${label} did not pass; flexible natural-generation delivery continues.`);
+    return false;
+  }
+  return true;
+}
+
 function hash(file) {
   return createHash('sha256').update(readFileSync(file)).digest('hex');
 }
@@ -39,9 +49,11 @@ try {
   const specPath = assertChangeSpecPath(root, specArg);
   const changeDir = dirname(specPath);
   const spec = readJson(specPath);
-  const errors = validatePageSpec(spec, { root });
+  const errors = validatePageSpec(spec, { root, strictGovernance: !flexible });
   if (errors.length) throw new Error(errors.join('\n'));
-  run(root, 'release-manifest', [resolve(root, 'scripts/verify-boss-ledger-release-manifest.mjs')]);
+  const releaseManifestArgs = [resolve(root, 'scripts/verify-boss-ledger-release-manifest.mjs')];
+  if (flexible) runWarning(root, 'release-manifest', releaseManifestArgs);
+  else run(root, 'release-manifest', releaseManifestArgs);
 
   const appPath = resolve(changeDir, 'preview-app.js');
   if (!existsSync(appPath) || readFileSync(appPath, 'utf8') !== generatedPreviewApp(spec)) {
@@ -66,7 +78,8 @@ try {
 
   run(root, 'canonical-static-preflight', [
     resolve(root, 'scripts/verify-boss-ledger-page-runtime.mjs'),
-    resolve(changeDir, 'preview.html')
+    resolve(changeDir, 'preview.html'),
+    ...(flexible ? ['--flexible'] : [])
   ]);
   console.log(`page-spec-precheck: pass (${relative(root, specPath)})`);
   console.log('- static preflight: passed');

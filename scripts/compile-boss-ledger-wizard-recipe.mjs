@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import { existsSync, writeFileSync } from 'node:fs';
 import { basename, relative, resolve } from 'node:path';
-import { spawnSync } from 'node:child_process';
 import { resolveResources } from './resolve-resources.mjs';
 import { compileStructuredWizard } from './lib/boss-ledger-wizard-recipe.mjs';
+import { readRecipeRouteContext } from './lib/recipe-route-context.mjs';
+import { runTimedNode, writeGenerationReport } from './lib/generation-performance.mjs';
 
 const root = process.cwd();
 const args = process.argv.slice(2);
@@ -11,12 +12,6 @@ const args = process.argv.slice(2);
 function arg(name) {
   const index = args.indexOf(name);
   return index >= 0 ? args[index + 1] : '';
-}
-
-function run(label, script, scriptArgs) {
-  const result = spawnSync(process.execPath, [resolve(root, script), ...scriptArgs], { cwd: root, encoding: 'utf8', stdio: 'inherit', timeout: 30_000 });
-  if (result.error?.code === 'ETIMEDOUT') throw new Error(`${label} exceeded 30000ms.`);
-  if (result.error || result.status !== 0) throw new Error(`${label} failed.`);
 }
 
 function pageDesign(spec) {
@@ -39,17 +34,19 @@ try {
   if (!request || !changeArg || args.length !== 4) {
     throw new Error('Usage: node scripts/compile-boss-ledger-wizard-recipe.mjs --request "<业务需求>" --change changes/{change-id}');
   }
-  const route = resolveResources(request, 'generate');
+  const route = readRecipeRouteContext(request) || resolveResources(request, 'generate');
   const expectedResources = [
     'modules/boss-ledger/execution/context-packs/core.md',
     'modules/boss-ledger/execution/context-packs/index.md',
-    'modules/boss-ledger/execution/context-packs/form.md'
+    'modules/boss-ledger/execution/context-packs/form.md',
+    'modules/boss-ledger/execution/context-packs/list.md',
+    'modules/boss-ledger/execution/context-packs/result.md'
   ];
   if (route.status !== 'resolved' || route.module !== 'boss-ledger' || route.intent !== 'wizard' || route.template !== 'form.staged-flow') {
     throw new Error('该需求未唯一命中老板管账的分阶段流程配方。');
   }
   if (JSON.stringify(route.resources) !== JSON.stringify(expectedResources)) {
-    throw new Error('分阶段流程配方只能读取 Boss Ledger 的核心、索引和表单规则包。');
+    throw new Error('分阶段流程配方必须在同一次路由中读取表单、来源列表和结果规则包。');
   }
 
   const changeDir = resolve(root, changeArg);
@@ -58,15 +55,21 @@ try {
     throw new Error('Change 必须是不存在的 changes/ 子目录。');
   }
   const changeId = basename(changeDir);
+  const compileStarted = Date.now();
   const spec = compileStructuredWizard({ rawRequest: request, changeId });
-  run('fast preparation', 'scripts/prepare-boss-ledger-page-spec.mjs', [changeArg, route.template]);
+  const timings = { compileMs: Date.now() - compileStarted };
+  timings.prepareMs = runTimedNode(root, 'fast preparation', 'scripts/prepare-boss-ledger-page-spec.mjs', [changeArg, route.template]);
   writeFileSync(resolve(changeDir, 'requirement.md'), requirement(spec));
   writeFileSync(resolve(changeDir, 'page-spec.json'), `${JSON.stringify(spec, null, 2)}\n`);
   writeFileSync(resolve(changeDir, 'page-design.md'), pageDesign(spec));
-  run('page-spec contract', 'scripts/check-boss-ledger-page-spec.mjs', [`${changeArg}/page-spec.json`]);
-  run('page build', 'scripts/build-boss-ledger-page-spec.mjs', [`${changeArg}/page-spec.json`]);
-  run('static preflight', 'scripts/verify-boss-ledger-page-spec.mjs', [`${changeArg}/page-spec.json`]);
+  timings.coverageMs = runTimedNode(root, 'requirement coverage', 'scripts/check-page-requirement-coverage.mjs', ['--system', 'boss-ledger', '--spec', `${changeArg}/page-spec.json`]);
+  timings.checkMs = runTimedNode(root, 'page-spec contract', 'scripts/check-boss-ledger-page-spec.mjs', [`${changeArg}/page-spec.json`]);
+  timings.buildMs = runTimedNode(root, 'page build', 'scripts/build-boss-ledger-page-spec.mjs', [`${changeArg}/page-spec.json`]);
+  timings.verifyMs = runTimedNode(root, 'static preflight', 'scripts/verify-boss-ledger-page-spec.mjs', [`${changeArg}/page-spec.json`]);
   writeFileSync(resolve(changeDir, 'review.md'), review(spec));
+  timings.recipeTotalMs = Date.now() - started;
+  timings.totalMs = timings.recipeTotalMs;
+  writeGenerationReport(changeDir, { system: 'boss-ledger', recipeName: 'structured-wizard', outcome: 'generated', fallbackReason: null, timings });
   console.log(`boss-ledger-wizard-recipe: pass (${relative(root, changeDir)})`);
   console.log(`- elapsed: ${Date.now() - started}ms`);
   console.log('- route: structured staged workflow');

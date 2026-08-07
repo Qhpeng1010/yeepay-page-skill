@@ -18,6 +18,35 @@ function scoreIntent(request, intent) {
   return { intent, score, matches, firstMatchIndex };
 }
 
+function intentById(contract, id) {
+  return contract.intents.find((intent) => intent.id === id);
+}
+
+function detectComposedIntents(rawRequest, contract) {
+  const request = String(rawRequest || '');
+  const detected = [];
+  const add = (id) => {
+    const intent = intentById(contract, id);
+    if (intent && !detected.includes(intent)) detected.push(intent);
+  };
+  const hasListContract = /(?:查询条件|列表字段|查询列表|列表页面|列表页|返回[^，。；]*列表)/.test(request);
+  const hasStagedFlow = /(?:第\s*[一二三四五六七八九十\d]+\s*步|分阶段|分步|上一步|下一步|预览(?:复核|确认))/.test(request);
+  const hasSeparateFormFlow = /(?:(?:新增|新建|编辑|配置).{0,24}(?:新标签页|新\s*tab|独立页|独立页面|全页|分阶段|分步|步骤)|点击.{0,24}(?:新增|新建|编辑).{0,24}(?:进入|打开).{0,24}(?:配置|表单|页面))/i.test(request);
+  const hasResultFlow = /(?:提交成功|成功反馈|成功页|结果页|返回(?:来源|列表)|继续新增)/.test(request);
+
+  if (hasListContract) add('query-list');
+  if (hasStagedFlow) add(intentById(contract, 'wizard') ? 'wizard' : 'form');
+  else if (hasSeparateFormFlow && hasListContract) add(intentById(contract, 'form') ? 'form' : 'simple-page-form');
+  if (hasResultFlow) add('result');
+  return detected;
+}
+
+function choosePrimaryIntent(ranked, composed) {
+  const staged = composed.find((intent) => intent.id === 'wizard');
+  if (staged) return staged;
+  return ranked[0]?.intent || composed[0] || null;
+}
+
 function unique(paths) {
   return [...new Set(paths)];
 }
@@ -54,8 +83,10 @@ function selectIntent(route, rawRequest) {
     .map((intent) => scoreIntent(request, intent))
     .filter((candidate) => candidate.score > 0)
     .sort((a, b) => b.score - a.score || a.firstMatchIndex - b.firstMatchIndex);
+  const composed = detectComposedIntents(rawRequest, contract);
+  const selected = choosePrimaryIntent(ranked, composed);
 
-  if (!ranked.length) {
+  if (!selected) {
     return {
       status: 'clarify',
       module: route.module,
@@ -64,20 +95,25 @@ function selectIntent(route, rawRequest) {
     };
   }
 
-  if (ranked[1] && ranked[0].score === ranked[1].score && ranked[0].firstMatchIndex === ranked[1].firstMatchIndex) {
-    return {
-      status: 'clarify',
-      module: route.module,
-      question: `需求同时命中 ${ranked[0].intent.pageType} 和 ${ranked[1].intent.pageType}，请确认主要页面类型。`,
-      candidates: ranked.slice(0, 3).map(({ intent, matches }) => ({ id: intent.id, matches }))
-    };
-  }
-
-  return { status: 'resolved', selected: ranked[0].intent, matches: ranked[0].matches };
+  const intents = unique([
+    selected,
+    ...composed
+  ].map((intent) => intent.id)).map((id) => intentById(contract, id)).filter(Boolean);
+  const selectedRank = ranked.find(({ intent }) => intent.id === selected.id);
+  const intentMatches = Object.fromEntries(ranked.map(({ intent, matches }) => [intent.id, matches]));
+  return {
+    status: 'resolved',
+    selected,
+    intents,
+    matches: selectedRank?.matches || [],
+    intentMatches,
+    composition: intents.length > 1
+  };
 }
 
 function resolveStage(route, selection, stage) {
   const selected = selection.selected;
+  const selectedIntents = selection.intents || [selected];
   const contract = readContract(route);
   const adapter = contract.adapter;
   if (!adapter?.resources) throw new Error(`${route.module}: domain contract is missing adapter.resources`);
@@ -102,6 +138,7 @@ function resolveStage(route, selection, stage) {
   const businessTemplates = selectedTemplates.filter((template) => !(templateConfig?.framework || []).includes(template));
   const replacements = {
     '{module}': route.module,
+    '{family}': selected.executionFamily || selected.id,
     '{template}': selectedTemplateId,
     '{templates}': selectedTemplates.length ? unique(businessTemplates).join(',') : selectedTemplateId
   };
@@ -113,7 +150,15 @@ function resolveStage(route, selection, stage) {
   const execution = resolveExecution(rootPath(route), adapter.execution, selected, selectedTemplateId);
   if (execution && ['template', 'generate', 'review'].includes(stage)) {
     resources.push(...existingMarkdown(execution.resources));
+    const relatedFamilyResources = unique(selectedIntents
+      .map((intent) => intent.executionFamily || intent.id)
+      .filter((family) => family !== execution.family)
+      .map((family) => adapter.execution?.familyContexts?.[family])
+      .filter(Boolean));
+    resources.push(...existingMarkdown(relatedFamilyResources));
   }
+
+  const families = unique(selectedIntents.map((intent) => intent.executionFamily || intent.id));
 
   return {
     status: 'resolved',
@@ -125,17 +170,28 @@ function resolveStage(route, selection, stage) {
     implementationMode: contract.implementationMode,
     assumption: route.assumption,
     matches: selection.matches,
+    intents: selectedIntents.map(({ id, pageType, executionFamily, templateId }) => ({
+      id,
+      pageType,
+      family: executionFamily || id,
+      template: templateId || null,
+      matches: selection.intentMatches?.[id] || []
+    })),
+    families,
+    composition: selection.composition,
     resources: unique(resources),
     commands: execution && stage === 'generate'
       ? {
           prepare: commands.prepare,
           preflight: commands.preflight,
           scaffold: execution.scaffoldCommand,
+          coverage: commands.coverage,
+          check: execution.checkCommand,
           build: execution.buildCommand,
           verify: execution.verifyCommand
         }
       : commands,
-    execution
+    execution: execution ? { ...execution, relatedFamilies: families.filter((family) => family !== execution.family) } : execution
   };
 }
 
@@ -167,12 +223,14 @@ function resolveExecution(_route, executionConfig, selected, templateId) {
     family: familyId,
     availability: family.availability,
     mode,
+    renderable: Boolean(executionConfig.familyContexts?.[familyId]),
     capabilities: family.capabilities || [],
     ruleRefs: family.ruleRefs || [],
     schema: executionConfig.schema,
     releaseManifest: executionConfig.releaseManifest,
     resources: [executionConfig.coreContext, executionConfig.contextIndex, executionConfig.familyContexts?.[familyId]].filter(Boolean),
     scaffoldCommand: replace(executionConfig.scaffoldCommand),
+    checkCommand: replace(executionConfig.checkCommand),
     buildCommand: replace(executionConfig.buildCommand),
     verifyCommand: replace(executionConfig.verifyCommand)
   };

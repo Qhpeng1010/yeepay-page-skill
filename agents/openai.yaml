@@ -1,4 +1,4 @@
 interface:
   display_name: "Yeepay Page Skill V3"
-  short_description: "Route and generate Yeepay pages from system rules"
-  default_prompt: "Use $yeepay-page-skill to route this request, select the smallest compliant mode, and generate the page from the selected system rules."
+  short_description: "Generate complete Yeepay pages without policy-state blocking"
+  default_prompt: "Use $yeepay-page-skill to generate the complete requested page, asking only for missing business decisions and preserving governance issues as warnings."

@@ -287,6 +287,14 @@ function checkSource(html) {
       fail('validate', 'Query module must own 16px inset; result module must use 0 16px 16px so Toolbar starts at the top');
     }
 
+    const queryRowsUseGridGap = /\.boss-query-grid\s*\{[^}]*row-gap\s*:\s*16px\b/i.test(source)
+      && /\.boss-query-field\s+\.ant-form-item\s*\{[^}]*margin-bottom\s*:\s*0\b/i.test(source);
+    if (queryRowsUseGridGap) {
+      pass('validate', 'Query grid keeps 16px row gaps without adding trailing space below the final row');
+    } else {
+      fail('validate', 'Query fields must use the grid 16px row gap and no per-field bottom margin so the final row ends at the module inset');
+    }
+
     const repeatedResultPadding = hasNonZeroHorizontalPadding(source, [
       'boss-result-summary', 'boss-result-toolbar', 'boss-table-body', 'boss-table-pagination'
     ]);
@@ -382,6 +390,8 @@ function checkSource(html) {
   if (!dateRangeQueryFields.length) {
     pass('validate', 'No date-range query field declared; default date shortcut check skipped');
   } else {
+    const firstDateRange = dateRangeQueryFields[0];
+    const expectsDatePresets = firstDateRange.showPresets !== false;
     const hasDefaultDatePresets = /DEFAULT_QUERY_DATE_PRESETS\s*=\s*\[['"]今日['"],\s*['"]近 7 日['"],\s*['"]近 30 日['"]\]/i.test(source);
     const hasDateShortcutInteraction = /boss-query-date-presets/i.test(source)
       && /form\.setFieldsValue\(\{\s*\[field\.key\]\s*:\s*range\s*\}\)/i.test(source)
@@ -390,10 +400,17 @@ function checkSource(html) {
     const hasPrimaryDerivedPresetSelection = /const\s+selected\s*=\s*isSameQueryDateRange\(value,\s*range\)/i.test(source)
       && /boss-query-date-preset\$\{selected\s*\?\s*['"]\s+is-selected['"]\s*:\s*['"]['"]\}/i.test(source)
       && /\.boss-query-date-preset\.is-selected[^}]*color\s*:\s*var\(--boss-primary\)[^}]*background\s*:\s*var\(--boss-selected-bg\)/i.test(source);
-    if (hasDefaultDatePresets && hasDateShortcutInteraction && hasCompactDateRange && hasPrimaryDerivedPresetSelection) {
-      pass('validate', 'Date-range queries default to today, use compact one-column width, and show the active shortcut with primary-derived selection styling');
+    const limitsPresetsToFirstDateRange = /function\s+usesQueryDatePresets\(query,\s*field\)[\s\S]{0,280}firstDateRange\?\.key\s*===\s*field\.key[\s\S]{0,100}showPresets\s*!==\s*false/i.test(source)
+      && /field\.key\s*===\s*datePresetFieldKey/i.test(source)
+      && /queryItem\(field,\s*form,\s*showDatePresets\)/i.test(source);
+    const supportsStandardDateRangeFallback = /if\s*\(showDatePresets\)\s*\{[\s\S]{0,300}QueryDateRangeControl/i.test(source)
+      && /if\s*\(field\.control\s*===\s*['"]date-range['"]\)\s*return\s+h\(DatePicker\.RangePicker/i.test(source);
+    if (limitsPresetsToFirstDateRange && supportsStandardDateRangeFallback && (!expectsDatePresets || (hasDefaultDatePresets && hasDateShortcutInteraction && hasCompactDateRange && hasPrimaryDerivedPresetSelection))) {
+      pass('validate', expectsDatePresets
+        ? 'Only the first date-range query defaults to today and shows the active shortcut with primary-derived selection styling'
+        : 'The first date-range explicitly disables shortcuts and uses the standard Ant Design RangePicker');
     } else {
-      fail('validate', 'Date-range queries must default to today, use compact one-column width, provide right-side quick selections for 今日、近 7 日、近 30 日, and show the active shortcut with primary-derived selection styling');
+      fail('validate', 'Only the first date-range query may show default shortcuts; showPresets: false and all later date ranges must use the standard Ant Design RangePicker without shortcuts');
     }
   }
 
@@ -447,11 +464,26 @@ function checkSource(html) {
     pass('validate', 'Shell footer stays in the content scroll flow');
   }
 
+  if (/\.boss-shell-footer[^{]*\{[^}]*background\s*:\s*var\(--boss-page-bg\)[^}]*border-top\s*:\s*1px\s+solid\s+var\(--boss-divider\)/i.test(source)) {
+    pass('validate', 'Shell Footer is visually separated from the content area');
+  } else {
+    fail('validate', 'Shell Footer must use a page-background band and top divider so it does not merge with content');
+  }
+
   const shellEmptyRule = /\.boss-shell-empty\s*\{[^}]*flex\s*:\s*1[^}]*min-height\s*:\s*\d+px[^}]*display\s*:\s*flex[^}]*align-items\s*:\s*center[^}]*justify-content\s*:\s*center[^}]*background\s*:\s*(?:#fff|var\(--boss-container\))/i.test(source);
   if (shellEmptyRule && hasThemeCssValue('boss-container', '#FFFFFF')) {
     pass('validate', 'Empty business routes use a full-height white module with centered Empty content');
   } else {
     fail('validate', 'Empty business routes must use .boss-shell-empty as a full-height white module with centered content');
+  }
+
+  const fullHeightResultRule = /\.boss-shell-content-body\s*\{[^}]*flex\s*:\s*1\s+1\s+0[^}]*min-height\s*:\s*0/i.test(source)
+    && /\.boss-content-stack\s*\{[^}]*flex\s*:\s*1\s+1\s+auto[^}]*min-height\s*:\s*100%/i.test(source)
+    && /\.boss-result-page\s*\{[^}]*flex\s*:\s*1\s+1\s+auto[^}]*min-height\s*:\s*100%[^}]*align-items\s*:\s*center[^}]*justify-content\s*:\s*center/i.test(source);
+  if (fullHeightResultRule) {
+    pass('validate', 'Success Result surfaces fill the Shell content area and center their content');
+  } else {
+    fail('validate', 'Success Result surfaces must fill the Shell content area instead of using a fixed minimum height');
   }
 
   if (/(?:const\s+Menu\s*=\s*antd\.Menu|antd\.Menu|<Menu\b|React\.createElement\(\s*Menu\b|ant-menu-inline)/i.test(source)) {
@@ -572,11 +604,11 @@ function checkSource(html) {
       pass('validate', 'Wizard business content has no decorative divider lines');
     }
 
-    const wizardActionFixed = /\.wizard-action-bar[^\{]*\{[^}]*position\s*:\s*fixed[^}]*bottom\s*:\s*0/i.test(source);
+    const wizardActionFixed = /\.wizard-action-bar[^\{]*\{[^}]*position\s*:\s*fixed[^}]*left\s*:\s*208px[^}]*right\s*:\s*0[^}]*bottom\s*:\s*0[^}]*height\s*:\s*48px[^}]*border-top\s*:\s*1px\s+solid\s+var\(--boss-divider\)/i.test(source);
     if (wizardActionFixed) {
-      pass('validate', 'Wizard bottom action bar is fixed at the workspace bottom');
+      pass('validate', 'Wizard action area is fixed over the Footer at the workspace bottom');
     } else {
-      fail('validate', 'Wizard bottom action bar must use position: fixed and bottom: 0');
+      fail('validate', 'Wizard action area must be a 48px workspace-fixed surface covering the Footer');
     }
 
     const wizardContentCentered = /\.wizard-content-frame[^\{]*\{[^}]*justify-content\s*:\s*center/i.test(source);
@@ -634,6 +666,15 @@ function checkSource(html) {
     pass('validate', 'Modal uses official Ant Design component structure');
   } else {
     pass('validate', 'No Modal usage detected; official Modal structure check skipped');
+  }
+
+  const modalVerticalCentering = /\.ant-modal-wrap\s*\{[^}]*display\s*:\s*flex[^}]*align-items\s*:\s*center[^}]*justify-content\s*:\s*center/i.test(source)
+    && /\.ant-modal-wrap\s+\.ant-modal\s*\{[^}]*top\s*:\s*0[^}]*margin\s*:\s*0\s+auto/i.test(source)
+    && /Modal\.confirm\(\{[\s\S]{0,180}centered\s*:\s*true/i.test(source);
+  if (modalVerticalCentering) {
+    pass('validate', 'Modal and second-confirmation dialogs use the shared vertical-centering layout');
+  } else {
+    fail('validate', 'Modal and second-confirmation dialogs must be vertically centered in the viewport');
   }
 
   const confirmationSource = source
@@ -717,14 +758,14 @@ function checkSource(html) {
     fail('validate', 'Ant Design Modal body must use padding: 24px 24px 0');
   }
 
-  const hasRuleDrivenFormLayout = /function resolveFormLayout\(formSpec, fields\)[\s\S]{0,500}const compactThreshold = presentation === 'drawer' \? 8 : 6;[\s\S]{0,300}const useSideLabel = fieldCount <= compactThreshold;[\s\S]{0,400}layout: useSideLabel \? 'horizontal' : 'vertical',[\s\S]{0,300}labelCol: useSideLabel \? \{ flex: '136px' \} : undefined,[\s\S]{0,300}fieldsClassName: useSideLabel \? 'boss-form-stack' : ''/i.test(source);
+  const hasRuleDrivenFormLayout = /function resolveFormLayout\(formSpec, fields\)[\s\S]{0,500}const isDrawer = presentation === 'drawer';[\s\S]{0,300}const useSideLabel = !isDrawer && fieldCount <= 6;[\s\S]{0,300}const useSingleColumn = isDrawer \? fieldCount <= 8 : useSideLabel;[\s\S]{0,400}layout: useSideLabel \? 'horizontal' : 'vertical',[\s\S]{0,300}labelCol: useSideLabel \? \{ flex: '136px' \} : undefined,[\s\S]{0,300}fieldsClassName: useSingleColumn \? 'boss-form-stack' : ''/i.test(source);
   const hasSingleColumnStack = /\.boss-form-grid\.boss-form-stack[\s\S]{0,300}grid-template-columns\s*:\s*minmax\(0,\s*640px\)/i.test(source);
   const hasResponsiveHorizontalFormFallback = /@media\s*\(max-width:\s*768px\)[\s\S]{0,5000}\.boss-horizontal-form\s+\.ant-form-item-row\s*\{[^}]*flex-direction\s*:\s*column/i.test(source)
     && /\.boss-horizontal-form\s+\.ant-form-item-label\s*\{[^}]*text-align\s*:\s*left/i.test(source);
   if (hasRuleDrivenFormLayout && hasSingleColumnStack && hasResponsiveHorizontalFormFallback) {
-    pass('validate', 'Form layout follows the 6/8 field thresholds and reflows to label-above single-column on narrow screens');
+    pass('validate', 'Standalone forms follow the 6-field threshold; Drawer forms use label-above layouts with the 8-field grid threshold');
   } else {
-    fail('validate', 'Forms must use side-label single-column layout at or below the 6/8 thresholds, then label-above field grids above them');
+    fail('validate', 'Standalone forms must use side-label layout at or below 6 fields; Drawer forms must use label-above layouts with the 8-field grid threshold');
   }
 
   if (usesTemplate('form.modal-simple') || usesTemplate('form.page-simple') || usesTemplate('form.guided-simple')) {
@@ -784,13 +825,10 @@ function checkSource(html) {
   ].filter(Boolean);
   const hasEmbeddedDrawerForm = embeddedDrawerForms.length > 0;
   if (hasEmbeddedDrawerForm) {
-    const drawerExceedsEightFields = embeddedDrawerForms.some((form) => (form.fields || []).length > 8);
-    if (hasRuleDrivenFormLayout && drawerExceedsEightFields) {
-      pass('validate', 'List-contained Drawer form with more than 8 fields uses label-above field-grid alignment');
-    } else if (hasRuleDrivenFormLayout) {
-      pass('validate', 'List-contained Drawer form with 8 or fewer fields uses side-label single-column alignment');
+    if (hasRuleDrivenFormLayout && /\.boss-drawer-form\s+\.ant-drawer-body\s*\{[^}]*padding-inline\s*:\s*24px/i.test(source)) {
+      pass('validate', 'List-contained Drawer forms use label-above fields with 24px horizontal content insets');
     } else {
-      fail('validate', 'List-contained Drawer forms must use the 8-field layout threshold');
+      fail('validate', 'List-contained Drawer forms must use label-above fields and 24px horizontal content insets');
     }
   } else {
     pass('validate', 'No list-contained Drawer form is declared; Drawer form alignment check skipped');
@@ -827,25 +865,24 @@ function checkSource(html) {
   }
 
   if (usesTemplate('form.grouped-page')) {
-    const fullPageActionBarCss = /\.boss-full-page-action-bar[^\{]*\{[^}]*position\s*:\s*fixed/i.test(source)
-      && /\.boss-full-page-action-bar[^\{]*\{[^}]*height\s*:\s*48px/i.test(source)
-      && /\.boss-full-page-action-bar[^\{]*\{[^}]*bottom\s*:\s*32px/i.test(source)
-      && /\.boss-full-page-action-bar[^\{]*\{[^}]*left\s*:\s*208px/i.test(source)
-      && /\.boss-full-page-action-bar[^\{]*\{[^}]*right\s*:\s*0/i.test(source);
+    const fullPageActionBarCss = /\.boss-full-page-action-bar[^\{]*\{[^}]*position\s*:\s*fixed[^}]*left\s*:\s*208px[^}]*right\s*:\s*0[^}]*bottom\s*:\s*0[^}]*height\s*:\s*48px/i.test(source)
+      && /\.boss-shell-sider\.collapsed\s*\+\s*\.boss-shell-workspace\s+\.boss-full-page-action-bar[^\{]*\{[^}]*left\s*:\s*48px/i.test(source)
+      && /\.boss-full-page-form\s+\.boss-form-grid\s+\.ant-form-item[^\{]*\{[^}]*margin-bottom\s*:\s*0/i.test(source)
+      && /\.boss-full-page-form\s+\.boss-form-grid[^\{]*\{[^}]*row-gap\s*:\s*24px/i.test(source);
     const fullPageActionBar = /(?:boss-full-page-action-bar|data-boss-full-page-action-bar)/i.test(source) && fullPageActionBarCss;
     if (fullPageActionBar) {
-      pass('validate', 'Full-page form bottom action bar is fixed above the Footer at 48px height');
+      pass('validate', 'Full-page form action area is fixed over the Footer and final-row fields have no trailing 24px margin');
     } else {
-      fail('validate', 'Full-page forms must use a workspace-level .boss-full-page-action-bar fixed above the Footer with height: 48px');
+      fail('validate', 'Full-page forms must use a 48px workspace-fixed action area over the Footer and remove the final-row field margin');
     }
-    const fullPageSafeArea = /(?:sub-merchant-page|full-page-form|page-form)[^\{]*\{[^}]*padding-bottom\s*:\s*(?:6[4-9]|[7-9]\d)px/i.test(source);
+    const fullPageSafeArea = /\.boss-full-page-form[^\{]*\{[^}]*padding-bottom\s*:\s*64px/i.test(source);
     if (fullPageSafeArea) {
-      pass('validate', 'Full-page form content reserves safe space for the fixed action bar and Footer');
+      pass('validate', 'Full-page form reserves a 64px scroll-safe area so the final content remains visible above the Footer-overlaid action area');
     } else {
-      fail('validate', 'Full-page form content must reserve bottom space so the final fields are not covered by the fixed action bar');
+      fail('validate', 'Full-page form must reserve a 64px scroll-safe area for the Footer-overlaid action area');
     }
   } else {
-    pass('validate', 'Grouped full-page form not selected; fixed action-bar check skipped');
+    pass('validate', 'Grouped full-page form not selected; Footer-overlaid action-area check skipped');
   }
 
   if (!hasQueryArea) {

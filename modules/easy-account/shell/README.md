@@ -12,7 +12,7 @@
 | `shell-config.example.js` | 品牌、多标签、菜单、账号和页脚配置 |
 | `assets/logo-txt@3x.png` | 侧栏展开时显示的完整品牌 Logo |
 | `assets/logo.png` | 侧栏收起时显示的方形品牌 Icon |
-| `vendor/` | Easy Account 独立维护的 React 18、Ant Design 5 与 Ant Design Icons 本地依赖 |
+| `modules/shared/browser-runtime/vendor/` | 老板管账与易账通共用的离线浏览器依赖，由根目录依赖清单生成 |
 
 ## Ant Design 约定
 
@@ -31,6 +31,11 @@ node scripts/build-easy-account-page-spec.mjs changes/{change-id}/page-spec.json
 ```
 
 然后人工打开该 Change 的 `preview.html` 验收。Shell 本身不再提供独立的旧模板预览入口。
+默认构建会创建指向共享运行时的软链接；需要移动到仓库外的独立交付包时使用：
+
+```bash
+node scripts/build-easy-account-page-spec.mjs changes/{change-id}/page-spec.json --portable
+```
 
 ## 多标签能力
 
@@ -44,7 +49,7 @@ node scripts/build-easy-account-page-spec.mjs changes/{change-id}/page-spec.json
 ## 接入方式
 
 1. 页面规格通过 `page-spec.json` 声明标签、导航和业务内容。
-2. 固定渲染器复制 Shell 运行时、配置、样式和 vendor，并生成业务预览。
+2. 固定渲染器复制 Shell 运行时、配置和样式，链接共享浏览器运行时并生成业务预览。
 3. 框架规则只写入 `shell.css` 与 `content-base.css`，页面视觉规则由导演规则和执行层共同约束。
 
 ## 框架固定值

@@ -189,6 +189,60 @@ function validateField(errors, field, location) {
   validateOptions(field.options, `${location}.options`);
 }
 
+function menuDescendantKeys(items, result = []) {
+  (items || []).forEach((item) => {
+    result.push(item?.key);
+    if (Array.isArray(item?.children)) menuDescendantKeys(item.children, result);
+  });
+  return result;
+}
+
+function validateShell(errors, shell) {
+  if (shell === undefined) return;
+  issue(errors, shell && typeof shell === 'object' && !Array.isArray(shell), 'shell must be an object.');
+  if (!shell || typeof shell !== 'object' || Array.isArray(shell)) return;
+
+  if (shell.primaryNav !== undefined) {
+    const validPrimaryNav = nonEmptyString(shell.primaryNav)
+      || (Array.isArray(shell.primaryNav) && shell.primaryNav.length > 0);
+    issue(errors, validPrimaryNav, 'shell.primaryNav must be a non-empty label or navigation array.');
+    if (Array.isArray(shell.primaryNav)) {
+      shell.primaryNav.forEach((item, index) => {
+        issue(errors, nonEmptyString(item?.key) && nonEmptyString(item?.label), `shell.primaryNav[${index}] requires key and label.`);
+      });
+      issue(errors, unique(shell.primaryNav.map((item) => item?.key)), 'shell.primaryNav keys must be unique.');
+    }
+  }
+
+  const menus = shell.sideMenusByPrimary;
+  if (menus === undefined) return;
+  issue(errors, menus && typeof menus === 'object' && !Array.isArray(menus), 'shell.sideMenusByPrimary must be an object.');
+  if (!menus || typeof menus !== 'object' || Array.isArray(menus)) return;
+
+  Object.entries(menus).forEach(([primaryKey, groups]) => {
+    const location = `shell.sideMenusByPrimary.${primaryKey}`;
+    issue(errors, Array.isArray(groups) && groups.length > 0, `${location} must contain at least one secondary menu group.`);
+    (groups || []).forEach((group, groupIndex) => {
+      const groupLocation = `${location}[${groupIndex}]`;
+      issue(errors, nonEmptyString(group?.key) && nonEmptyString(group?.label), `${groupLocation} requires key and label.`);
+      issue(errors, Array.isArray(group?.children) && group.children.length > 0, `${groupLocation}.children must be a non-empty array.`);
+      (group?.children || []).forEach((item, itemIndex) => {
+        issue(errors, nonEmptyString(item?.key) && nonEmptyString(item?.label), `${groupLocation}.children[${itemIndex}] requires key and label.`);
+      });
+    });
+    issue(errors, unique(menuDescendantKeys(groups).filter(Boolean)), `${location} menu keys must be unique.`);
+  });
+
+  if (nonEmptyString(shell.activePrimaryKey)) {
+    const activeGroups = menus[shell.activePrimaryKey];
+    issue(errors, Array.isArray(activeGroups) && activeGroups.length > 0, 'shell.activePrimaryKey must reference sideMenusByPrimary.');
+    if (nonEmptyString(shell.selectedMenuKey) && Array.isArray(activeGroups)) {
+      const leafKeys = activeGroups.flatMap((group) => menuDescendantKeys(group.children || [])).filter(Boolean);
+      issue(errors, leafKeys.includes(shell.selectedMenuKey), 'shell.selectedMenuKey must reference a child of the active secondary menu group.');
+    }
+  }
+}
+
 function validateListDrawerDetail(errors, table, capabilities, columnKeys) {
   const detailActions = (table.rowActions || []).filter((action) => action?.type === 'detail');
   const drawerDetail = table.drawerDetail;
@@ -277,7 +331,14 @@ function validateList(errors, spec, capabilities) {
   if (!list) return;
   const fields = list.query?.fields;
   issue(errors, Array.isArray(fields), 'list.query.fields must be an array.');
-  (fields || []).forEach((field, index) => validateField(errors, field, `list.query.fields[${index}]`));
+  (fields || []).forEach((field, index) => {
+    const location = `list.query.fields[${index}]`;
+    validateField(errors, field, location);
+    if (field?.showPresets !== undefined) {
+      issue(errors, field.control === 'date-range', `${location}.showPresets is only supported for date-range query fields.`);
+      issue(errors, typeof field.showPresets === 'boolean', `${location}.showPresets must be a boolean.`);
+    }
+  });
   const advanced = capabilities.includes('query.advanced');
   const basic = capabilities.includes('query.basic');
   issue(errors, Number(advanced) + Number(basic) === 1, 'List Page Spec requires exactly one of query.basic or query.advanced.');
@@ -300,7 +361,13 @@ function validateList(errors, spec, capabilities) {
   (table.columns || []).forEach((column, index) => {
     issue(errors, nonEmptyString(column.key), `list.table.columns[${index}].key is required.`);
     issue(errors, nonEmptyString(column.label), `list.table.columns[${index}].label is required.`);
-    if (column.format === 'status') issue(errors, capabilities.includes('table.status'), 'Status columns require table.status.');
+    if (column.format === 'status') {
+      issue(errors, capabilities.includes('table.status'), 'Status columns require table.status.');
+      issue(errors, column.statusMap && typeof column.statusMap === 'object', 'Status columns require statusMap.');
+      Object.entries(column.statusMap || {}).forEach(([value, status]) => {
+        issue(errors, status && typeof status === 'object' && nonEmptyString(status.label) && nonEmptyString(status.status), `Status mapping ${value} requires label and status.`);
+      });
+    }
     if (column.format === 'amount') issue(errors, capabilities.includes('table.amount'), 'Amount columns require table.amount.');
     if (column.format === 'tag') issue(errors, column.tagMap && typeof column.tagMap === 'object', 'Tag columns require tagMap.');
   });
@@ -319,8 +386,13 @@ function validateList(errors, spec, capabilities) {
   validateRowActions(errors, table, capabilities, columnKeys);
   validateListDrawerDetail(errors, table, capabilities, columnKeys);
   if (table.primaryAction) {
-    issue(errors, capabilities.includes('list.drawerCreate'), 'table.primaryAction requires list.drawerCreate.');
-    validateEmbeddedActionForm(errors, table.primaryAction.form, 'list.table.primaryAction');
+    if (table.primaryAction.workflowTarget === 'form') {
+      issue(errors, capabilities.includes('form.sourceList'), 'A source-list primary action requires form.sourceList.');
+      issue(errors, !table.primaryAction.form, 'A source-list primary action must not declare a Drawer form.');
+    } else {
+      issue(errors, capabilities.includes('list.drawerCreate'), 'table.primaryAction requires list.drawerCreate.');
+      validateEmbeddedActionForm(errors, table.primaryAction.form, 'list.table.primaryAction');
+    }
   }
   if (table.batchActions?.length) {
     issue(errors, capabilities.includes('table.batchAction'), 'Batch actions require table.batchAction.');
@@ -454,6 +526,16 @@ function validateForm(errors, spec, capabilities) {
   }
   if (intent === 'wizard') {
     issue(errors, form.presentation === 'page' && Array.isArray(form.steps), 'form.staged-flow requires steps in a page presentation.');
+  }
+  if (form.sourceList !== undefined) {
+    issue(errors, form.sourceList && typeof form.sourceList === 'object' && !Array.isArray(form.sourceList), 'form.sourceList must be an object.');
+    issue(errors, capabilities.includes('form.sourceList'), 'form.sourceList requires form.sourceList.');
+    issue(errors, form.presentation === 'page', 'form.sourceList requires a full-page form presentation.');
+    issue(errors, form.submit?.success?.actionType === 'return-source', 'form.sourceList requires a return-source success action.');
+    if (form.sourceList && typeof form.sourceList === 'object') {
+      validateList(errors, { metadata: { templateId: 'list.regular' }, list: form.sourceList }, capabilities);
+      issue(errors, form.sourceList.table?.primaryAction?.workflowTarget === 'form', 'form.sourceList.table.primaryAction must target the form workflow.');
+    }
   }
   (form.groups || []).forEach((group, index) => {
     issue(errors, nonEmptyString(group.key) && nonEmptyString(group.title), `form.groups[${index}] requires key and title.`);
@@ -621,16 +703,17 @@ function validateDashboard(errors, spec, capabilities) {
   ['distribution', 'trend', 'ranking'].forEach((role) => issue(errors, roleCounts[role] >= 1, `dashboard.charts requires at least one ${role} chart.`));
 }
 
-export function validatePageSpec(spec, { root = ROOT, allowWorkflowResult = false, allowLegacy = false } = {}) {
+export function validatePageSpec(spec, { root = ROOT, allowWorkflowResult = false, allowLegacy = false, strictGovernance = true } = {}) {
   const errors = [];
   issue(errors, spec && typeof spec === 'object' && !Array.isArray(spec), 'Page Spec must be an object.');
   if (!spec || typeof spec !== 'object') return errors;
   issue(errors, spec.schemaVersion === 1, 'schemaVersion must be 1.');
-  const allowedTopLevel = new Set(['schemaVersion', 'metadata', 'ui', 'shell', 'content', 'list', 'form', 'detail', 'result', 'dashboard', 'states']);
+  const allowedTopLevel = new Set(['schemaVersion', 'metadata', 'ui', 'shell', 'content', 'list', 'form', 'detail', 'result', 'dashboard', 'workflow', 'states']);
   Object.keys(spec).filter((key) => !allowedTopLevel.has(key)).forEach((key) => errors.push(`Unsupported top-level Page Spec key: ${key}.`));
   issue(errors, spec.ui?.system === 'boss-ledger', 'ui.system must be boss-ledger.');
   issue(errors, spec.ui?.runtime === 'react-antd-page-spec', 'ui.runtime must be react-antd-page-spec.');
   issue(errors, spec.ui?.rendererVersion === 1, 'ui.rendererVersion must be 1.');
+  validateShell(errors, spec.shell);
   const family = spec.metadata?.family;
   issue(errors, ['list', 'form', 'detail', 'result', 'dashboard'].includes(family), 'metadata.family is unsupported.');
   issue(errors, /^\d{8}-[a-z0-9-]+$/.test(spec.metadata?.changeId || ''), 'metadata.changeId must use YYYYMMDD-lowercase-slug.');
@@ -654,22 +737,22 @@ export function validatePageSpec(spec, { root = ROOT, allowWorkflowResult = fals
   const executionMode = spec.metadata?.executionMode;
   const expectedMode = expectedRuntimeMode(policy, family, spec.metadata?.templateId);
   issue(errors, Boolean(selectedPolicy), `No generation policy for family ${family || '<empty>'}.`);
-  if (selectedPolicy && !allowLegacy) {
+  if (selectedPolicy && !allowLegacy && strictGovernance) {
     issue(errors, selectedPolicy.availability === 'available', `${family} is ${selectedPolicy.availability}, not available for direct Page Spec generation.`);
     issue(errors, selectedPolicy.mode !== 'page-spec-only' || selectedPolicy.availability === 'available', `${family} is not available as an independent Page Spec entry.`);
   }
   issue(errors, ['shadow', 'page-spec-default', 'page-spec-only'].includes(executionMode), 'metadata.executionMode is invalid.');
-  if (expectedMode) {
+  if (expectedMode && strictGovernance) {
     issue(errors, executionMode === expectedMode, `metadata.executionMode must equal policy mode ${expectedMode} for ${spec.metadata?.templateId || '<empty>'}.`);
   }
   const capabilities = spec.content?.capabilities;
   issue(errors, Array.isArray(capabilities) && unique(capabilities), 'content.capabilities must be a unique array.');
-  if (selectedPolicy && Array.isArray(capabilities)) {
+  if (selectedPolicy && Array.isArray(capabilities) && strictGovernance) {
     const allowed = new Set(selectedPolicy.capabilities);
     capabilities.filter((capability) => !allowed.has(capability)).forEach((capability) => errors.push(`Unsupported ${family} capability: ${capability}.`));
   }
   const validatedCombinations = spec.metadata?.validatedCombinations;
-  if (executionMode === 'shadow') {
+  if (executionMode === 'shadow' && strictGovernance) {
     issue(errors, Array.isArray(validatedCombinations) && validatedCombinations.length > 0 && unique(validatedCombinations) && validatedCombinations.every(nonEmptyString), 'shadow Page Spec must declare non-empty unique metadata.validatedCombinations.');
     if (Array.isArray(validatedCombinations) && validatedCombinations.length > 0 && Array.isArray(capabilities)) {
       const combinations = validatedCombinations.map((id) => (policy.validatedCombinations || []).find((entry) => entry.id === id)).filter(Boolean);
@@ -681,7 +764,7 @@ export function validatePageSpec(spec, { root = ROOT, allowWorkflowResult = fals
         issue(errors, sameSet(capabilities, coveredCapabilities), 'metadata.validatedCombinations must cover exactly the selected capabilities.');
       }
     }
-  } else if (validatedCombinations !== undefined) {
+  } else if (executionMode !== 'shadow' && validatedCombinations !== undefined && strictGovernance) {
     errors.push('metadata.validatedCombinations is only allowed for shadow Page Specs.');
   }
 

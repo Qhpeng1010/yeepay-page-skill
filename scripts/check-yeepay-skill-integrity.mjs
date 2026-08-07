@@ -5,6 +5,10 @@ import { resolve } from 'node:path';
 const root = process.cwd();
 const requiredFiles = [
   'SKILL.md',
+  'package.json',
+  'package-lock.json',
+  '.rgignore',
+  'modules/shared/browser-runtime/README.md',
   'modules/shared/design-system.md',
   'modules/shared/theme-routing.md',
   'modules/shared/template-routing.md',
@@ -22,12 +26,10 @@ const requiredFiles = [
   'modules/boss-ledger/shell/shell-runtime.js',
   'modules/boss-ledger/shell/shell.css',
   'modules/boss-ledger/shell/content-base.css',
-  'modules/boss-ledger/shell/vendor/antd-reset.css',
-  'modules/boss-ledger/shell/vendor/react.production.min.js',
-  'modules/boss-ledger/shell/vendor/react-dom.production.min.js',
-  'modules/boss-ledger/shell/vendor/antd.min.js',
-  'modules/boss-ledger/shell/vendor/ant-design-icons.umd.js',
   'scripts/validate-boss-ledger-preview.mjs',
+  'scripts/build-shared-browser-runtime.mjs',
+  'scripts/check-shared-browser-runtime.mjs',
+  'scripts/lib/shared-browser-runtime.mjs',
   'scripts/read-boss-ledger-rules.mjs',
   'scripts/build-boss-ledger-context-packs.mjs',
   'scripts/prepare-boss-ledger-page-spec.mjs',
@@ -35,12 +37,14 @@ const requiredFiles = [
   'scripts/generate-boss-ledger-page.mjs',
   'scripts/lib/boss-ledger-generation-entry.mjs',
   'scripts/lib/boss-ledger-list-workbench-recipe.mjs',
+  'scripts/lib/boss-ledger-page-design-evidence.mjs',
   'scripts/test-boss-ledger-generation-entry.mjs',
   'scripts/test-boss-ledger-list-workbench-recipe.mjs',
   'scripts/compile-boss-ledger-list-workbench-recipe.mjs',
   'scripts/verify-boss-ledger-page-runtime.mjs',
   'scripts/route-business.mjs',
   'scripts/resolve-resources.mjs',
+  'scripts/generate-page.mjs',
   'scripts/validate-progressive-structure.mjs',
   'references/registry.yaml',
   'workflows/delivery.md',
@@ -60,6 +64,9 @@ const requiredFiles = [
   'modules/boss-ledger/execution/renderer/page-spec-business.css',
   'modules/boss-ledger/execution/renderer/page-spec-runtime.js',
   'scripts/check-boss-ledger-page-spec.mjs',
+  'scripts/check-page-requirement-coverage.mjs',
+  'scripts/lib/page-requirement-coverage.mjs',
+  'scripts/test-page-requirement-coverage.mjs',
   'scripts/build-boss-ledger-page-spec.mjs',
   'scripts/scaffold-boss-ledger-page-spec.mjs',
   'scripts/verify-boss-ledger-page-spec.mjs',
@@ -68,6 +75,7 @@ const requiredFiles = [
   'scripts/check-boss-ledger-rule-coverage.mjs',
   'scripts/set-boss-ledger-family-mode.mjs',
   'scripts/test-boss-ledger-page-spec-contract.mjs',
+  'scripts/test-boss-ledger-page-design-evidence.mjs',
   'scripts/validate-boss-ledger-page-spec-system.mjs',
   'scripts/run-boss-ledger-page-spec-fixture.mjs',
   'modules/easy-account/director-rules/README.md',
@@ -101,10 +109,13 @@ const requiredFiles = [
   'modules/open-platform/execution/renderer/page-spec-business.css',
   'modules/open-platform/execution/renderer/page-spec-runtime.js',
   'scripts/check-open-platform-page-spec.mjs',
+  'scripts/check-open-platform-requirement-coverage.mjs',
   'scripts/build-open-platform-page-spec.mjs',
+  'scripts/prepare-open-platform-page-spec.mjs',
   'scripts/scaffold-open-platform-page-spec.mjs',
   'scripts/verify-open-platform-page-spec.mjs',
   'scripts/test-open-platform-page-spec-contract.mjs',
+  'scripts/test-open-platform-generation-flow.mjs',
   'scripts/validate-open-platform-page-spec-system.mjs',
 ];
 const registry = JSON.parse(readFileSync(resolve(root, 'references/registry.yaml'), 'utf8'));
@@ -124,7 +135,7 @@ for (const module of registry.modules || []) {
       .forEach((file) => {
         if (!existsSync(resolve(root, file))) adapterErrors.push(`${module.id}: missing execution resource ${file}`);
       });
-    [execution.scaffoldCommand, execution.buildCommand, execution.verifyCommand].filter(Boolean).forEach((command) => {
+    [execution.scaffoldCommand, execution.checkCommand, execution.buildCommand, execution.verifyCommand].filter(Boolean).forEach((command) => {
       const match = String(command).match(/node\s+(scripts\/[^\s]+)/);
       if (!match || !existsSync(resolve(root, match[1]))) adapterErrors.push(`${module.id}: missing execution command ${command}`);
     });

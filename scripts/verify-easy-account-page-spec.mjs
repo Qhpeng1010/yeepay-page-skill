@@ -3,10 +3,12 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { assertChangeSpecPath, generatedPreviewApp, pageSpecHash, readJson, validatePageSpec } from './lib/easy-account-page-spec.mjs';
+import { verifyPageVendor } from './lib/shared-browser-runtime.mjs';
 
 const specArg = process.argv.find((arg) => arg.endsWith('page-spec.json'));
 const fast = process.argv.includes('--fast');
 const browser = process.argv.includes('--browser');
+const flexible = process.argv.includes('--flexible');
 if (!specArg) {
   console.error('Usage: node scripts/verify-easy-account-page-spec.mjs [--fast] changes/{change-id}/page-spec.json');
   process.exit(2);
@@ -86,12 +88,14 @@ try {
   const specPath = assertChangeSpecPath(root, specArg);
   const changeDir = dirname(specPath);
   const spec = readJson(specPath);
-  const errors = validatePageSpec(spec, { root });
+  const errors = validatePageSpec(spec, { root, strictGovernance: !flexible });
   if (errors.length) throw new Error(errors.join('\n'));
   const appPath = resolve(changeDir, 'preview-app.js');
   if (!existsSync(appPath) || readFileSync(appPath, 'utf8') !== generatedPreviewApp(spec)) throw new Error('preview-app.js is stale or edited.');
   const record = readJson(resolve(changeDir, 'page-spec-build.json'));
   if (record.pageSpecHash !== pageSpecHash(spec)) throw new Error('page-spec-build.json does not match page-spec.json.');
+  const vendorFailures = verifyPageVendor(root, changeDir, spec);
+  if (vendorFailures.length) throw new Error(vendorFailures.join('\n'));
   for (const [file, expected] of Object.entries(record.generated || {})) {
     const absolute = resolve(changeDir, file);
     if (!existsSync(absolute) || hash(absolute) !== expected) throw new Error(`Derived artifact drift detected: ${file}.`);

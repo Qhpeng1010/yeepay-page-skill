@@ -6,7 +6,7 @@ Boss Ledger 是易宝运营、商户、审核、财务、风控、客服和系�
 
 - 运营后台、商户后台、审核、查询、配置、Dashboard、表单、详情和步骤流程进入本模块。
 - YOP、开放平台、API/SDK 文档、错误码和接入指南不进入本模块。
-- 未指定平台时可默认路由到本模块，但必须在产物中记录该假设。
+- 未指定平台时先询问所属服务，不得因为“列表”“表单”“查询”等通用页面词默认路由到本模块。
 
 ## Progressive Loading
 
@@ -23,6 +23,7 @@ Boss Ledger 始终使用 `modules/boss-ledger/shell/` 的固定壳层。它是�
 - `execution/page-spec.schema.json` 与语义验证器阻止非法组合。
 - `execution/renderer/` 从 `page-spec.json` 确定性生成业务页面并复用 canonical Shell。
 - `execution/release-manifest.json` 绑定规则、策略、契约、渲染器与 Shell 版本。
+- adapter 返回的需求覆盖命令在构建前逐项核对原始需求，防止字段、操作或流程被静默删除。
 
 当前 `list` 与 `dashboard` 默认使用 Page Spec；`form` 和 `detail` 处于 shadow；独立 `result` 与 `empty-state` 尚未作为独立入口开放。列表内新增或编辑属于 `list` 的受控组合，不作为脱离来源上下文的独立抽屉表单入口。
 

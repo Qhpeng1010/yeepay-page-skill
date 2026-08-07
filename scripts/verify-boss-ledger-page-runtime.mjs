@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 // rule-assertion: canonical.shell
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { basename, dirname, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { generatedPreviewApp, readJson, validatePageSpec } from './lib/boss-ledger-page-spec.mjs';
+import { renderBossLedgerPreview, verifyPageVendor } from './lib/shared-browser-runtime.mjs';
 
 const args = process.argv.slice(2);
 const previewArg = args.find((arg) => !arg.startsWith('--'));
+const flexible = args.includes('--flexible');
 if (!previewArg) {
   console.error('Usage: node scripts/verify-boss-ledger-page-runtime.mjs changes/{change-id}/preview.html');
   process.exit(2);
@@ -24,6 +26,13 @@ const failures = [];
 
 if (!existsSync(pageSpecPath)) {
   console.error('Page Spec runtime verification requires page-spec.json. Legacy preview packages are no longer supported.');
+  process.exit(2);
+}
+let spec;
+try {
+  spec = readJson(pageSpecPath);
+} catch (error) {
+  console.error(`Page Spec runtime verification could not read page-spec.json: ${error.message}`);
   process.exit(2);
 }
 
@@ -95,22 +104,27 @@ function sameFile(actual, expected, label) {
   if (!readFileSync(actual).equals(readFileSync(expected))) failures.push(`${label} differs from the canonical shell asset`);
 }
 
-function compareTree(actualDir, expectedDir, label) {
-  if (!existsSync(actualDir)) return failures.push(`${label} is missing`);
-  const expectedFiles = readdirSync(expectedDir).filter((name) => statSync(resolve(expectedDir, name)).isFile());
-  const actualFiles = readdirSync(actualDir).filter((name) => statSync(resolve(actualDir, name)).isFile());
-  if (expectedFiles.join('\n') !== actualFiles.join('\n')) failures.push(`${label} file list differs from canonical assets`);
-  expectedFiles.forEach((name) => sameFile(resolve(actualDir, name), resolve(expectedDir, name), `${label}/${name}`));
+function sameContent(actual, expected, label) {
+  if (!existsSync(actual)) return failures.push(`${label} is missing`);
+  if (readFileSync(actual, 'utf8') !== expected) failures.push(`${label} differs from the generated canonical content`);
 }
 
-sameFile(previewPath, resolve(rendererDir, 'page-spec-preview.template.html'), 'preview.html');
+sameContent(
+  previewPath,
+  renderBossLedgerPreview(readFileSync(resolve(rendererDir, 'page-spec-preview.template.html'), 'utf8'), spec),
+  'preview.html'
+);
 sameFile(resolve(changeDir, 'shell-runtime.js'), resolve(templateDir, 'shell-runtime.js'), 'shell-runtime.js');
 sameFile(resolve(changeDir, 'shell.css'), resolve(templateDir, 'shell.css'), 'shell.css');
 sameFile(resolve(changeDir, 'content-base.css'), resolve(templateDir, 'content-base.css'), 'content-base.css');
 sameFile(resolve(changeDir, 'theme.css'), resolve(themeDir, 'theme.css'), 'theme.css');
 sameFile(resolve(changeDir, 'theme.js'), resolve(themeDir, 'theme.js'), 'theme.js');
 sameFile(resolve(changeDir, 'assets/boss-logo.svg'), resolve(root, 'modules/boss-ledger/assets/boss-logo.svg'), 'assets/boss-logo.svg');
-compareTree(resolve(changeDir, 'vendor'), resolve(templateDir, 'vendor'), 'vendor');
+try {
+  verifyPageVendor(root, changeDir, spec).forEach((failure) => failures.push(failure));
+} catch (error) {
+  failures.push(error.message);
+}
 
 const businessCssPath = resolve(changeDir, 'business.css');
 const appPath = resolve(changeDir, 'preview-app.js');
@@ -119,8 +133,7 @@ if (!existsSync(appPath)) failures.push('preview-app.js is missing');
 sameFile(resolve(changeDir, 'page-spec-runtime.js'), resolve(rendererDir, 'page-spec-runtime.js'), 'page-spec-runtime.js');
 sameFile(businessCssPath, resolve(rendererDir, 'page-spec-business.css'), 'business.css');
 try {
-  const spec = readJson(pageSpecPath);
-  const specErrors = validatePageSpec(spec, { root });
+  const specErrors = validatePageSpec(spec, { root, strictGovernance: !flexible });
   specErrors.forEach((error) => failures.push(`page-spec: ${error}`));
   if (existsSync(appPath) && readFileSync(appPath, 'utf8') !== generatedPreviewApp(spec)) {
     failures.push('preview-app.js is not the exact derived output of page-spec.json');

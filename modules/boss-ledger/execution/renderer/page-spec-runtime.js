@@ -58,33 +58,49 @@
     UpOutlined
   } = icons;
 
+  function selectedMenuGroupKey(items, selectedKey) {
+    for (const item of items || []) {
+      if ((item.children || []).some((child) => child.key === selectedKey || selectedMenuGroupKey([child], selectedKey))) return item.key;
+    }
+    return null;
+  }
+
   function defaultShellConfig(spec) {
     const pageName = spec.metadata.pageName;
     const pageKey = 'page-spec-current';
     const shell = spec.shell || {};
     const primaryKey = shell.activePrimaryKey || 'workspace';
+    const defaultPrimaryNav = [
+      { key: 'home', label: '首页', route: '/home' },
+      { key: 'merchant', label: '商户管理', route: '/merchant' },
+      { key: 'workspace', label: '业务管理', route: '/workspace' },
+      { key: 'system', label: '系统管理', route: '/system' }
+    ];
+    const primaryNav = Array.isArray(shell.primaryNav)
+      ? shell.primaryNav
+      : typeof shell.primaryNav === 'string' && shell.primaryNav.trim()
+        ? [{ key: primaryKey, label: shell.primaryNav.trim(), route: `/${primaryKey}` }]
+        : defaultPrimaryNav;
+    const sideMenusByPrimary = shell.sideMenusByPrimary || {
+      home: [{ key: 'home-group', label: '首页', icon: 'HomeOutlined', children: [{ key: 'dashboard', label: '经营概览', route: '/home/dashboard' }] }],
+      merchant: [{ key: 'merchant-group', label: '商户管理', icon: 'TeamOutlined', children: [{ key: pageKey, label: pageName, route: `/merchant/${pageKey}`, closable: false }] }],
+      workspace: [{ key: 'business-group', label: '业务管理', icon: 'AppstoreOutlined', children: [{ key: pageKey, label: pageName, route: `/workspace/${pageKey}`, closable: false }] }],
+      system: [{ key: 'system-group', label: '系统管理', icon: 'SettingOutlined', children: [{ key: pageKey, label: pageName, route: `/system/${pageKey}`, closable: false }] }]
+    };
+    const selectedMenuKey = shell.selectedMenuKey || pageKey;
+    const inferredOpenMenuKey = selectedMenuGroupKey(sideMenusByPrimary[primaryKey], selectedMenuKey);
     return {
       topbar: shell.topbar || {
         left: '上次登录时间：2026-07-28 09:18:32　登录 IP：10.24.18.66',
         right: 'Boss Ledger　帮助中心　消息'
       },
       logoSrc: './assets/boss-logo.svg',
-      primaryNav: shell.primaryNav || [
-        { key: 'home', label: '首页', route: '/home' },
-        { key: 'merchant', label: '商户管理', route: '/merchant' },
-        { key: 'workspace', label: '业务管理', route: '/workspace' },
-        { key: 'system', label: '系统管理', route: '/system' }
-      ],
-      sideMenusByPrimary: shell.sideMenusByPrimary || {
-        home: [{ key: 'home-group', label: '首页', icon: 'HomeOutlined', children: [{ key: 'dashboard', label: '经营概览', route: '/home/dashboard' }] }],
-        merchant: [{ key: 'merchant-group', label: '商户管理', icon: 'TeamOutlined', children: [{ key: pageKey, label: pageName, route: `/merchant/${pageKey}`, closable: false }] }],
-        workspace: [{ key: 'business-group', label: '业务管理', icon: 'AppstoreOutlined', children: [{ key: pageKey, label: pageName, route: `/workspace/${pageKey}`, closable: false }] }],
-        system: [{ key: 'system-group', label: '系统管理', icon: 'SettingOutlined', children: [{ key: pageKey, label: pageName, route: `/system/${pageKey}`, closable: false }] }]
-      },
+      primaryNav,
+      sideMenusByPrimary,
       tabs: shell.tabs || [{ key: pageKey, label: pageName, route: `/${primaryKey}/${pageKey}`, closable: false }],
       activePrimaryKey: primaryKey,
-      selectedMenuKey: shell.selectedMenuKey || pageKey,
-      openMenuKeys: shell.openMenuKeys || [`${primaryKey === 'workspace' ? 'business' : primaryKey}-group`],
+      selectedMenuKey,
+      openMenuKeys: shell.openMenuKeys || (inferredOpenMenuKey ? [inferredOpenMenuKey] : [`${primaryKey === 'workspace' ? 'business' : primaryKey}-group`]),
       activeTabKey: shell.activeTabKey || pageKey,
       footerText: shell.footerText
     };
@@ -126,12 +142,21 @@
     return [today.startOf('day'), today.endOf('day')];
   }
 
+  function firstQueryDateRangeField(query) {
+    return (query?.fields || []).find((field) => field.control === 'date-range');
+  }
+
+  function usesQueryDatePresets(query, field) {
+    const firstDateRange = firstQueryDateRangeField(query);
+    return firstDateRange?.key === field?.key && field?.showPresets !== false;
+  }
+
   function queryInitialValues(query) {
     const values = { ...(query?.initialValues || {}) };
-    (query?.fields || []).forEach((field) => {
-      if (field.control !== 'date-range' || values[field.key] !== undefined) return;
-      values[field.key] = queryDateRangeForPreset(field.defaultPreset || queryDatePresets(field)[0]);
-    });
+    const firstDateRange = firstQueryDateRangeField(query);
+    if (firstDateRange && usesQueryDatePresets(query, firstDateRange) && values[firstDateRange.key] === undefined) {
+      values[firstDateRange.key] = queryDateRangeForPreset(firstDateRange.defaultPreset || queryDatePresets(firstDateRange)[0]);
+    }
     return values;
   }
 
@@ -160,8 +185,8 @@
       })));
   }
 
-  function queryItem(field, form) {
-    const className = `boss-query-field${field.control === 'date-range' ? ' boss-query-date-range-field' : ''}`;
+  function queryItem(field, form, showDatePresets) {
+    const className = `boss-query-field${showDatePresets ? ' boss-query-date-range-field' : ''}`;
     const data = {
       key: field.key,
       className,
@@ -169,7 +194,7 @@
       'data-boss-query-key': field.key,
       'data-boss-query-control': field.control
     };
-    if (field.control === 'date-range') {
+    if (showDatePresets) {
       return h('div', data, h(Form.Item, { label: field.label }, h(QueryDateRangeControl, { field, form })));
     }
     return h('div', data, h(Form.Item, { name: field.key, label: field.label }, controlForField(field)));
@@ -235,13 +260,14 @@
   function resolveFormLayout(formSpec, fields) {
     const presentation = formSpec?.presentation || 'page';
     const fieldCount = Array.isArray(fields) ? fields.length : 0;
-    const compactThreshold = presentation === 'drawer' ? 8 : 6;
-    const useSideLabel = fieldCount <= compactThreshold;
+    const isDrawer = presentation === 'drawer';
+    const useSideLabel = !isDrawer && fieldCount <= 6;
+    const useSingleColumn = isDrawer ? fieldCount <= 8 : useSideLabel;
     return {
       layout: useSideLabel ? 'horizontal' : 'vertical',
       labelCol: useSideLabel ? { flex: '136px' } : undefined,
       className: useSideLabel ? 'boss-horizontal-form' : 'boss-vertical-form',
-      fieldsClassName: useSideLabel ? 'boss-form-stack' : ''
+      fieldsClassName: useSingleColumn ? 'boss-form-stack' : ''
     };
   }
 
@@ -377,7 +403,7 @@
   function boundDetailValue(field, row) {
     const value = row?.[field.source];
     if (field.format === 'status') {
-      const status = field.statusMap?.[value] || { label: String(value ?? '-'), status: 'default' };
+      const status = resolveStatusDisplay(value, field.statusMap);
       return h(Badge, { status: status.status || 'default', text: status.label });
     }
     if (field.format === 'tag') {
@@ -408,6 +434,7 @@
       open,
       title: workflow?.title,
       width: workflow?.width || 640,
+      rootClassName: 'boss-drawer-form',
       closeIcon: false,
       onClose,
       extra: React.createElement(Button, { type: 'text', icon: h(CloseOutlined), 'aria-label': '关闭表单', onClick: onClose }),
@@ -415,6 +442,15 @@
         h(Button, { onClick: onClose }, workflow?.cancelLabel || '取 消'),
         h(Button, { type: 'primary', onClick: submit }, workflow?.primaryLabel || '保 存'))
     }, h(Form, { form: drawerForm, layout: drawerLayout.layout, labelCol: drawerLayout.labelCol, className: drawerLayout.className, 'data-boss-form-layout': drawerLayout.layout }, h('div', { className: `boss-drawer-form-fields boss-form-grid ${drawerLayout.fieldsClassName}` }, ...(workflow?.fields || []).map((field) => formItem(field)))));
+  }
+
+  function resolveStatusDisplay(value, statusMap) {
+    const mapped = statusMap?.[value];
+    if (typeof mapped === 'string') return { label: String(value ?? '-'), status: mapped };
+    return {
+      label: typeof mapped?.label === 'string' && mapped.label.trim() ? mapped.label : String(value ?? '-'),
+      status: mapped?.status || 'default'
+    };
   }
 
   function dataColumns(columns) {
@@ -426,7 +462,7 @@
       }
       if (column.format === 'status') {
         resolved.render = (value) => {
-          const status = column.statusMap?.[value] || { label: String(value ?? '-'), status: 'default' };
+          const status = resolveStatusDisplay(value, column.statusMap);
           return h(Badge, { status: status.status || 'default', text: status.label });
         };
       }
@@ -440,15 +476,20 @@
     });
   }
 
-  function ListPage({ spec }) {
+  function ListPage({ spec, onStartWorkflow, createdRecord }) {
     const list = spec.list;
     const tableSpec = list.table;
     const queryFields = list.query.fields || [];
+    const firstDateRangeField = firstQueryDateRangeField(list.query);
+    const datePresetFieldKey = usesQueryDatePresets(list.query, firstDateRangeField)
+      ? firstDateRangeField.key
+      : null;
     const queryInitial = React.useMemo(() => queryInitialValues(list.query), [list.query]);
     const hasSecondaryQueryFields = queryFields.some((field) => field.advanced);
     const [form] = Form.useForm();
     const [applied, setApplied] = React.useState({});
     const [rows, setRows] = React.useState(() => tableSpec.rows);
+    const createdRecordRef = React.useRef(null);
     const [loading, setLoading] = React.useState(false);
     const [failed, setFailed] = React.useState(false);
     const [queryCollapsed, setQueryCollapsed] = React.useState(false);
@@ -466,6 +507,13 @@
     const optionalColumns = tableSpec.columns.filter((column) => column.key !== 'actions' && column.hideable !== false);
     const [visibleKeys, setVisibleKeys] = React.useState(() => tableSpec.columns.filter((column) => column.hidden !== true).map((column) => column.key));
     const [columnOrder, setColumnOrder] = React.useState(initialColumnKeys);
+
+    React.useEffect(() => {
+      if (!createdRecord || createdRecordRef.current === createdRecord) return;
+      createdRecordRef.current = createdRecord;
+      setRows((current) => [createdRecord, ...current]);
+      setPage(1);
+    }, [createdRecord, tableSpec.rowKey]);
 
     const visibleQueryFields = queryLayoutReady && queryHasOverflow && queryCollapsed
       ? queryFields.filter((field) => collapsedQueryKeys.includes(field.key))
@@ -569,6 +617,7 @@
       if (!confirm) return onOk();
       Modal.confirm({
         className: 'boss-confirm-modal',
+        centered: true,
         title: confirm.title,
         content: h('div', { className: 'boss-confirm-content' },
           h('div', null, confirm.description),
@@ -678,7 +727,13 @@
         toolbarTools.push(h(Button, { key: action.key, onClick: () => runSecondaryAction(action) }, action.label));
       }
     });
-    if (tableSpec.primaryAction) toolbarTools.push(h(Button, { key: tableSpec.primaryAction.key, type: 'primary', onClick: () => setWorkflow({ kind: 'create', action: tableSpec.primaryAction, row: tableSpec.primaryAction.createRecord || {} }) }, tableSpec.primaryAction.label));
+    if (tableSpec.primaryAction) toolbarTools.push(h(Button, {
+      key: tableSpec.primaryAction.key,
+      type: 'primary',
+      onClick: () => tableSpec.primaryAction.workflowTarget === 'form' && onStartWorkflow
+        ? onStartWorkflow()
+        : setWorkflow({ kind: 'create', action: tableSpec.primaryAction, row: tableSpec.primaryAction.createRecord || {} })
+    }, tableSpec.primaryAction.label));
     if ((tableSpec.tools || []).includes('refresh')) toolbarTools.push(h(Tooltip, { key: 'refresh', title: '刷新' }, h(Button, { icon: h(ReloadOutlined), 'aria-label': '刷新', onClick: () => runQuery(form.getFieldsValue()) })));
     // Column settings are a fixed list affordance, so it remains the final toolbar tool for every query list.
     toolbarTools.push(h(Popover, { key: 'settings', title: null, content: settingsContent, trigger: 'click', placement: 'bottomRight' }, h(Tooltip, { title: '列设置' }, h(Button, { className: 'boss-column-setting-button', icon: h(SettingOutlined), 'aria-label': '列设置' }))));
@@ -727,14 +782,14 @@
           className: `boss-query-grid${queryLayoutReady ? '' : ' is-measuring'}`,
           'data-boss-query-measurement': 'actual-row-count'
         },
-        ...visibleQueryFields.map((field) => queryItem(field, form)),
+        ...visibleQueryFields.map((field) => queryItem(field, form, field.key === datePresetFieldKey)),
         h('div', { className: 'boss-query-actions', 'data-boss-query-row': 'actions' }, queryLayoutReady && queryHasOverflow ? h(Button, { type: 'text', className: 'boss-query-expand-button', icon: queryCollapsed ? h(DownOutlined) : h(UpOutlined), onClick: toggleQuery }, queryCollapsed ? '展开' : '收起') : null, h(Button, { onClick: reset }, '重置'), h(Button, { type: 'primary', htmlType: 'submit' }, '查询'))))),
         h('section', { className: 'boss-result-module' }, statistics, h('div', { className: 'boss-result-toolbar' }, h('div', { className: 'boss-result-toolbar-left' }, summary), h('div', { className: 'boss-result-toolbar-right' }, ...toolbarTools)), batchBar, h('div', { className: 'boss-table-body' }, h(Table, tableProps)), h('div', { className: 'boss-table-pagination' }, h(Pagination, { current: page, pageSize, total: failed ? 0 : filteredRows.length, showSizeChanger: false, showTotal: (total) => `共 ${total} 条`, onChange: setPage })))),
       detailDrawer,
       workflowDrawer);
   }
 
-  function WizardFormPage({ spec }) {
+  function WizardFormPage({ spec, onReturnSource }) {
     const formSpec = spec.form;
     const wizardSteps = [...formSpec.steps];
     const [form] = Form.useForm();
@@ -742,6 +797,7 @@
     const [submitting, setSubmitting] = React.useState(false);
     const [completed, setCompleted] = React.useState(false);
     const [submitError, setSubmitError] = React.useState(null);
+    const [submittedValues, setSubmittedValues] = React.useState(null);
     const allFields = wizardSteps.flatMap((item) => item.fields || []);
     const initialValues = {};
     allFields.forEach((field) => { if (Object.hasOwn(field, 'default')) initialValues[field.key] = initialValueForField(field); });
@@ -758,6 +814,7 @@
       const confirmation = formSpec.submit.confirm || {};
       Modal.confirm({
         className: 'boss-confirm-modal',
+        centered: true,
         title: confirmation.title || '提交确认',
         content: confirmation.description || '确认提交当前配置吗？提交后将进入后续流程。',
         width: 416,
@@ -777,6 +834,7 @@
               return;
             }
             setSubmitting(false);
+            setSubmittedValues(values);
             setCompleted(true);
             message.success(formSpec.submit.success.message);
             resolveSubmit();
@@ -789,7 +847,8 @@
       const returnSource = formSpec.submit.success.actionType === 'return-source';
       return h('div', { className: 'boss-content-stack' }, h('section', { className: 'boss-result-page' }, renderFormSuccessResult(formSpec.submit.success, () => {
           if (returnSource) {
-            message.info('已返回来源列表');
+            if (onReturnSource) onReturnSource(submittedValues || {});
+            else message.info('已返回来源列表');
             return;
           }
           setCompleted(false); setSubmitError(null); form.resetFields(); setStep(0);
@@ -818,13 +877,14 @@
           : h(Button, { type: 'primary', loading: submitting, onClick: submit }, formSpec.submit.primaryLabel || '提 交')));
   }
 
-  function FormPage({ spec }) {
+  function FormPage({ spec, onReturnSource }) {
     const formSpec = spec.form;
-    if (formSpec.steps) return h(WizardFormPage, { spec });
+    if (formSpec.steps) return h(WizardFormPage, { spec, onReturnSource });
     const [form] = Form.useForm();
     const [submitting, setSubmitting] = React.useState(false);
     const [completed, setCompleted] = React.useState(false);
     const [submitError, setSubmitError] = React.useState(null);
+    const [submittedValues, setSubmittedValues] = React.useState(null);
     const sections = formSpec.groups || [{ key: 'main', title: formSpec.sectionTitle, fields: formSpec.fields }];
     const initialValues = {};
     const allFields = formSpec.fields || (formSpec.groups ? formSpec.groups.flatMap((group) => group.fields || []) : []);
@@ -842,6 +902,7 @@
           return;
         }
         setSubmitting(false);
+        setSubmittedValues(values);
         setCompleted(true);
         message.success(formSpec.submit.success.message);
       }, formSpec.submit.delayMs || 260);
@@ -859,7 +920,10 @@
       : [h(Button, { key: 'secondary', onClick: () => form.resetFields() }, formSpec.submit.cancelLabel || '取 消'), h(Button, { key: 'submit', type: 'primary', loading: submitting, onClick: submit }, formSpec.submit.primaryLabel)]));
     const floatingActions = [h(Button, { key: 'secondary', onClick: closeOrReset }, formSpec.submit.cancelLabel || '取 消'), h(Button, { key: 'submit', type: 'primary', loading: submitting, onClick: submit }, formSpec.submit.primaryLabel)];
     const formBody = completed
-      ? renderFormSuccessResult(formSpec.submit.success, closeOrReset, closeOrReset)
+      ? renderFormSuccessResult(formSpec.submit.success, () => {
+        if (formSpec.submit.success.actionType === 'return-source' && onReturnSource) onReturnSource(submittedValues || {});
+        else closeOrReset();
+      }, closeOrReset)
       : h(Form, { form, layout: formLayout.layout, labelCol: formLayout.labelCol, initialValues, className: formLayout.className, 'data-boss-form-layout': formLayout.layout },
         ...(sections || []).map((section) => {
           const fields = h('div', { className: `boss-form-grid ${formLayout.fieldsClassName}` }, ...(section.fields || []).map((field) => formItem(field)));
@@ -869,8 +933,8 @@
         }),
         submitError ? h(Alert, { className: 'boss-form-submit-error', type: 'error', showIcon: true, message: submitError.message, description: submitError.recovery }) : null,
         presentation === 'page' ? pageActions : null);
-    if (presentation === 'modal') return h('div', { className: 'boss-content-stack' }, h(Modal, { open: true, title: spec.metadata.pageName, width: formSpec.width || 500, closable: true, onCancel: closeOrReset, footer: completed ? null : floatingActions }, formBody));
-    if (presentation === 'drawer') return h('div', { className: 'boss-content-stack' }, h(Drawer, { open: true, title: spec.metadata.pageName, width: formSpec.width || 640, closeIcon: false, onClose: closeOrReset, extra: React.createElement(Button, { type: 'text', icon: h(CloseOutlined), 'aria-label': '关闭表单', onClick: closeOrReset }), footer: completed ? null : h('div', { className: 'boss-drawer-footer-actions' }, ...floatingActions) }, formBody));
+    if (presentation === 'modal') return h('div', { className: 'boss-content-stack' }, h(Modal, { open: true, centered: true, title: spec.metadata.pageName, width: formSpec.width || 500, closable: true, onCancel: closeOrReset, footer: completed ? null : floatingActions }, formBody));
+    if (presentation === 'drawer') return h('div', { className: 'boss-content-stack' }, h(Drawer, { open: true, title: spec.metadata.pageName, width: formSpec.width || 640, rootClassName: 'boss-drawer-form', closeIcon: false, onClose: closeOrReset, extra: React.createElement(Button, { type: 'text', icon: h(CloseOutlined), 'aria-label': '关闭表单', onClick: closeOrReset }), footer: completed ? null : h('div', { className: 'boss-drawer-footer-actions' }, ...floatingActions) }, formBody));
     if (completed) return h('div', { className: 'boss-content-stack' }, h('section', { className: 'boss-result-page' }, formBody));
     const groupedPageClass = spec.metadata.templateId === 'form.grouped-page' ? ' boss-grouped-form-module' : '';
     return h('div', { className: 'boss-content-stack' }, h('section', { className: `boss-form-module boss-full-page-form${usesInlinePageActions ? ' boss-inline-action-page' : ''}${groupedPageClass}` }, formSpec.sideGuide ? h('div', { className: 'boss-guided-form-layout' }, h('div', { className: 'boss-guided-form-main' }, formBody), h(BusinessGuide, { guide: formSpec.sideGuide })) : formBody));
@@ -906,7 +970,7 @@
     const body = h(React.Fragment, null,
       detail.metrics?.length ? h('div', { className: 'boss-detail-metrics', style: { '--boss-metric-columns': detail.metrics.length } }, ...detail.metrics.map((metric) => h('div', { key: metric.key, className: 'boss-detail-metric' }, h(Statistic, { title: metric.label, value: metric.value, suffix: metric.unit, precision: metric.precision })))) : null,
       detail.anchors && !groupedDetailSurfaces ? h('div', { className: 'boss-detail-with-anchors' }, h('nav', { className: 'boss-detail-anchors', 'aria-label': '详情目录' }, ...detail.groups.map((group) => h('a', { key: group.key, href: `#detail-${group.key}` }, group.title))), h('div', { className: 'boss-detail-anchor-content' }, groupedContent)) : groupedContent);
-    if (detail.presentation === 'modal') return h('div', { className: 'boss-content-stack' }, h(Modal, { open, title: spec.metadata.pageName, onCancel: () => setOpen(false), footer: h(Button, { onClick: () => setOpen(false) }, detail.closeLabel || '关 闭'), width: detail.width || 640 }, body));
+    if (detail.presentation === 'modal') return h('div', { className: 'boss-content-stack' }, h(Modal, { open, centered: true, title: spec.metadata.pageName, onCancel: () => setOpen(false), footer: h(Button, { onClick: () => setOpen(false) }, detail.closeLabel || '关 闭'), width: detail.width || 640 }, body));
     if (detail.presentation === 'drawer') return h('div', { className: 'boss-content-stack' }, h(Drawer, { open, title: spec.metadata.pageName, width: detail.width || 808, closeIcon: false, onClose: () => setOpen(false), extra: React.createElement(Button, { type: 'text', icon: h(CloseOutlined), 'aria-label': '关闭详情', onClick: () => setOpen(false) }), footer: h('div', { className: 'boss-drawer-footer-actions' }, h(Button, { onClick: () => setOpen(false) }, detail.closeLabel || '我知道了')) }, h('div', { className: `boss-drawer-detail${detail.groups.length > 1 ? ' boss-drawer-grouped-detail' : ''}` }, body)));
     return h('div', { className: 'boss-content-stack' }, h('section', { className: `boss-detail-module${groupedDetailSurfaces ? ' boss-grouped-detail-module' : ''}` }, body));
   }
@@ -970,8 +1034,49 @@
       h('span', { className: 'boss-dashboard-scope-status', 'aria-live': 'polite', 'data-dashboard-scope': JSON.stringify(scope) }, dashboard.scope.statusText || '当前展示所选统计范围的数据'));
   }
 
-  function BusinessPage({ spec }) {
+  function sourceRecordFromValues(spec, values) {
+    const sourceList = spec.form.sourceList;
+    const table = sourceList.table;
+    const record = { ...(table.primaryAction?.createRecord || {}) };
+    const labels = spec.workflow?.recordFieldLabels || {};
+    const columnsByLabel = new Map(table.columns.map((column) => [column.label, column.key]));
+    Object.entries(labels).forEach(([fieldKey, label]) => {
+      const columnKey = columnsByLabel.get(label);
+      if (columnKey && values[fieldKey] !== undefined) record[columnKey] = values[fieldKey];
+    });
+    if (!record[table.rowKey]) record[table.rowKey] = `R${String(table.rows.length + 1).padStart(3, '0')}`;
+    return record;
+  }
+
+  function LinkedWorkflowPage({ spec, activeTabKey, rootTabKey, tabs, openTab, closeTab }) {
+    const [createdRecord, setCreatedRecord] = React.useState(null);
+    const sourceSpec = React.useMemo(() => ({ ...spec, list: spec.form.sourceList }), [spec]);
+    const workflowTabKey = `${rootTabKey}--create`;
+    const workflowOpen = (tabs || []).some((tab) => tab.key === workflowTabKey);
+    const openWorkflow = () => openTab?.({
+      key: workflowTabKey,
+      label: spec.form.title || spec.metadata.pageName,
+      route: `/workflow/${workflowTabKey}`,
+      closable: true
+    });
+    return h(React.Fragment, null,
+      h('div', { style: { display: activeTabKey === rootTabKey ? 'block' : 'none' } }, h(ListPage, {
+        spec: sourceSpec,
+        createdRecord,
+        onStartWorkflow: openWorkflow
+      })),
+      workflowOpen ? h('div', { style: { display: activeTabKey === workflowTabKey ? 'block' : 'none' } }, h(FormPage, {
+        spec,
+        onReturnSource: (values) => {
+          setCreatedRecord(sourceRecordFromValues(spec, values));
+          closeTab?.(workflowTabKey);
+        }
+      })) : null);
+  }
+
+  function BusinessPage({ spec, activeTabKey, rootTabKey, tabs, openTab, closeTab }) {
     if (spec.metadata.family === 'list') return h(ListPage, { spec });
+    if (spec.metadata.family === 'form' && spec.form?.sourceList) return h(LinkedWorkflowPage, { spec, activeTabKey, rootTabKey, tabs, openTab, closeTab });
     if (spec.metadata.family === 'form') return h(FormPage, { spec });
     if (spec.metadata.family === 'detail') return h(DetailPage, { spec });
     if (spec.metadata.family === 'result') return h(ResultPage, { spec });
@@ -981,7 +1086,7 @@
 
   function mount(spec) {
     const shellConfig = defaultShellConfig(spec);
-    const renderContent = ({ activeTabKey }) => activeTabKey === shellConfig.activeTabKey ? h(BusinessPage, { spec }) : null;
+    const renderContent = (shellContext) => h(BusinessPage, { spec, rootTabKey: shellConfig.activeTabKey, ...shellContext });
     ReactDOM.createRoot(document.getElementById('root')).render(
       h(ConfigProvider, {
         locale: antd.locales?.zh_CN,

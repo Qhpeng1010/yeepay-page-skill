@@ -4,6 +4,8 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { classifyEasyAccountGeneration } from './lib/easy-account-generation-entry.mjs';
+import { recipeRouteEnvironment } from './lib/recipe-route-context.mjs';
+import { readGenerationReport, writeGenerationReport } from './lib/generation-performance.mjs';
 
 const root = process.cwd();
 const args = process.argv.slice(2);
@@ -49,17 +51,86 @@ function print(result, json) {
   }
   console.log(`easy-account-generation-entry: ${result.status}`);
   console.log(`- ${result.reason}`);
+  if (result.question) console.log(`- question: ${result.question}`);
   if (result.pageName) console.log(`- page: ${result.pageName}`);
   if (result.change) console.log(`- change: ${result.change}`);
+  if (result.preview) console.log(`- preview: ${result.preview}`);
+  if (result.recipeName) console.log(`- recipe: ${result.recipeName}`);
+  if (result.fallbackReason) console.log(`- fallback: ${result.fallbackReason}`);
+  if (Number.isInteger(result.elapsedMs)) console.log(`- elapsed: ${result.elapsedMs}ms`);
   if (result.next) console.log(`- next: ${result.next}`);
 }
 
-function generate(result, request, change) {
+function generate(result, request, change, resolvedRoute) {
   const command = [resolve(root, 'scripts/compile-easy-account-list-workbench-recipe.mjs'), '--request', request, '--change', change];
-  const executed = spawnSync(process.execPath, command, { cwd: root, encoding: 'utf8', timeout: 30_000 });
+  const executed = spawnSync(process.execPath, command, {
+    cwd: root,
+    encoding: 'utf8',
+    timeout: 30_000,
+    env: recipeRouteEnvironment(request, resolvedRoute)
+  });
   if (executed.error?.code === 'ETIMEDOUT') throw new Error('快速生成超过 30 秒。');
   if (executed.error || executed.status !== 0) throw new Error(executed.stderr || executed.stdout || '快速生成失败。');
-  return { ...result, status: 'generated', change, next: '静态预检已完成，打开 preview.html 进行人工验收。' };
+  const stageReport = readGenerationReport(resolve(root, change));
+  if (!stageReport) throw new Error('快速生成未写入阶段耗时报告。');
+  return {
+    ...result,
+    status: 'generated',
+    change,
+    preview: `${change}/preview.html`,
+    review: `${change}/review.md`,
+    checks: 'passed',
+    humanAcceptance: 'pending',
+    stageReport,
+    next: '静态预检已完成，打开 preview.html 进行人工验收。'
+  };
+}
+
+export function generateEasyAccountPage({ request, requestedChange = '', route = null, timingContext = {} }) {
+  const startedAt = timingContext.startedAt || Date.now();
+  const classifyStarted = Date.now();
+  const decision = classifyEasyAccountGeneration(request, { route });
+  const baseTimings = {
+    routeMs: timingContext.routeMs || 0,
+    classifyMs: Date.now() - classifyStarted
+  };
+  if (decision.status !== 'fast') {
+    const timings = { ...baseTimings, totalMs: Date.now() - startedAt };
+    return {
+      ...decision,
+      recipeName: null,
+      outcome: decision.status,
+      fallbackReason: decision.reason,
+      timings,
+      elapsedMs: timings.totalMs
+    };
+  }
+  const change = allocateChange(request, requestedChange);
+  const inputRequest = decision.inputRequest || request;
+  const delivered = generate({ ...decision, requestedChange }, inputRequest, change, route);
+  const timings = {
+    ...baseTimings,
+    ...delivered.stageReport.timings,
+    totalMs: Date.now() - startedAt
+  };
+  const result = {
+    ...delivered,
+    recipeName: decision.recipe,
+    outcome: 'generated',
+    fallbackReason: null,
+    timings,
+    elapsedMs: timings.totalMs
+  };
+  delete result.stageReport;
+  writeGenerationReport(resolve(root, change), {
+    system: 'easy-account',
+    recipeName: result.recipeName,
+    outcome: result.outcome,
+    fallbackReason: result.fallbackReason,
+    reason: result.reason,
+    timings
+  });
+  return result;
 }
 
 function main() {
@@ -67,13 +138,7 @@ function main() {
   const requestedChange = arg('--change');
   const json = args.includes('--json');
   if (!request) throw new Error('Usage: node scripts/generate-easy-account-page.mjs --request "<业务需求>" [--change changes/<change-id>] [--json]');
-  const decision = classifyEasyAccountGeneration(request);
-  if (decision.status === 'fast') {
-    const change = allocateChange(request, requestedChange);
-    print(generate({ ...decision, requestedChange }, request, change), json);
-    return;
-  }
-  print(decision, json);
+  print(generateEasyAccountPage({ request, requestedChange }), json);
 }
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {

@@ -32,7 +32,7 @@ const state = {
   mode: 'controlled-page-spec',
   status: 'ready-for-page-spec',
   templateId,
-  nextAction: '写入 page-spec.json 和 page-design.md，然后运行 check、build 和 verify。'
+  nextAction: '写入包含原始需求的 page-spec.json 和 page-design.md，然后运行 coverage、check、build 和 verify。'
 };
 writeFileSync(resolve(changeDir, 'generation-state.json'), `${JSON.stringify(state, null, 2)}\n`);
 console.log(`easy-account-page-spec-prepare: pass (${changeArg})`);

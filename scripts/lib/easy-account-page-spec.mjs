@@ -25,8 +25,9 @@ function validateField(errors, field, location) {
   if (!field || typeof field !== 'object') return;
   issue(errors, text(field.key), `${location}.key is required.`);
   issue(errors, text(field.label), `${location}.label is required.`);
-  issue(errors, ['input', 'textarea', 'select', 'radio', 'upload', 'number', 'date', 'date-range'].includes(field.control), `${location}.control is unsupported.`);
+  issue(errors, ['input', 'textarea', 'select', 'radio', 'tree-select', 'upload', 'number', 'date', 'date-range'].includes(field.control), `${location}.control is unsupported.`);
   if (['select', 'radio'].includes(field.control)) issue(errors, Array.isArray(field.options) && field.options.length > 0, `${location}.options are required for ${field.control}.`);
+  if (field.control === 'tree-select') issue(errors, Array.isArray(field.treeData) && field.treeData.length > 0, `${location}.treeData is required for tree-select.`);
   (field.options || []).forEach((option, index) => {
     issue(errors, text(option?.label), `${location}.options[${index}].label is required.`);
     issue(errors, option && Object.hasOwn(option, 'value'), `${location}.options[${index}].value is required.`);
@@ -66,6 +67,7 @@ function validateList(errors, spec, capabilities) {
     issue(errors, text(column.key), `list.table.columns[${index}].key is required.`);
     issue(errors, text(column.label), `list.table.columns[${index}].label is required.`);
     if (column.format === 'status') issue(errors, capabilities.includes('table.status'), 'Status columns require table.status.');
+    if (column.format === 'switch') issue(errors, capabilities.includes('table.switch'), 'Switch columns require table.switch.');
     if (column.format === 'amount') issue(errors, capabilities.includes('table.amount'), 'Amount columns require table.amount.');
     if (column.format === 'stack') {
       issue(errors, capabilities.includes('table.stackCells'), 'Stacked columns require table.stackCells.');
@@ -167,6 +169,7 @@ function validateList(errors, spec, capabilities) {
       ? (createForm.groups || []).flatMap((group) => group.fields || [])
       : (createForm.fields || []);
     createFields.forEach((field, index) => validateField(errors, field, `table.primaryAction.form.fields[${index}]`));
+    if (createFields.some((field) => field.control === 'tree-select')) issue(errors, capabilities.includes('form.treeSelect'), 'Tree-select fields require form.treeSelect.');
     issue(errors, unique(createFields.map((field) => field.key)), 'Create form field keys must be unique.');
     issue(errors, createForm.submit && text(createForm.submit.primaryLabel), 'table.primaryAction.form.submit.primaryLabel is required.');
     if (presentation === 'modal') {
@@ -204,7 +207,8 @@ function validateForm(errors, spec, capabilities) {
   if (form.groups) issue(errors, capabilities.includes('form.groups'), 'form.groups requires form.groups.');
   if (form.steps) issue(errors, capabilities.includes('form.steps'), 'form.steps requires form.steps.');
   const fields = fieldsForForm(form);
-  fields.forEach((field, index) => validateField(errors, field, `form.fields[${index}]`));
+    fields.forEach((field, index) => validateField(errors, field, `form.fields[${index}]`));
+    if (fields.some((field) => field.control === 'tree-select')) issue(errors, capabilities.includes('form.treeSelect'), 'Tree-select fields require form.treeSelect.');
   issue(errors, unique(fields.map((field) => field.key)), 'Form field keys must be unique.');
   issue(errors, ['page', 'drawer', 'modal'].includes(form.presentation || 'page'), 'form.presentation must be page, drawer or modal.');
   if ((form.presentation || 'page') === 'modal') issue(errors, fields.length <= 6, 'Modal forms support at most 6 fields; use a Drawer form.');
@@ -306,7 +310,7 @@ function validateResult(errors, spec, capabilities, allowWorkflowResult) {
   }
 }
 
-export function validatePageSpec(spec, { root = ROOT, allowWorkflowResult = false, allowShellPages = true } = {}) {
+export function validatePageSpec(spec, { root = ROOT, allowWorkflowResult = false, allowShellPages = true, strictGovernance = true } = {}) {
   const errors = [];
   issue(errors, spec && typeof spec === 'object' && !Array.isArray(spec), 'Page Spec must be an object.');
   if (!spec || typeof spec !== 'object') return errors;
@@ -325,13 +329,13 @@ export function validatePageSpec(spec, { root = ROOT, allowWorkflowResult = fals
   const policy = loadPolicy(root);
   const selected = policy.families.find((entry) => entry.id === family);
   issue(errors, Boolean(selected), `No generation policy for family ${family || '<empty>'}.`);
-  if (selected) {
+  if (selected && strictGovernance) {
     issue(errors, selected.availability === 'available', `${family} is ${selected.availability}.`);
     issue(errors, selected.mode !== 'legacy', `${family} is configured for legacy mode.`);
   }
   const capabilities = spec.content?.capabilities;
   issue(errors, Array.isArray(capabilities) && unique(capabilities), 'content.capabilities must be a unique array.');
-  if (selected && Array.isArray(capabilities)) {
+  if (selected && Array.isArray(capabilities) && strictGovernance) {
     const allowedCapabilities = new Set(selected.capabilities);
     capabilities.filter((capability) => !allowedCapabilities.has(capability)).forEach((capability) => errors.push(`Unsupported ${family} capability: ${capability}.`));
   }
@@ -352,7 +356,7 @@ export function validatePageSpec(spec, { root = ROOT, allowWorkflowResult = fals
         issue(errors, text(page?.tabId), `shell.pages[${index}].tabId is required.`);
         issue(errors, page?.spec && typeof page.spec === 'object', `shell.pages[${index}].spec is required.`);
         if (page?.spec && typeof page.spec === 'object') {
-          validatePageSpec(page.spec, { root, allowWorkflowResult, allowShellPages: false })
+          validatePageSpec(page.spec, { root, allowWorkflowResult, allowShellPages: false, strictGovernance })
             .forEach((error) => errors.push(`shell.pages[${index}].spec: ${error}`));
           issue(errors, page.spec.metadata?.changeId === spec.metadata?.changeId, `shell.pages[${index}].spec must share the parent changeId.`);
         }

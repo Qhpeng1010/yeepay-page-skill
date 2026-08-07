@@ -57,7 +57,7 @@ function validateIntegrationGuide(errors, guide, capabilities) {
   issue(errors, capabilities.includes('docs.flow') && capabilities.includes('docs.code') && capabilities.includes('docs.copyCode') && capabilities.includes('docs.previousNext'), 'Integration guide requires flow, code, copy and previous/next capabilities.');
 }
 
-export function validatePageSpec(spec, { root = ROOT } = {}) {
+export function validatePageSpec(spec, { root = ROOT, strictGovernance = true } = {}) {
   const errors = [];
   issue(errors, spec && typeof spec === 'object' && !Array.isArray(spec), 'Page Spec must be an object.');
   if (!spec || typeof spec !== 'object') return errors;
@@ -66,6 +66,7 @@ export function validatePageSpec(spec, { root = ROOT } = {}) {
   issue(errors, spec.schemaVersion === 1, 'schemaVersion must be 1.');
   issue(errors, /^\d{8}-[a-z0-9-]+$/.test(spec.metadata?.changeId || ''), 'metadata.changeId must use YYYYMMDD-lowercase-slug.');
   issue(errors, text(spec.metadata?.pageName), 'metadata.pageName is required.');
+  issue(errors, text(spec.metadata?.request), 'metadata.request is required.');
   const family = spec.metadata?.family;
   issue(errors, ['api-document', 'integration-guide'].includes(family), 'metadata.family is unsupported.');
   issue(errors, text(spec.metadata?.templateId), 'metadata.templateId is required.');
@@ -74,10 +75,10 @@ export function validatePageSpec(spec, { root = ROOT } = {}) {
   issue(errors, spec.ui?.rendererVersion === 1, 'ui.rendererVersion must be 1.');
   const policy = loadPolicy(root); const entry = policy.families.find((item) => item.id === family);
   issue(errors, Boolean(entry), `No generation policy for ${family || '<empty>'}.`);
-  if (entry) { issue(errors, entry.availability === 'available', `${family} is ${entry.availability}.`); issue(errors, entry.mode !== 'legacy', `${family} is configured for legacy.`); }
+  if (entry && strictGovernance) { issue(errors, entry.availability === 'available', `${family} is ${entry.availability}.`); issue(errors, entry.mode !== 'legacy', `${family} is configured for legacy.`); }
   const capabilities = spec.content?.capabilities;
   issue(errors, Array.isArray(capabilities) && unique(capabilities), 'content.capabilities must be a unique array.');
-  if (entry && Array.isArray(capabilities)) { const allow = new Set(entry.capabilities); capabilities.filter((item) => !allow.has(item)).forEach((item) => errors.push(`Unsupported ${family} capability: ${item}.`)); }
+  if (entry && Array.isArray(capabilities) && strictGovernance) { const allow = new Set(entry.capabilities); capabilities.filter((item) => !allow.has(item)).forEach((item) => errors.push(`Unsupported ${family} capability: ${item}.`)); }
   const refs = spec.metadata?.ruleRefs;
   issue(errors, Array.isArray(refs) && refs.length > 0 && unique(refs), 'metadata.ruleRefs must be a non-empty unique array.');
   if (Array.isArray(refs)) refs.filter((ref) => !knownRuleIds(root).has(ref)).forEach((ref) => errors.push(`Unknown Director Rule ID: ${ref}.`));

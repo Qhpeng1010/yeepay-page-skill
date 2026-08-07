@@ -4,7 +4,56 @@ import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node
 import { basename, dirname, relative, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { assertChangeSpecPath, generatedPreviewApp, pageSpecHash, readJson, validatePageSpec } from './lib/open-platform-page-spec.mjs';
+
 const specArg = process.argv.find((arg) => arg.endsWith('page-spec.json'));
-if (!specArg) { console.error('Usage: node scripts/build-open-platform-page-spec.mjs changes/{change-id}/page-spec.json'); process.exit(2); }
+const flexible = process.argv.includes('--flexible');
+if (!specArg) {
+  console.error('Usage: node scripts/build-open-platform-page-spec.mjs changes/{change-id}/page-spec.json [--flexible]');
+  process.exit(2);
+}
+
 const hash = (file) => createHash('sha256').update(readFileSync(file)).digest('hex');
-try { const root = process.cwd(); const path = assertChangeSpecPath(root, specArg); const changeDir = dirname(path); const spec = readJson(path); const errors = validatePageSpec(spec, { root }); if (errors.length) throw new Error(errors.join('\n')); if (spec.metadata.changeId !== basename(changeDir)) throw new Error('metadata.changeId must match the Change directory name.'); if (!existsSync(resolve(changeDir, 'rules-read.md'))) throw new Error('rules-read.md is missing.'); mkdirSync(resolve(changeDir, 'assets'), { recursive: true }); const renderer = resolve(root, 'modules/open-platform/execution/renderer'); const copies = [['page-spec-preview.template.html','preview.html'],['page-spec-runtime.js','page-spec-runtime.js'],['page-spec-business.css','business.css']].map(([source,target]) => [resolve(renderer,source),resolve(changeDir,target)]); copies.forEach(([source,target]) => cpSync(source,target)); const app = resolve(changeDir, 'preview-app.js'); writeFileSync(app, generatedPreviewApp(spec)); const generated = Object.fromEntries([...copies.map(([,target]) => [target.split('/').pop(),target]),['preview-app.js',app]].map(([name,file]) => [name,hash(file)])); const policy = readJson(resolve(root, 'modules/open-platform/execution/generation-policy.json')); writeFileSync(resolve(changeDir,'page-spec-build.json'), `${JSON.stringify({ schemaVersion:1,system:'open-platform',policyVersion:policy.policyVersion,rendererVersion:1,pageSpecHash:pageSpecHash(spec),generated },null,2)}\n`); writeFileSync(resolve(changeDir,'page-spec-checklist.md'), `# ${spec.metadata.pageName} Page Spec 检查清单\n\n- [x] 系统：易宝开放平台\n- [x] 页面族：${spec.metadata.family}\n- [x] 运行模式：shadow\n- [x] 独立 Documentation Shell 已构建\n- [x] 派生产物已记录哈希\n`); const syntax = spawnSync(process.execPath,['--check',app],{cwd:root,encoding:'utf8'}); if (syntax.status !== 0) throw new Error(syntax.stderr || 'Generated preview-app.js syntax check failed.'); console.log(`open-platform-page-spec-build: pass (${relative(root,path)})`); } catch (error) { console.error(`FAIL: ${error.message}`); process.exit(1); }
+
+try {
+  const root = process.cwd();
+  const specPath = assertChangeSpecPath(root, specArg);
+  const changeDir = dirname(specPath);
+  const spec = readJson(specPath);
+  const errors = validatePageSpec(spec, { root, strictGovernance: !flexible });
+  if (errors.length) throw new Error(errors.join('\n'));
+  if (spec.metadata.changeId !== basename(changeDir)) throw new Error('metadata.changeId must match the Change directory name.');
+  if (!existsSync(resolve(changeDir, 'rules-read.md'))) throw new Error('rules-read.md is missing.');
+
+  mkdirSync(resolve(changeDir, 'assets'), { recursive: true });
+  const renderer = resolve(root, 'modules/open-platform/execution/renderer');
+  const copies = [
+    ['page-spec-preview.template.html', 'preview.html'],
+    ['page-spec-runtime.js', 'page-spec-runtime.js'],
+    ['page-spec-business.css', 'business.css']
+  ].map(([source, target]) => [resolve(renderer, source), resolve(changeDir, target)]);
+  copies.forEach(([source, target]) => cpSync(source, target));
+
+  const app = resolve(changeDir, 'preview-app.js');
+  writeFileSync(app, generatedPreviewApp(spec));
+  const generated = Object.fromEntries([
+    ...copies.map(([, target]) => [basename(target), target]),
+    ['preview-app.js', app]
+  ].map(([name, file]) => [name, hash(file)]));
+  const policy = readJson(resolve(root, 'modules/open-platform/execution/generation-policy.json'));
+  writeFileSync(resolve(changeDir, 'page-spec-build.json'), `${JSON.stringify({
+    schemaVersion: 1,
+    system: 'open-platform',
+    policyVersion: policy.policyVersion,
+    rendererVersion: 1,
+    governanceMode: flexible ? 'flexible' : 'strict',
+    pageSpecHash: pageSpecHash(spec),
+    generated
+  }, null, 2)}\n`);
+  writeFileSync(resolve(changeDir, 'page-spec-checklist.md'), `# ${spec.metadata.pageName} Page Spec 检查清单\n\n- [x] 系统：易宝开放平台\n- [x] 页面族：${spec.metadata.family}\n- [x] 运行模式：shadow\n- [x] 独立 Documentation Shell 已构建\n- [x] 派生产物已记录哈希\n`);
+  const syntax = spawnSync(process.execPath, ['--check', app], { cwd: root, encoding: 'utf8' });
+  if (syntax.status !== 0) throw new Error(syntax.stderr || 'Generated preview-app.js syntax check failed.');
+  console.log(`open-platform-page-spec-build: pass (${relative(root, specPath)})`);
+} catch (error) {
+  console.error(`FAIL: ${error.message}`);
+  process.exit(1);
+}

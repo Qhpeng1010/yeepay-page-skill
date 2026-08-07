@@ -50,6 +50,15 @@
       config.onRouteChange?.(route || { key });
     };
 
+    const openTab = (tab) => {
+      if (!tab?.key) return;
+      setTabs((current) => current.some((item) => item.key === tab.key)
+        ? current
+        : current.concat({ key: tab.key, label: tab.label || tab.key, route: tab.route, closable: tab.closable !== false }));
+      setActiveTabKey(tab.key);
+      config.onRouteChange?.(tab);
+    };
+
     const closeTab = (targetKey) => {
       if (tabs.length <= 1) return;
       const targetIndex = tabs.findIndex((tab) => tab.key === targetKey);
@@ -82,7 +91,7 @@
         React.createElement('span', { className: 'boss-shell-tab-title' }, tab.label))
     }));
     const activeTab = tabs.find((tab) => tab.key === activeTabKey) || routeCatalog.get(activeTabKey);
-    const content = renderContent?.({ activeTabKey, activeTab, activePrimaryKey, selectedMenuKey });
+    const content = renderContent?.({ activeTabKey, activeTab, activePrimaryKey, selectedMenuKey, tabs, openTab, closeTab });
 
     return React.createElement('div', { className: 'boss-shell', 'data-boss-shell-template-version': '1' },
       React.createElement('div', { className: 'boss-shell-topbar', 'data-boss-shell': 'topbar' },

@@ -4,10 +4,13 @@ import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node
 import { basename, dirname, relative, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { assertChangeSpecPath, generatedPreviewApp, pageSpecHash, readJson, validatePageSpec } from './lib/easy-account-page-spec.mjs';
+import { installPageVendor } from './lib/shared-browser-runtime.mjs';
 
 const specArg = process.argv.find((arg) => arg.endsWith('page-spec.json'));
+const portable = process.argv.includes('--portable') || process.argv.includes('--materialize-vendor');
+const flexible = process.argv.includes('--flexible');
 if (!specArg) {
-  console.error('Usage: node scripts/build-easy-account-page-spec.mjs changes/{change-id}/page-spec.json');
+  console.error('Usage: node scripts/build-easy-account-page-spec.mjs changes/{change-id}/page-spec.json [--portable]');
   process.exit(2);
 }
 function sha256(file) { return createHash('sha256').update(readFileSync(file)).digest('hex'); }
@@ -16,7 +19,7 @@ try {
   const specPath = assertChangeSpecPath(root, specArg);
   const changeDir = dirname(specPath);
   const spec = readJson(specPath);
-  const errors = validatePageSpec(spec, { root });
+  const errors = validatePageSpec(spec, { root, strictGovernance: !flexible });
   if (errors.length) throw new Error(errors.join('\n'));
   if (spec.metadata.changeId !== basename(changeDir)) throw new Error('metadata.changeId must match the Change directory name.');
   if (!existsSync(resolve(changeDir, 'rules-read.md'))) throw new Error('rules-read.md is missing.');
@@ -34,7 +37,7 @@ try {
   ];
   fixedCopies.forEach(([source, target]) => cpSync(source, target));
   cpSync(resolve(shellRoot, 'assets'), resolve(changeDir, 'assets'), { recursive: true });
-  cpSync(resolve(shellRoot, 'vendor'), resolve(changeDir, 'vendor'), { recursive: true });
+  installPageVendor(root, changeDir, spec, { portable });
   const appPath = resolve(changeDir, 'preview-app.js');
   writeFileSync(appPath, generatedPreviewApp(spec));
   const policy = readJson(resolve(root, 'modules/easy-account/execution/generation-policy.json'));
@@ -44,7 +47,7 @@ try {
     ['business.css', resolve(changeDir, 'business.css')],
     ['preview-app.js', appPath]
   ].map(([name, file]) => [name, sha256(file)]));
-  writeFileSync(resolve(changeDir, 'page-spec-build.json'), `${JSON.stringify({ schemaVersion: 1, system: 'easy-account', policyVersion: policy.policyVersion, rendererVersion: spec.ui.rendererVersion, pageSpecHash: pageSpecHash(spec), generated }, null, 2)}\n`);
+  writeFileSync(resolve(changeDir, 'page-spec-build.json'), `${JSON.stringify({ schemaVersion: 1, system: 'easy-account', policyVersion: policy.policyVersion, rendererVersion: spec.ui.rendererVersion, governanceMode: flexible ? 'flexible' : 'strict', pageSpecHash: pageSpecHash(spec), generated }, null, 2)}\n`);
   writeFileSync(resolve(changeDir, 'page-spec-checklist.md'), `# ${spec.metadata.pageName} Page Spec 检查清单\n\n- [x] 系统：Easy Account\n- [x] 页面族：${spec.metadata.family}\n- [x] 模板：${spec.metadata.templateId}\n- [x] 运行模式：shadow\n- [x] Page Spec 契约通过\n- [x] 易账通独立 Shell 与渲染器已构建\n- [x] 派生产物已记录哈希\n`);
   const syntax = spawnSync(process.execPath, ['--check', appPath], { cwd: root, encoding: 'utf8' });
   if (syntax.status !== 0) throw new Error(syntax.stderr || 'Generated preview-app.js syntax check failed.');

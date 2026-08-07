@@ -27,10 +27,12 @@
     Select,
     Space,
     Statistic,
+    Switch,
     Steps,
     Table,
     Tag,
     Tabs,
+    TreeSelect,
     Tooltip,
     Upload,
     message
@@ -73,6 +75,15 @@
     const common = { id, placeholder, disabled: field.disabled, maxLength: field.maxLength };
     if (field.control === 'select') return h(Select, { ...common, allowClear: true, options: field.options || [] });
     if (field.control === 'radio') return h(Radio.Group, { id, disabled: field.disabled, options: field.options || [] });
+    if (field.control === 'tree-select') return h(TreeSelect, {
+      ...common,
+      allowClear: true,
+      treeData: field.treeData || [],
+      treeCheckable: field.treeCheckable !== false,
+      showCheckedStrategy: TreeSelect?.SHOW_PARENT,
+      treeDefaultExpandAll: true,
+      style: { width: '100%' }
+    });
     if (field.control === 'upload') return h(Upload, {
       id,
       accept: field.accept || 'image/*',
@@ -131,6 +142,7 @@
       const mapped = field.statusMap?.[value];
       return status(mapped || value);
     }
+    if (field.format === 'switch') return value === true || value === 'enabled' || value === 'active' ? '可启用' : '禁用';
     return value ?? '-';
   }
 
@@ -502,6 +514,15 @@
             ? amount
             : column.format === 'status'
               ? status
+              : column.format === 'switch'
+                ? (value, row) => h(Switch, {
+                  checked: value === true || value === 'enabled' || value === 'active',
+                  checkedChildren: column.enabledLabel || '启用',
+                  unCheckedChildren: column.disabledLabel || '禁用',
+                  onChange: (checked) => setAllRows((current) => current.map((item) => item[table.rowKey] === row[table.rowKey]
+                    ? { ...item, [column.key]: checked ? 'enabled' : 'disabled' }
+                    : item))
+                })
               : column.format === 'stack'
                 ? (_, row) => stackCell(column, row)
                 : undefined

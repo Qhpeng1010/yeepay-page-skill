@@ -7,12 +7,17 @@ const root = process.cwd();
 const args = process.argv.slice(2);
 const positional = [];
 let resume = false;
+let flexible = false;
 let timeoutMs = 30_000;
 
 for (let index = 0; index < args.length; index += 1) {
   const arg = args[index];
   if (arg === '--resume') {
     resume = true;
+    continue;
+  }
+  if (arg === '--flexible') {
+    flexible = true;
     continue;
   }
   if (arg === '--timeout-ms') {
@@ -25,7 +30,7 @@ for (let index = 0; index < args.length; index += 1) {
 
 const [changeArg, ruleTemplate] = positional;
 if (!changeArg || !ruleTemplate || positional.length !== 2 || !Number.isInteger(timeoutMs) || timeoutMs < 1_000 || timeoutMs > 30_000) {
-  console.error('Usage: node scripts/prepare-boss-ledger-page-spec.mjs changes/{change-id} {rule-template-id} [--resume] [--timeout-ms 1000..30000]');
+  console.error('Usage: node scripts/prepare-boss-ledger-page-spec.mjs changes/{change-id} {rule-template-id} [--resume] [--flexible] [--timeout-ms 1000..30000]');
   process.exit(2);
 }
 
@@ -58,7 +63,7 @@ function printOutput(result) {
   if (result.stderr) process.stderr.write(result.stderr);
 }
 
-function runCheckpoint(state, name, script, scriptArgs) {
+function runCheckpoint(state, name, script, scriptArgs, { blocking = true } = {}) {
   const startedAt = new Date().toISOString();
   const started = Date.now();
   state.status = 'preparing';
@@ -74,14 +79,15 @@ function runCheckpoint(state, name, script, scriptArgs) {
   printOutput(result);
   const elapsedMs = Date.now() - started;
   const timedOut = result.error?.code === 'ETIMEDOUT';
+  const failed = Boolean(result.error) || result.status !== 0;
   const checkpoint = {
     name,
-    status: !result.error && result.status === 0 ? 'pass' : 'failed',
+    status: failed ? (blocking ? 'failed' : 'warning') : 'pass',
     startedAt,
     elapsedMs,
     timeoutMs
   };
-  if (checkpoint.status === 'failed') checkpoint.error = timedOut ? `${name} exceeded ${timeoutMs}ms` : result.error?.message || `exit ${result.status ?? 'unknown'}`;
+  if (failed) checkpoint.error = timedOut ? `${name} exceeded ${timeoutMs}ms` : result.error?.message || `exit ${result.status ?? 'unknown'}`;
   state.checkpoints.push(checkpoint);
   delete state.activeCheckpoint;
   if (checkpoint.status === 'failed') {
@@ -90,6 +96,11 @@ function runCheckpoint(state, name, script, scriptArgs) {
     state.nextAction = `修复 ${name} 后使用 --resume 继续；不要重复路由或重新创建 Change。`;
     writeState(state);
     throw new Error(checkpoint.error);
+  }
+  if (checkpoint.status === 'warning') {
+    state.warnings = [...(state.warnings || []), `${name}: ${checkpoint.error}`];
+    state.nextAction = `${name} 未通过，但自然语言生成继续；交付前由维护者刷新该检查。`;
+    console.warn(`boss-ledger-prepare-warning: ${name} did not pass; flexible natural-generation continues.`);
   }
   writeState(state);
 }
@@ -102,6 +113,9 @@ try {
       throw new Error('Only a prepared or blocked Change without page-spec.json can resume. Inspect generation-state.json for the last checkpoint.');
     }
     if (previous.ruleTemplate !== ruleTemplate) throw new Error('Resume rule template must match the original prepared Change.');
+    if (previous.governanceMode && previous.governanceMode !== (flexible ? 'flexible' : 'strict')) {
+      throw new Error('Resume governance mode must match the original prepared Change.');
+    }
     if (previous.status === 'ready-for-page-spec' && existsSync(rulesPath)) {
       console.log(`boss-ledger-fast-prepare: resume (${changeArg})`);
       console.log('- rules already read; continue by writing page-spec.json');
@@ -119,10 +133,11 @@ try {
       schemaVersion: 1,
       system: 'boss-ledger',
       changeId: basename(changeDir),
-      mode: 'fast',
+      mode: flexible ? 'natural-generation' : 'fast',
       status: 'preparing',
       startedAt: new Date().toISOString(),
       timeoutMs,
+      governanceMode: flexible ? 'flexible' : 'strict',
       ruleTemplate,
       checkpoints: [{ name: 'change-directory', status: 'pass', completedAt: new Date().toISOString() }],
       nextAction: '执行轻量预检。'
@@ -130,21 +145,22 @@ try {
     writeState(state);
   }
 
-  const passed = new Set(state.checkpoints.filter((checkpoint) => checkpoint.status === 'pass').map((checkpoint) => checkpoint.name));
+  const passed = new Set(state.checkpoints.filter((checkpoint) => ['pass', 'warning'].includes(checkpoint.status)).map((checkpoint) => checkpoint.name));
   if (!passed.has('generation-policy')) runCheckpoint(state, 'generation-policy', 'scripts/check-boss-ledger-generation-policy.mjs', []);
-  if (!passed.has('release-manifest')) runCheckpoint(state, 'release-manifest', 'scripts/verify-boss-ledger-release-manifest.mjs', []);
+  if (!passed.has('release-manifest')) runCheckpoint(state, 'release-manifest', 'scripts/verify-boss-ledger-release-manifest.mjs', [], { blocking: !flexible });
   if (!passed.has('context-packs')) runCheckpoint(state, 'context-packs', 'scripts/build-boss-ledger-context-packs.mjs', ['--check']);
   if (!passed.has('rules-read')) runCheckpoint(state, 'rules-read', 'scripts/read-boss-ledger-rules.mjs', [changeArg, ruleTemplate]);
 
   state.status = 'ready-for-page-spec';
   state.preparedAt = new Date().toISOString();
-  state.nextAction = '在 90 秒内写入 page-spec.json、page-design.md 和最小交付说明，然后运行目标页构建与快速验收。';
+  state.nextAction = '在 90 秒内写入包含原始需求的 page-spec.json、业务页面设计和最小交付说明；构建会自动同步结构化交付证据，然后运行需求覆盖、目标页构建与快速验收。';
   writeState(state);
   console.log(`boss-ledger-fast-prepare: pass (${changeArg})`);
   console.log('- next: write page-spec.json and page-design.md');
-  console.log('- then: node scripts/check-boss-ledger-page-spec.mjs changes/{change-id}/page-spec.json');
-  console.log('- then: node scripts/build-boss-ledger-page-spec.mjs changes/{change-id}/page-spec.json');
-  console.log('- then: node scripts/verify-boss-ledger-page-spec.mjs changes/{change-id}/page-spec.json');
+  const governanceFlag = flexible ? ' --flexible' : '';
+  console.log(`- then: node scripts/check-boss-ledger-page-spec.mjs changes/{change-id}/page-spec.json${governanceFlag}`);
+  console.log(`- then: node scripts/build-boss-ledger-page-spec.mjs changes/{change-id}/page-spec.json${governanceFlag}`);
+  console.log(`- then: node scripts/verify-boss-ledger-page-spec.mjs changes/{change-id}/page-spec.json${governanceFlag}`);
 } catch (error) {
   console.error(`boss-ledger-fast-prepare: failed\n- ${error.message}`);
   process.exit(1);

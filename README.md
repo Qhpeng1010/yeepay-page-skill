@@ -14,7 +14,6 @@
 
 1. [老板管账导演规则](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/modules/boss-ledger/director-rules/README.md:1)：设计师唯一需要维护的规则入口，包含视觉、模板应用、交互与验收三本规则的边界。
 2. [交付流程](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/workflows/delivery.md:1)：了解一个页面从需求到人工验收的执行过程。
-3. [变更记录](/Users/sunguochao/Documents/AI-Design/Yeepay-skill/CHANGELOG.md:1)：查看规则、生成和验证链路的可追溯改动。
 
 ## 目录说明
 
@@ -22,7 +21,6 @@
 Yeepay-skill/
 ├── SKILL.md                  跨系统路由、边界与交付入口
 ├── README.md                 本说明
-├── PRODUCT.md                某个产品场景的简要定义示例
 ├── references/               产品域路由表
 ├── modules/                  各业务域的规则、固定实现和执行能力
 │   ├── boss-ledger/          老板管账后台
@@ -36,6 +34,22 @@ Yeepay-skill/
 ```
 
 `SKILL.md` 只负责把请求送往正确的系统。它不定义页面样式、模板细则或具体执行命令；这些由路由后的规则、适配器和固定渲染器分别负责。
+
+## 浏览器依赖
+
+React、ReactDOM、Ant Design、Ant Design Icons、Day.js、Lodash 与 Ant Design Charts
+由根目录 `package.json` 和 `package-lock.json` 锁定。压缩后的浏览器文件是生成物，
+不在源码目录手工维护：
+
+```bash
+npm ci
+npm run build:runtime
+npm run check:runtime
+```
+
+生成结果位于 `modules/shared/browser-runtime/vendor/`，供老板管账和易账通共同使用。
+普通 Change 通过软链接引用；页面构建命令加 `--portable` 后会复制独立交付所需文件。
+普通页面只加载基础运行时，图表依赖仅在 Dashboard 页面按需写入预览。
 
 首轮需求没有明确所属服务时，入口会先询问用户选择老板管账、易账通或易宝开放平台，不会根据“查询”“列表”“表单”等通用词猜测业务域。老板管账和易账通承载后台页面；易宝开放平台当前承载 API 文档与接入指南页面。
 
@@ -103,7 +117,7 @@ modules/boss-ledger/
   -> 通过后交付
 ```
 
-页面不会因为规则模板存在就一定可以生成。以 `generation-policy.json` 的状态为准。
+页面是否能形成预览以实际规格与渲染器为准。`generation-policy.json` 的状态在默认自然生成中用于记录治理与验收风险，不再单独决定是否生成。
 
 ## 易账通当前边界
 
@@ -119,6 +133,10 @@ modules/boss-ledger/
 
 - **自由组合**：需求未命中已验证配方时，根据三本导演规则和当前开放能力组合页面。它适合探索新业务场景，生成后由业务人员人工验收。
 - **稳定配方**：对已经人工验收、结构稳定且可由有限参数表达的页面，提炼为可重复生成的配方。配方只负责确定性解析和参数编译，不新增或覆盖视觉、模板和交互规则。
+
+配方只是快速生成能力，不是页面生成许可。显式快速模式由统一入口在一次调用中完成配方分类、编译、构建和静态预检；命中后直接返回产物，不再由智能体调用第二个生成命令。需求未命中配方时，只要所属系统和页面意图明确，就继续走受控自然语言生成；只有关键业务决策缺失才询问用户，只有缺少可执行规格、渲染器或必要基础设施才阻断。策略状态、未登记组合、能力白名单和发布指纹只作为治理告警。两条生成路径都必须通过原始需求覆盖校验，禁止静默遗漏字段、操作或流程。
+
+统一入口默认输出完整 JSON，无需追加 `--json`；只有人工阅读摘要时才使用 `--text`。结果包含配方名称、命中或回退结果、回退原因和各阶段毫秒数。配方生成成功后，同一份可观测性数据写入 Change 的 `generation-report.json`，用于区分配方解析、准备、需求覆盖、规格检查、构建和静态预检耗时。
 
 自由组合页面不能因为“生成过一次”就自动变成配方。是否晋级由设计师决定，完整步骤见[自由组合晋级配方流程](workflows/recipe-promotion.md)。
 
@@ -189,7 +207,7 @@ Page Spec Change 中的 `preview-app.js` 和 `business.css` 都由系统生成�
 
 **为什么页面不能生成？**
 
-通常是当前规则模板对应的能力仍处于 `pending` 或 `workflow-only` 状态。系统应报告能力缺口，不应勉强拼出一个看似可用的页面。
+默认自然生成不会因为 `pending`、`workflow-only`、未登记组合或提示词未命中配方而停止。真正的阻塞只应来自三类问题：所属服务或关键业务决策缺失、底层没有可执行规格/渲染器、结构或构建错误导致无法形成可验收预览；输出会明确区分询问、治理告警和真实阻塞。
 
 **为什么我改了导演规则，页面没有变化？**
 

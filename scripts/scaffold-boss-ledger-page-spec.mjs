@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-import { cpSync, existsSync, mkdirSync, readFileSync, symlinkSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
+import { installPageVendor, renderBossLedgerPreview } from './lib/shared-browser-runtime.mjs';
 
 const changeArg = process.argv[2];
-const materializeVendor = process.argv.includes('--materialize-vendor');
+const portable = process.argv.includes('--portable') || process.argv.includes('--materialize-vendor');
 if (!changeArg) {
-  console.error('Usage: node scripts/scaffold-boss-ledger-page-spec.mjs changes/{change-id}');
+  console.error('Usage: node scripts/scaffold-boss-ledger-page-spec.mjs changes/{change-id} [--portable]');
   process.exit(2);
 }
 
@@ -32,9 +33,12 @@ if (existsSync(resolve(target, 'preview.html'))) {
 const shellRoot = resolve(root, 'modules/boss-ledger/shell');
 const rendererRoot = resolve(root, 'modules/boss-ledger/execution/renderer');
 const themeRoot = resolve(root, 'modules/boss-ledger/execution/theme');
-const vendorSource = resolve(shellRoot, 'vendor');
+const spec = JSON.parse(readFileSync(resolve(target, 'page-spec.json'), 'utf8'));
 mkdirSync(resolve(target, 'assets'), { recursive: true });
-cpSync(resolve(rendererRoot, 'page-spec-preview.template.html'), resolve(target, 'preview.html'));
+writeFileSync(
+  resolve(target, 'preview.html'),
+  renderBossLedgerPreview(readFileSync(resolve(rendererRoot, 'page-spec-preview.template.html'), 'utf8'), spec)
+);
 cpSync(resolve(rendererRoot, 'page-spec-runtime.js'), resolve(target, 'page-spec-runtime.js'));
 cpSync(resolve(rendererRoot, 'page-spec-business.css'), resolve(target, 'business.css'));
 cpSync(resolve(themeRoot, 'theme.css'), resolve(target, 'theme.css'));
@@ -44,13 +48,8 @@ cpSync(resolve(shellRoot, 'shell.css'), resolve(target, 'shell.css'));
 cpSync(resolve(shellRoot, 'content-base.css'), resolve(target, 'content-base.css'));
 cpSync(resolve(root, 'modules/boss-ledger/assets/boss-logo.svg'), resolve(target, 'assets/boss-logo.svg'));
 
-const targetVendor = resolve(target, 'vendor');
-if (materializeVendor) {
-  cpSync(vendorSource, targetVendor, { recursive: true });
-} else {
-  symlinkSync('../../modules/boss-ledger/shell/vendor', targetVendor, 'dir');
-}
+installPageVendor(root, target, spec, { portable });
 
 console.log(`Boss Ledger Page Spec scaffolded: ${target}`);
 console.log('Editable source: page-spec.json');
-console.log('Derived files: preview.html, preview-app.js, page-spec-runtime.js, business.css, theme, Shell, vendor and assets');
+console.log('Derived files: preview.html, preview-app.js, page-spec-runtime.js, business.css, theme, Shell, shared runtime and assets');
