@@ -135,6 +135,7 @@ invalidDatePresetDeclaration.list.query.fields[0].showPresets = 'false';
 if (validatePageSpec(multipleDateRanges, { root }).length
   || !validatePageSpec(invalidDatePresetDeclaration, { root }).includes('list.query.fields[0].showPresets must be a boolean.')
   || !runtimeSource.includes('function firstQueryDateRangeField(query)')
+  || !runtimeSource.includes('if (!firstDateRange || !field) return false;')
   || !runtimeSource.includes('return firstDateRange?.key === field?.key && field?.showPresets !== false;')
   || !runtimeSource.includes('queryItem(field, form, showDatePresets)')
   || !runtimeSource.includes('field.key === datePresetFieldKey')) {

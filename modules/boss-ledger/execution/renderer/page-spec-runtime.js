@@ -148,6 +148,7 @@
 
   function usesQueryDatePresets(query, field) {
     const firstDateRange = firstQueryDateRangeField(query);
+    if (!firstDateRange || !field) return false;
     return firstDateRange?.key === field?.key && field?.showPresets !== false;
   }
 
